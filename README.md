@@ -1,10 +1,12 @@
 # embeddingsearch
+**This is still highly work-in-progress**
+
 Embeddingsearch is a python library that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of pre-processed entries.
 
 When first implementing the idea, it was conceptualized to only import files into the database.
 
 # How to set up
-1. Install ![ollama](https://ollama.com/download)
+1. Install [ollama](https://ollama.com/download)
 2. Pull a few models using ollama (e.g. `paraphrase-multilingual`, `bge-m3`, `mxbai-embed-large`, `nomic-embed-text`)
 3. [Install the depencencies](#installing-the-dependencies)
 4. [Set up a local mysql database](#mysql-database-setup)
@@ -45,8 +47,7 @@ CREATE TABLE embedding (id int PRIMARY KEY auto_increment, id_datapoint int, mod
 ```
 
 # To-do
-- Proper config file
-- Add support for other databases?
+- Implement the api server (WSGI via gunicorn / falcon)
 - Add database setup script?
 - Remove tables related to caching (It's not done on the sql server side anymore.)
 
