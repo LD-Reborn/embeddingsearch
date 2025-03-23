@@ -48,6 +48,7 @@ CREATE TABLE embedding (id int PRIMARY KEY auto_increment, id_datapoint int, mod
 
 # To-do
 - Implement the api server (WSGI via gunicorn / falcon)
+- Move the models to the db file and move functions into the corresponding classes. (Maybe if circular references can be avoided, move them back to the model file in the end?)
 - Add database setup script?
 - Remove tables related to caching (It's not done on the sql server side anymore.)
 
