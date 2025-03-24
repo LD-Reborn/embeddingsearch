@@ -51,6 +51,8 @@ CREATE TABLE embedding (id int PRIMARY KEY auto_increment, id_datapoint int, mod
 - Move the models to the db file and move functions into the corresponding classes. (Maybe if circular references can be avoided, move them back to the model file in the end?)
 - Add database setup script?
 - Remove tables related to caching (It's not done on the sql server side anymore.)
+- Improve performance (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
+- Perhaps split the database code into a "read-only" library, optimized for query performance and caching, and a management library meant for updating the cache?
 
 # Off-scope
 - Support for other database types
