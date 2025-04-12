@@ -1,9 +1,13 @@
 # embeddingsearch
 **This is still highly work-in-progress**
 
-Embeddingsearch is a python library that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of pre-processed entries.
+Embeddingsearch is a DotNet C# library that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of pre-processed entries.
 
-When first implementing the idea, it was conceptualized to only import files into the database.
+This repository comes with
+- the library
+- a ready-to-use CLI module
+- a REST API server (WIP) for if you want to process the data somewhere else or make it available to other languages.
+
 
 # How to set up
 1. Install [ollama](https://ollama.com/download)
@@ -11,17 +15,14 @@ When first implementing the idea, it was conceptualized to only import files int
 3. [Install the depencencies](#installing-the-dependencies)
 4. [Set up a local mysql database](#mysql-database-setup)
 
-# How to run the example script
-1. Start the script `python3 dbtest.py`
-2. Generate the index. Type in `index_folder` and submit. Then `target` and submit. (This might take a while with no GPU acceleration - go get some coffee)
-3. After the indexing is done, you may prompt searches using `search`
-
 # Installing the dependencies
 ## Ubuntu 24.04
-`pip install mysql.connector`
-`apt install python3-magic`
+1. `sudo apt update && sudo apt install dotnet-sdk-8.0 -y`
 ## Windows
-TODO
+1. Install Ubuntu in WSL (`wsl --install` and `wsl --install -d Ubuntu`)
+2. Enter your WSL environment `wsl.exe` and configure it
+3. Update via `sudo apt update && sudo apt upgrade -y && sudo snap refresh`
+3. GOTO [Ubuntu 24.04](#Ubuntu-24.04)
 
 # MySQL database setup
 1. Install mysql: `sudo apt install mysql-server` and connect to it: `sudo mysql -u root`
@@ -29,30 +30,108 @@ TODO
 `CREATE DATABASE embeddingsearch; use embeddingsearch;`
 2. Create the user
 `CREATE USER embeddingsearch identified by "somepassword!"; GRANT ALL ON embeddingsearch.* TO embeddingsearch;`
-3. Create the tables
-```sql
-CREATE TABLE searchdomain (id int PRIMARY KEY auto_increment, name varchar(512), settings JSON);
+3. Create the tables: `dotnet build && src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --database --setup`
+4. (optional) [Create a searchdomain](#create-a-searchdomain)
 
-CREATE TABLE query (id int PRIMARY KEY auto_increment, id_searchdomain int, query TEXT, FOREIGN KEY (id_searchdomain) REFERENCES searchdomain(id));
+# Using the CLI
+Before anything follow these steps:
+1. Enter the project's `src` directory (used as the working directory in all examples)
+2. Build the project: `dotnet build`
+All user-defined parameters are denoted using the `$` symbol. I.e. `$mysql_ip` means: replace this with your MySQL IP address or set it as a local variable in your terminal session.
 
-CREATE TABLE entity (id int PRIMARY KEY auto_increment, name varchar(512), probmethod varchar(128), id_searchdomain int, FOREIGN KEY (id_searchdomain) REFERENCES searchdomain(id));
+## Database
+### Create or check
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --database --create [--setup]`
 
-CREATE TABLE queryresult (id int PRIMARY KEY auto_increment, id_query int, id_entity int, result double, FOREIGN KEY (id_query) REFERENCES query(id), FOREIGN KEY (id_entity) REFERENCES entity(id));
+Without the `--setup` parameter a "dry-run" is performed. I.e. no actions are taken. Only the database is checked for read access and that all tables exist.
 
-CREATE TABLE attribute (id int PRIMARY KEY auto_increment, id_entity int, attribute varchar(512), value longtext, FOREIGN KEY (id_entity) REFERENCES entity(id));
+## Searchdomain
+### Create a searchdomain
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --searchdomain --create -s $searchdomain_name`
 
-CREATE TABLE datapoint (id int PRIMARY KEY auto_increment, name varchar(512), probmethod_embedding varchar(512), id_entity int, FOREIGN KEY (id_entity) REFERENCES entity(id));
+Creates the searchdomain as specified under `$searchdomain_name`
 
-CREATE TABLE embedding (id int PRIMARY KEY auto_increment, id_datapoint int, model varchar(512), embedding blob, FOREIGN KEY (id_datapoint) REFERENCES datapoint(id));
+### List searchdomains
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --searchdomain --list`
+
+List all searchdomains
+
+### Update searchdomain
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --searchdomain --update -s $searchdomain_name [-n $searchdomain_newname] [-S $searchdomain_newsettings]`
+
+Set a new name and/or update the settings for the searchdomain.
+
+### Delete searchdomain
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --searchdomain --delete -s $searchdomain_name`
+
+Deletes a searchdomain and its corresponding entites.
+
+## Entity
+### Create / Index entity
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --index -o $ollama_URL -s $searchdomain_name -e $entity_as_JSON`
+Creates the entity using the json string as specified under $entity_as_JSON
+
+Example: `src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --index -o $ollama_URL -s $searchdomain_name -e '{"name": "myfile.txt", "probmethod": "weighted_average", "searchdomain": "mysearchdomain", "attributes": {"mimetype": "text-plain"}, "datapoints": [{"name": "text", "text": "this is the full text", "probmethod_embedding": "weighted_average", "model": ["bge-m3", "nomic-embed-text", "paraphrase-multilingual"]}, {"name": "filepath", "text": "/home/myuser/myfile.txt", "probmethod_embedding": "weighted_average", "model": ["bge-m3", "nomic-embed-text", "paraphrase-multilingual"]}]}'`
+
+Only the json:
+```json
+{
+  "name": "myfile.txt",
+  "probmethod": "weighted_average",
+  "searchdomain": "mysearchdomain",
+  "attributes": {
+    "mimetype": "text-plain"
+  },
+  "datapoints": [
+    {
+      "name": "text",
+      "text": "this is the full text",
+      "probmethod_embedding": "weighted_average",
+      "model": [
+        "bge-m3",
+        "nomic-embed-text",
+        "paraphrase-multilingual"
+      ]
+    },
+    {
+      "name": "filepath",
+      "text": "/home/myuser/myfile.txt",
+      "probmethod_embedding": "weighted_average",
+      "model": [
+        "bge-m3",
+        "nomic-embed-text",
+        "paraphrase-multilingual"
+      ]
+    }
+  ]
+}
 ```
+### Evaluate query (i.e. "search"; that what you're here for)
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --evaluate -o $ollama_URL -s $searchdomain_name -q $query_string [-n $max_results]`
+
+Executes a search using the specified query string and outputs the results.
+
+### List entities
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --list -s $searchdomain_name`
+
+Lists all entities in that domain (together with its attributes and datapoints and probmethod)
+
+### Delete entity
+`src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --remove -s $searchdomain_name -n $entity_name`
+
+Deletes the entity specified by `$entity_name`.
+
+# Known issues
+| Issue | Solution
+| --- | ---
+| Failed to load /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so, error: /snap/core20/current/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so) | You likely installed dotnet via snap. Try using `/usr/bin/dotnet` instead of `dotnet`.
 
 # To-do
-- Implement the api server (WSGI via gunicorn / falcon)
-- Move the models to the db file and move functions into the corresponding classes. (Maybe if circular references can be avoided, move them back to the model file in the end?)
-- Add database setup script?
-- Remove tables related to caching (It's not done on the sql server side anymore.)
-- Improve performance (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
-- Perhaps split the database code into a "read-only" library, optimized for query performance and caching, and a management library meant for updating the cache?
+- Implement the api server
+- Improve performance & latency (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
+- Write a Linux installer for the CLI tool
+- Make the API server a docker container
+- Maybe add a config such that one does not need to always specify the MySQL connection info
 
-# Off-scope
-- Support for other database types
+# Future features
+- Support for other database types (TSQL, SQLite)

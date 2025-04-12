@@ -1,0 +1,5 @@
+src/cli/bin
+src/cli/obj
+src/embeddingsearch/bin
+src/embeddingsearch/obj
+src/server
