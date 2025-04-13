@@ -5,9 +5,9 @@ Embeddingsearch is a DotNet C# library that uses Embedding Similarity Search (si
 This repository comes with
 - the library
 - a ready-to-use CLI module
-- a REST API server (WIP) for if you want to process the data somewhere else or make it available to other languages.
+- a REST API server (WIP) for if you want to process the data on a remote server or make it available to other languages.
 
-
+(Reranker support is planned, but its integration is not yet conceptualized.)
 # How to set up
 1. Install [ollama](https://ollama.com/download)
 2. Pull a few models using ollama (e.g. `paraphrase-multilingual`, `bge-m3`, `mxbai-embed-large`, `nomic-embed-text`)
