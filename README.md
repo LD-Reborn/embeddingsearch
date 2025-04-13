@@ -1,5 +1,4 @@
 # embeddingsearch
-**This is still highly work-in-progress**
 
 Embeddingsearch is a DotNet C# library that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of pre-processed entries.
 
@@ -122,11 +121,15 @@ Lists all entities in that domain (together with its attributes and datapoints a
 Deletes the entity specified by `$entity_name`.
 
 # Known issues
-| Issue | Solution
-| --- | ---
-| Failed to load /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so, error: /snap/core20/current/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so) | You likely installed dotnet via snap. Try using `/usr/bin/dotnet` instead of `dotnet`.
+| Issue | Solution |
+| --- | --- |
+| Failed to load /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so, error: /snap/core20/current/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so) | You likely installed dotnet via snap. Try using `/usr/bin/dotnet` instead of `dotnet`. |
+| Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Invalid attempt to access a field before calling Read() | The searchdomain you entered does not exist |
 
 # To-do
+- Rename `cli` to something unique but still short, e.g. `escli`?
+- Improve error messaging for when retrieving a searchdomain fails.
+- Remove the `id` collumns from the database tables where the table is actually identified (and should be unique by) the name, which should become the new primary key.
 - Implement the api server
 - Improve performance & latency (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
 - Write a Linux installer for the CLI tool
