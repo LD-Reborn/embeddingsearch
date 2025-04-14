@@ -74,7 +74,9 @@ Deletes a searchdomain and its corresponding entites.
 `src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --index -o $ollama_URL -s $searchdomain_name -e $entity_as_JSON`
 Creates the entity using the json string as specified under $entity_as_JSON
 
-Example: `src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --index -o $ollama_URL -s $searchdomain_name -e '{"name": "myfile.txt", "probmethod": "weighted_average", "searchdomain": "mysearchdomain", "attributes": {"mimetype": "text-plain"}, "datapoints": [{"name": "text", "text": "this is the full text", "probmethod_embedding": "weighted_average", "model": ["bge-m3", "nomic-embed-text", "paraphrase-multilingual"]}, {"name": "filepath", "text": "/home/myuser/myfile.txt", "probmethod_embedding": "weighted_average", "model": ["bge-m3", "nomic-embed-text", "paraphrase-multilingual"]}]}'`
+Example:
+- Linux: `src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --index -o $ollama_URL -s $searchdomain_name -e '{"name": "myfile.txt", "probmethod": "weighted_average", "searchdomain": "mysearchdomain", "attributes": {"mimetype": "text-plain"}, "datapoints": [{"name": "text", "text": "this is the full text", "probmethod_embedding": "weighted_average", "model": ["bge-m3", "nomic-embed-text", "paraphrase-multilingual"]}, {"name": "filepath", "text": "/home/myuser/myfile.txt", "probmethod_embedding": "weighted_average", "model": ["bge-m3", "nomic-embed-text", "paraphrase-multilingual"]}]}'`
+- Powershell: `src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --entity --index -o $ollama_URL -s $searchdomain_name -e '{\"name\": \"myfile.txt\", \"probmethod\": \"weighted_average\", \"searchdomain\": \"mysearchdomain\", \"attributes\": {\"mimetype\": \"text-plain\"}, \"datapoints\": [{\"name\": \"text\", \"text\": \"this is the full text\", \"probmethod_embedding\": \"weighted_average\", \"model\": [\"bge-m3\", \"nomic-embed-text\", \"paraphrase-multilingual\"]}, {\"name\": \"filepath\", \"text\": \"\/home\/myuser\/myfile.txt\", \"probmethod_embedding\": \"weighted_average\", \"model\": [\"bge-m3\", \"nomic-embed-text\", \"paraphrase-multilingual\"]}]}'`
 
 Only the json:
 ```json
@@ -132,6 +134,7 @@ Deletes the entity specified by `$entity_name`.
 | Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Authentication to host 'localhost' for user 'embeddingsearch' using method 'caching_sha2_password' failed with message: Access denied for user 'embeddingsearch'@'localhost' (using password: YES) | TBD |
 
 # To-do
+- fix the `--help` functionality
 - Rename `cli` to something unique but still short, e.g. `escli`?
 - Improve error messaging for when retrieving a searchdomain fails.
 - Remove the `id` collumns from the database tables where the table is actually identified (and should be unique by) the name, which should become the new primary key.
