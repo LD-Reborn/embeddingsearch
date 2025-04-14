@@ -134,6 +134,7 @@ Deletes the entity specified by `$entity_name`.
 | Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Authentication to host 'localhost' for user 'embeddingsearch' using method 'caching_sha2_password' failed with message: Access denied for user 'embeddingsearch'@'localhost' (using password: YES) | TBD |
 
 # To-do
+- Implement environment variable use
 - fix the `--help` functionality
 - Rename `cli` to something unique but still short, e.g. `escli`?
 - Improve error messaging for when retrieving a searchdomain fails.
