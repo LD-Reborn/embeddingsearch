@@ -13,24 +13,28 @@ This repository comes with
 2. Pull a few models using ollama (e.g. `paraphrase-multilingual`, `bge-m3`, `mxbai-embed-large`, `nomic-embed-text`)
 3. [Install the depencencies](#installing-the-dependencies)
 4. [Set up a local mysql database](#mysql-database-setup)
+5. (optional) [Create a searchdomain](#create-a-searchdomain)
 
 # Installing the dependencies
 ## Ubuntu 24.04
 1. `sudo apt update && sudo apt install dotnet-sdk-8.0 -y`
 ## Windows
+Download the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow these steps to use WSL:
 1. Install Ubuntu in WSL (`wsl --install` and `wsl --install -d Ubuntu`)
 2. Enter your WSL environment `wsl.exe` and configure it
 3. Update via `sudo apt update && sudo apt upgrade -y && sudo snap refresh`
-3. GOTO [Ubuntu 24.04](#Ubuntu-24.04)
+4. GOTO [Ubuntu 24.04](#Ubuntu-24.04)
 
 # MySQL database setup
-1. Install mysql: `sudo apt install mysql-server` and connect to it: `sudo mysql -u root`
-1. Create the database
+1. Install the MySQL server:
+- Linux/WSL: `sudo apt install mysql-server`
+- Windows: [MySQL Community Server](https://dev.mysql.com/downloads/mysql/)
+2. connect to it: `sudo mysql -u root` (Or from outside of WSL: `mysql -u root`)
+3. Create the database
 `CREATE DATABASE embeddingsearch; use embeddingsearch;`
-2. Create the user
-`CREATE USER embeddingsearch identified by "somepassword!"; GRANT ALL ON embeddingsearch.* TO embeddingsearch;`
-3. Create the tables: `dotnet build && src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --database --setup`
-4. (optional) [Create a searchdomain](#create-a-searchdomain)
+4. Create the user
+`CREATE USER 'embeddingsearch'@'%' identified by "somepassword!"; GRANT ALL ON embeddingsearch.* TO embeddingsearch; FLUSH PRIVILEGES;`
+5. Create the tables: `dotnet build` and `src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --database --setup`
 
 # Using the CLI
 Before anything follow these steps:
@@ -125,6 +129,7 @@ Deletes the entity specified by `$entity_name`.
 | --- | --- |
 | Failed to load /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so, error: /snap/core20/current/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so) | You likely installed dotnet via snap. Try using `/usr/bin/dotnet` instead of `dotnet`. |
 | Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Invalid attempt to access a field before calling Read() | The searchdomain you entered does not exist |
+| Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Authentication to host 'localhost' for user 'embeddingsearch' using method 'caching_sha2_password' failed with message: Access denied for user 'embeddingsearch'@'localhost' (using password: YES) | TBD |
 
 # To-do
 - Rename `cli` to something unique but still short, e.g. `escli`?
