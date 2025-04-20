@@ -115,8 +115,9 @@ public class OptionsEntityIndex : OptionsEntity // Example: -i -e {"name": "myfi
     [Option('s', Required = true, HelpText = "Searchdomain the entity belongs to")]
     public required string Searchdomain { get; set; }
     
-    [Option('e', Required = true, HelpText = "Entity (as JSON) to be inserted")]
-    public required string EntityJSON { get; set; }
+    [Option('e', Required = false, HelpText = "Entity (as JSON) to be inserted")]
+    public string? EntityJSON { get; set; }
+
     /* Example for an entity:
     {
     "name": "myfile.txt",

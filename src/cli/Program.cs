@@ -159,6 +159,7 @@ parser.ParseArguments<OptionsCommand>(args).WithParsed<OptionsCommand>(opts =>
                         counter += 1;
                     }
                     Console.WriteLine($"Number of entities deleted as part of deleting the searchdomain: {counter}");
+                    searchdomain.ExecuteSQLNonQuery("DELETE FROM entity WHERE id_searchdomain = @id", new() {{"id", searchdomain.id}}); // Cleanup // TODO add rows affected
                     searchdomain.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", opts.Searchdomain}});
                     Console.WriteLine("Searchdomain has been successfully removed.");
                 })
@@ -204,14 +205,44 @@ parser.ParseArguments<OptionsCommand>(args).WithParsed<OptionsCommand>(opts =>
             {
                 parser.ParseArguments<OptionsEntityIndex>(args).WithParsed<OptionsEntityIndex>(opts =>
                 {
+                    if (opts.EntityJSON is null)
+                    {
+                        opts.EntityJSON = Console.In.ReadToEnd();
+                    }
                     Searchdomain searchdomain = GetSearchdomain(opts.OllamaURL, opts.Searchdomain, opts.IP, opts.Username, opts.Password);
-                    Entity? entity = searchdomain.EntityFromJSON(opts.EntityJSON);
-                    if (entity is not null)
+                    try
                     {
-                        Console.WriteLine("Successfully created/updated the entity");
-                    } else
+                        if (opts.EntityJSON.StartsWith('[')) // multiple entities
+                        {
+                            List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>?>(opts.EntityJSON);
+                            if (jsonEntities is not null)
+                            {
+                                
+                                List<Entity>? entities = searchdomain.EntitiesFromJSON(opts.EntityJSON);
+                                if (entities is not null)
+                                {
+                                    Console.WriteLine("Successfully created/updated the entity");
+                                } else
+                                {
+                                    Console.Error.WriteLine("Unable to create the entity using the provided JSON.");
+                                    retval = 1;
+                                }
+                            }
+                        } else
+                        {
+                            Entity? entity = searchdomain.EntityFromJSON(opts.EntityJSON);
+                            if (entity is not null)
+                            {
+                                Console.WriteLine("Successfully created/updated the entity");
+                            } else
+                            {
+                                Console.Error.WriteLine("Unable to create the entity using the provided JSON.");
+                                retval = 1;
+                            }
+                        }
+                    } catch (Exception e)
                     {
-                        Console.Error.WriteLine("Unable to create the entity using the provided JSON.");
+                        Console.Error.WriteLine($"Unable to create the entity using the provided JSON.\nException: {e}");
                         retval = 1;
                     }
                 })
@@ -287,11 +318,16 @@ static List<(float, string)> Search(OptionsEntityEvaluate optionsEntityIndex)
 static Searchdomain GetSearchdomain(string ollamaURL, string searchdomain, string ip, string username, string password, bool runEmpty = false)
 {
     string connectionString = $"server={ip};database=embeddingsearch;uid={username};pwd={password};";
-    var ollamaConfig = new OllamaApiClient.Configuration
+    // var ollamaConfig = new OllamaApiClient.Configuration
+    // {
+    //     Uri = new Uri(ollamaURL)
+    // };
+    var httpClient = new HttpClient
     {
-        Uri = new Uri(ollamaURL)
+        BaseAddress = new Uri(ollamaURL),
+        Timeout = TimeSpan.FromSeconds(36000) //.MaxValue //FromSeconds(timeout)
     };
-    var ollama = new OllamaApiClient(ollamaConfig);
+    var ollama = new OllamaApiClient(httpClient);
     return new Searchdomain(searchdomain, connectionString, ollama, "sqlserver", runEmpty);
 }
 

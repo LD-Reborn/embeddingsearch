@@ -1,4 +1,6 @@
-class JSONEntity
+namespace embeddingsearch;
+
+public class JSONEntity
 {
     public required string name { get; set; }
     public required string probmethod { get; set; }
@@ -7,7 +9,7 @@ class JSONEntity
     public required JSONDatapoint[] datapoints { get; set; }
 }
 
-class JSONDatapoint
+public class JSONDatapoint
 {
     public required string name { get; set; }
     public required string text { get; set; }

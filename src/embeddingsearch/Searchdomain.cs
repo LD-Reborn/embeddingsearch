@@ -282,7 +282,7 @@ public class Searchdomain
         
         foreach (JSONDatapoint jsonDatapoint in jsonEntity.datapoints)
         {
-            Dictionary<string, float[]> embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.text, [.. jsonDatapoint.model], ollama);
+            Dictionary<string, float[]> embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.text, [.. jsonDatapoint.model], ollama, embeddingCache);
             var probMethod_embedding = probmethods.GetMethod(jsonDatapoint.probmethod_embedding) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.probmethod_embedding}");
             Datapoint datapoint = new(jsonDatapoint.name, probMethod_embedding, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
             int id_datapoint = DatabaseInsertDatapoint(jsonDatapoint.name, jsonDatapoint.probmethod_embedding, id_entity);
@@ -300,6 +300,65 @@ public class Searchdomain
         };
         entityCache.Add(entity);
         return entity;
+    }
+
+    public List<Entity>? EntitiesFromJSON(string json)
+    {
+        List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>>(json);
+        if (jsonEntities is null)
+        {
+            return null;
+        }
+
+        Dictionary<string, List<string>> toBeCached = [];
+        foreach (JSONEntity jSONEntity in jsonEntities)
+        {
+            foreach (JSONDatapoint datapoint in jSONEntity.datapoints)
+            {
+                foreach (string model in datapoint.model)
+                {
+                    if (!toBeCached.ContainsKey(model))
+                    {
+                        toBeCached[model] = [];
+                    }
+                    toBeCached[model].Add(datapoint.text);
+                }
+            }
+        }
+        //Console.WriteLine(JsonSerializer.Serialize(toBeCached));
+        //return new List<Entity>();
+        Dictionary<string, Dictionary<string, float[]>> cache = []; // local cache
+        foreach (KeyValuePair<string, List<string>> cacheThis in toBeCached)
+        {
+            string model = cacheThis.Key;
+            List<string> contents = cacheThis.Value;
+            Console.WriteLine("DEBUG@searchdomain-1");
+            Console.WriteLine(model);
+            Console.WriteLine(contents);
+            Console.WriteLine(contents.Count);
+            if (contents.Count == 0)
+            {
+                Console.WriteLine("DEBUG@searchdomain-2-no");
+                cache[model] = [];
+                continue;
+            }
+            Console.WriteLine("DEBUG@searchdomain-2-yes");
+            //Console.WriteLine("DEBUG@searchdomain[[");
+            //Console.WriteLine(model);
+            //Console.WriteLine(JsonSerializer.Serialize(contents));
+            //Console.WriteLine("]]");
+            cache[model] = Datapoint.GenerateEmbeddings(contents, model, ollama, embeddingCache);
+            //Console.WriteLine(JsonSerializer.Serialize(cache[model]));
+        }
+        var tempEmbeddingCache = embeddingCache;
+        embeddingCache = cache;
+        List<Entity> retVal = [];
+        foreach (JSONEntity jSONEntity in jsonEntities)
+        {
+            retVal.Append(EntityFromJSON(JsonSerializer.Serialize(jSONEntity)));
+        }
+        embeddingCache = tempEmbeddingCache;
+        return retVal;
     }
 
     public void DatabaseRemoveEntity(string name)
