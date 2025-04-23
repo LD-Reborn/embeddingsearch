@@ -107,6 +107,7 @@ parser.ParseArguments<OptionsCommand>(args).WithParsed<OptionsCommand>(opts =>
                     {
                         Console.WriteLine($" - {search.GetString(0)}");
                     }
+                    search.Close();
                 })
                 .WithNotParsed<OptionsSearchdomainList>(action =>
                 {
