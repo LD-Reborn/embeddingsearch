@@ -2,5 +2,7 @@ src/cli/bin
 src/cli/obj
 src/embeddingsearch/bin
 src/embeddingsearch/obj
-src/server
 src/debug
+src/server/appsettings.Development.json
+src/server/bin
+src/server/obj
