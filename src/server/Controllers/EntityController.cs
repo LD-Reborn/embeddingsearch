@@ -55,7 +55,7 @@ public class EntityController : ControllerBase
     }
 
     [HttpGet("List")]
-    public ActionResult<EntityListResults> List(string searchdomain)
+    public ActionResult<EntityListResults> List(string searchdomain, bool returnEmbeddings = false)
     {
         EntityListResults entityListResults = new() {Results = []};
         Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
@@ -69,12 +69,19 @@ public class EntityController : ControllerBase
             List<DatapointResult> datapointResults = [];
             foreach (Datapoint datapoint in entity.datapoints)
             {
-                List<EmbeddingResult> embeddingResults = [];
-                foreach ((string, float[]) embedding in datapoint.embeddings)
+                if (returnEmbeddings)
                 {
-                    embeddingResults.Add(new EmbeddingResult() {Model = embedding.Item1, Embeddings = embedding.Item2});
+                    List<EmbeddingResult> embeddingResults = [];
+                    foreach ((string, float[]) embedding in datapoint.embeddings)
+                    {
+                        embeddingResults.Add(new EmbeddingResult() {Model = embedding.Item1, Embeddings = embedding.Item2});
+                    }
+                    datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.Method.Name, Embeddings = embeddingResults});
                 }
-                datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.Method.Name, Embeddings = embeddingResults});
+                else
+                {
+                    datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.Method.Name, Embeddings = null});
+                }
             }
             EntityListResult entityListResult = new()
             {

@@ -39,7 +39,7 @@ public class DatapointResult
 {
     public required string Name { get; set; }
     public required string ProbMethod { get; set; }
-    public required List<EmbeddingResult> Embeddings { get; set; } 
+    public required List<EmbeddingResult>? Embeddings { get; set; } 
 }
 
 public class EmbeddingResult
