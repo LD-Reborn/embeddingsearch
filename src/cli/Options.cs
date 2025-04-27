@@ -95,7 +95,7 @@ public class OptionsEntity : OptionsCommand
 
 }
 
-public class OptionsEntityEvaluate : OptionsEntity
+public class OptionsEntityQuery : OptionsEntity
 {
     [Option('s', Required = true, HelpText = "Searchdomain to be searched")]
     public required string Searchdomain { get; set; }

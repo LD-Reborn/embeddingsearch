@@ -183,7 +183,7 @@ parser.ParseArguments<OptionsCommand>(args).WithParsed<OptionsCommand>(opts =>
         {
             if (opts.IsEvaluate)
             {
-                parser.ParseArguments<OptionsEntityEvaluate>(args).WithParsed<OptionsEntityEvaluate>(opts =>
+                parser.ParseArguments<OptionsEntityQuery>(args).WithParsed<OptionsEntityQuery>(opts =>
                 {
                     Console.WriteLine("The results:");
                     var search = Search(opts);
@@ -197,7 +197,7 @@ parser.ParseArguments<OptionsCommand>(args).WithParsed<OptionsCommand>(opts =>
                         Console.WriteLine($"{search[i].Item1} {search[i].Item2}");
                     }
                 })
-                .WithNotParsed<OptionsEntityEvaluate>(action =>
+                .WithNotParsed<OptionsEntityQuery>(action =>
                 {
                     PrintErrorUndeterminedAction("entity");
                     retval = 1;
@@ -308,7 +308,7 @@ parser.ParseArguments<OptionsCommand>(args).WithParsed<OptionsCommand>(opts =>
 
 return retval;
 
-static List<(float, string)> Search(OptionsEntityEvaluate optionsEntityIndex)
+static List<(float, string)> Search(OptionsEntityQuery optionsEntityIndex)
 {
     var searchdomain = GetSearchdomain(optionsEntityIndex.OllamaURL, optionsEntityIndex.Searchdomain, optionsEntityIndex.IP, optionsEntityIndex.Username, optionsEntityIndex.Password);
     List<(float, string)> results = searchdomain.Search(optionsEntityIndex.Query);
