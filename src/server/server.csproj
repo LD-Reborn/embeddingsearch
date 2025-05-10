@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\embeddingsearch\embeddingsearch.csproj" />
+    <ProjectReference Include="..\Models\Models.csproj" />
   </ItemGroup>
 
 </Project>

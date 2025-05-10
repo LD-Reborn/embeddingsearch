@@ -6,3 +6,7 @@ src/debug
 src/server/appsettings.Development.json
 src/server/bin
 src/server/obj
+src/Client/bin
+src/Client/obj
+src/Models/bin
+src/Models/obj

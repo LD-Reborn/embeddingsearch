@@ -156,7 +156,7 @@ parser.ParseArguments<OptionsCommand>(args).WithParsed<OptionsCommand>(opts =>
                     int counter = 0;
                     foreach (Entity entity in searchdomain.entityCache)
                     {
-                        searchdomain.DatabaseRemoveEntity(entity.name);
+                        searchdomain.RemoveEntity(entity.name);
                         counter += 1;
                     }
                     Console.WriteLine($"Number of entities deleted as part of deleting the searchdomain: {counter}");
@@ -260,7 +260,7 @@ parser.ParseArguments<OptionsCommand>(args).WithParsed<OptionsCommand>(opts =>
                     bool hasEntity = searchdomain.HasEntity(opts.Name);
                     if (hasEntity)
                     {
-                        searchdomain.DatabaseRemoveEntity(opts.Name);
+                        searchdomain.RemoveEntity(opts.Name);
                     } else
                     {
                         Console.Error.WriteLine($"No entity with the name {opts.Name} has been found.");

@@ -270,7 +270,8 @@ public class Searchdomain
         }
         if (HasEntity(jsonEntity.name))
         {
-            DatabaseRemoveEntity(jsonEntity.name);
+            RemoveEntity(jsonEntity.name);
+
         }
         int id_entity = DatabaseInsertEntity(jsonEntity.name, jsonEntity.probmethod, id);
         foreach (KeyValuePair<string, string> attribute in jsonEntity.attributes)
@@ -325,30 +326,17 @@ public class Searchdomain
                 }
             }
         }
-        //Console.WriteLine(JsonSerializer.Serialize(toBeCached));
-        //return new List<Entity>();
         Dictionary<string, Dictionary<string, float[]>> cache = []; // local cache
         foreach (KeyValuePair<string, List<string>> cacheThis in toBeCached)
         {
             string model = cacheThis.Key;
             List<string> contents = cacheThis.Value;
-            Console.WriteLine("DEBUG@searchdomain-1");
-            Console.WriteLine(model);
-            Console.WriteLine(contents);
-            Console.WriteLine(contents.Count);
             if (contents.Count == 0)
             {
-                Console.WriteLine("DEBUG@searchdomain-2-no");
                 cache[model] = [];
                 continue;
             }
-            Console.WriteLine("DEBUG@searchdomain-2-yes");
-            //Console.WriteLine("DEBUG@searchdomain[[");
-            //Console.WriteLine(model);
-            //Console.WriteLine(JsonSerializer.Serialize(contents));
-            //Console.WriteLine("]]");
             cache[model] = Datapoint.GenerateEmbeddings(contents, model, ollama, embeddingCache);
-            //Console.WriteLine(JsonSerializer.Serialize(cache[model]));
         }
         var tempEmbeddingCache = embeddingCache;
         embeddingCache = cache;
@@ -361,7 +349,7 @@ public class Searchdomain
         return retVal;
     }
 
-    public void DatabaseRemoveEntity(string name)
+    public void RemoveEntity(string name)
     {
         Dictionary<string, dynamic> parameters = new()
         {
@@ -371,6 +359,7 @@ public class Searchdomain
         ExecuteSQLNonQuery("DELETE datapoint.* FROM datapoint JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
         ExecuteSQLNonQuery("DELETE attribute.* FROM attribute JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
         ExecuteSQLNonQuery("DELETE FROM entity WHERE name = @name", parameters);
+        entityCache.RemoveAll(entity => entity.name == name);
     }
 
     public int DatabaseInsertSearchdomain(string name)

@@ -56,6 +56,10 @@ public class SearchomainManager
 
     public int CreateSearchdomain(string searchdomain, string settings = "{}")
     {
+        if (searchdomains.TryGetValue(searchdomain, out Searchdomain? value))
+        {
+            throw new Exception("Searchdomain already exists"); // TODO create proper SearchdomainAlreadyExists exception
+        }
         Dictionary<string, dynamic> parameters = new()
         {
             { "name", searchdomain },
@@ -68,13 +72,12 @@ public class SearchomainManager
     {
         Searchdomain searchdomain_ = GetSearchdomain(searchdomain);
         int counter = 0;
-        foreach (Entity entity in searchdomain_.entityCache)
+        while (searchdomain_.entityCache.Count > 0)
         {
-            searchdomain_.DatabaseRemoveEntity(entity.name);
+            searchdomain_.RemoveEntity(searchdomain_.entityCache.First().name);
             counter += 1;
         }
         _logger.LogDebug($"Number of entities deleted as part of deleting the searchdomain \"{searchdomain}\": {counter}");
-        searchdomain_.ExecuteSQLNonQuery("DELETE FROM entity WHERE id_searchdomain = @id", new() {{"id", searchdomain_.id}}); // Cleanup // TODO add rows affected
         searchdomain_.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
         searchdomains.Remove(searchdomain);
         _logger.LogDebug($"Searchdomain has been successfully removed");

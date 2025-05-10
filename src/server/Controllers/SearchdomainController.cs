@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using embeddingsearch;
-using server.Models;
+using Models;
 
 namespace server.Controllers;
 
@@ -22,13 +22,23 @@ public class SearchdomainController : ControllerBase
     [HttpGet("List")]
     public ActionResult<SearchdomainListResults> List()
     {
-        return Ok(_domainManager.ListSearchdomains());
+        var results = _domainManager.ListSearchdomains()
+            ?? throw new Exception("Unable to list searchdomains");
+        SearchdomainListResults searchdomainListResults = new() {Searchdomains = results};
+        return Ok(searchdomainListResults);
     }
 
     [HttpGet("Create")]
     public ActionResult<SearchdomainCreateResults> Create(string searchdomain, string settings = "{}")
     {
-        return Ok(new SearchdomainCreateResults(){Id = _domainManager.CreateSearchdomain(searchdomain, settings)});
+        try
+        {
+            int id = _domainManager.CreateSearchdomain(searchdomain, settings);
+            return Ok(new SearchdomainCreateResults(){Id = id, Success = true});
+        } catch (Exception)
+        {
+            return Ok(new SearchdomainCreateResults(){Id = null, Success = false});
+        }
     }
 
     [HttpGet("Delete")]
@@ -40,8 +50,9 @@ public class SearchdomainController : ControllerBase
         {
             success = true;
             deletedEntries = _domainManager.DeleteSearchdomain(searchdomain);
-        } catch (Exception)
+        } catch (Exception ex)
         {
+            Console.WriteLine(ex);
             success = false;
             deletedEntries = 0;
         }
@@ -51,14 +62,20 @@ public class SearchdomainController : ControllerBase
     [HttpGet("Update")]
     public ActionResult<SearchdomainUpdateResults> Update(string searchdomain, string newName, string settings = "{}")
     {
-        Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        Dictionary<string, dynamic> parameters = new()
+        try
         {
-            {"name", newName},
-            {"settings", settings},
-            {"id", searchdomain_.id}
-        };
-        searchdomain_.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);
+            Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+            Dictionary<string, dynamic> parameters = new()
+            {
+                {"name", newName},
+                {"settings", settings},
+                {"id", searchdomain_.id}
+            };
+            searchdomain_.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);
+        } catch (Exception)
+        {
+            return Ok(new SearchdomainUpdateResults(){Success = false});
+        }
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
 }

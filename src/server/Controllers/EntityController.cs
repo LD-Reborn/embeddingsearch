@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using embeddingsearch;
 using System.Text.Json;
-using server.Models;
-
+using Models;
 namespace server.Controllers;
 
 [ApiController]
@@ -23,7 +22,14 @@ public class EntityController : ControllerBase
     [HttpGet("Query")]
     public ActionResult<EntityQueryResults> Query(string searchdomain, string query)
     {
-        Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        } catch (Exception)
+        {
+            return Ok(new EntityQueryResults() {Results = []});
+        }
         var results = searchdomain_.Search(query);
         List<EntityQueryResult> queryResults = [.. results.Select(r => new EntityQueryResult
         {
@@ -36,7 +42,14 @@ public class EntityController : ControllerBase
     [HttpGet("Index")]
     public ActionResult<EntityIndexResult> Index(string searchdomain, string jsonEntity)
     {
-        Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        } catch (Exception)
+        {
+            return Ok(new EntityIndexResult() {Success = false});
+        }
         List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>?>(jsonEntity);
         if (jsonEntities is not null)
         {
@@ -44,21 +57,29 @@ public class EntityController : ControllerBase
             List<Entity>? entities = searchdomain_.EntitiesFromJSON(jsonEntity);
             if (entities is not null)
             {
-                return new EntityIndexResult() {Success = true};
+                return Ok(new EntityIndexResult() {Success = true});
             }
             else
             {
                 _logger.LogDebug("Unable to deserialize an entity");
             }
         }
-        return new EntityIndexResult() {Success = false};
+        
+        return Ok(new EntityIndexResult() {Success = false});
     }
 
     [HttpGet("List")]
     public ActionResult<EntityListResults> List(string searchdomain, bool returnEmbeddings = false)
     {
-        EntityListResults entityListResults = new() {Results = []};
-        Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        } catch (Exception)
+        {
+            return Ok(new EntityListResults() {Results = [], Success = false});
+        }
+        EntityListResults entityListResults = new() {Results = [], Success = true};
         foreach (Entity entity in searchdomain_.entityCache)
         {
             List<AttributeResult> attributeResults = [];
@@ -91,19 +112,26 @@ public class EntityController : ControllerBase
             };
             entityListResults.Results.Add(entityListResult);
         }
-        return entityListResults;
+        return Ok(entityListResults);
     }
 
     [HttpGet("Delete")]
-    public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entity) // TODO test this
+    public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName) // TODO test this
     {
-        Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        Entity? entity_ = searchdomain_.GetEntity(entity);
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        } catch (Exception)
+        {
+            return Ok(new EntityDeleteResults() {Success = false});
+        }
+        Entity? entity_ = searchdomain_.GetEntity(entityName);
         if (entity_ is null)
         {
-            return new EntityDeleteResults() {Success = false};
+            return Ok(new EntityDeleteResults() {Success = false});
         }
-        searchdomain_.DatabaseRemoveEntity(entity);
-        return new EntityDeleteResults() {Success = true};
+        searchdomain_.RemoveEntity(entityName);
+        return Ok(new EntityDeleteResults() {Success = true});
     }
 }
