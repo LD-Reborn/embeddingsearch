@@ -70,5 +70,4 @@ TBD
 
 
 # Community
-[![Discord 
-Server](https://img.shields.io/badge/Join%20Discord-7289DA?style=flat&logo=discord&logoColor=whiteServer](https://img.shields.io/badge/Join%20Discord-7289DA?style=flat&logo=discord&lgoColor=white)](https://discord.gg/MUKeZM3k)
+<a href="https://discord.gg/MUKeZM3k"><img src="https://img.shields.io/badge/Join%20Discord-7289DA?style=flat&logo=discord&logoColor=whiteServer" alt="Discord"></img></a>
