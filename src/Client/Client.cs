@@ -25,7 +25,7 @@ public class Client
             this.searchdomain = searchdomain;
         }
 
-        public Client(ILogger<Client> logger, IConfiguration configuration)
+        public Client(IConfiguration configuration)
         {
             string? baseUri = configuration.GetSection("Embeddingsearch").GetValue<string>("BaseUri");
             string? apiKey = configuration.GetSection("Embeddingsearch").GetValue<string>("ApiKey");
