@@ -1,9 +1,4 @@
-# Using the CLI
-Before anything follow these steps:
-1. Enter the project's `src` directory (used as the working directory in all examples)
-2. Build the project: `dotnet build`
-All user-defined parameters are denoted using the `$` symbol. I.e. `$mysql_ip` means: replace this with your MySQL IP address or set it as a local variable in your terminal session.
-
+# CLI
 ## Database
 ### Create or check
 `src/cli/bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --database --create [--setup]`

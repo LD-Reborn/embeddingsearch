@@ -3,28 +3,34 @@
 Embeddingsearch is a DotNet C# library that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of pre-processed entries.
 
 This repository comes with
-- a server
+- a server (accessible via API calls)
 - a clientside library
-- a ready-to-use CLI module
-- an API for if you want to process the data on a remote server or make it available to other languages.
+- a CLI module
+- an indexer (TBD)
 
 (Currently only initial retrieval is implemented.
 Reranker support is planned, but its integration is not yet conceptualized.)
-# How to set up
+# How to set up / use
 ## server
 1. Install [ollama](https://ollama.com/download)
 2. Pull a few models using ollama (e.g. `paraphrase-multilingual`, `bge-m3`, `mxbai-embed-large`, `nomic-embed-text`)
 3. [Install the depencencies](docs/Server.md#installing-the-dependencies)
 4. [Set up a local mysql database](docs/Server.md#mysql-database-setup)
 5. (optional) [Create a searchdomain](#create-a-searchdomain)
-## indexer
-TBD
 ## client
 1. Download the package and add it to your project (TODO: NuGet)
 2. Create a new client by either:
     1. By injecting IConfiguration (e.g. `services.AddSingleton<Client>();`)
     2. By specifying the baseUri, apiKey, and searchdomain (e.g. `new Client.Client(baseUri, apiKey, searchdomain)`)
+## indexer
+TBD
+## CLI
+Before anything follow these steps:
+1. Enter the project's `src` directory (used as the working directory in all examples)
+2. Build the project: `dotnet build`
+All user-defined parameters are denoted using the `$` symbol. I.e. `$mysql_ip` means: replace this with your MySQL IP address or set it as a local variable in your terminal session.
 
+All commands, parameters and examples are documented here: [docs/CLI.md](docs/CLI.md)
 # Known issues
 | Issue | Solution |
 | --- | --- |
