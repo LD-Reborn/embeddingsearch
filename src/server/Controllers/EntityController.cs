@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using embeddingsearch;
 using System.Text.Json;
 using Models;
+using System.Text.Json.Nodes;
 namespace server.Controllers;
 
 [ApiController]
@@ -39,33 +40,30 @@ public class EntityController : ControllerBase
         return Ok(new EntityQueryResults(){Results = queryResults});
     }
 
-    [HttpGet("Index")]
-    public ActionResult<EntityIndexResult> Index(string searchdomain, string jsonEntity)
+    [HttpPost("Index")]
+    public ActionResult<EntityIndexResult> Index(string searchdomain, [FromBody] List<JSONEntity>? jsonEntity)
     {
         Searchdomain searchdomain_;
         try
         {
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (Exception)
-        {
-            return Ok(new EntityIndexResult() {Success = false});
         }
-        List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>?>(jsonEntity);
-        if (jsonEntities is not null)
+        catch (Exception)
         {
-            
-            List<Entity>? entities = searchdomain_.EntitiesFromJSON(jsonEntity);
-            if (entities is not null)
-            {
-                return Ok(new EntityIndexResult() {Success = true});
-            }
-            else
-            {
-                _logger.LogDebug("Unable to deserialize an entity");
-            }
+            return Ok(new EntityIndexResult() { Success = false });
         }
-        
-        return Ok(new EntityIndexResult() {Success = false});
+        List<Entity>? entities = searchdomain_.EntitiesFromJSON(JsonSerializer.Serialize(jsonEntity));
+        if (entities is not null)
+        {
+            _domainManager.InvalidateSearchdomainCache(searchdomain);
+            return Ok(new EntityIndexResult() { Success = true });
+        }
+        else
+        {
+            _logger.LogDebug("Unable to deserialize an entity");
+        }
+
+        return Ok(new EntityIndexResult() { Success = false });
     }
 
     [HttpGet("List")]

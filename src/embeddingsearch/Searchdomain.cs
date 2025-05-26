@@ -268,25 +268,25 @@ public class Searchdomain
         {
             return null;
         }
-        if (HasEntity(jsonEntity.name))
+        if (HasEntity(jsonEntity.Name))
         {
-            RemoveEntity(jsonEntity.name);
+            RemoveEntity(jsonEntity.Name);
 
         }
-        int id_entity = DatabaseInsertEntity(jsonEntity.name, jsonEntity.probmethod, id);
-        foreach (KeyValuePair<string, string> attribute in jsonEntity.attributes)
+        int id_entity = DatabaseInsertEntity(jsonEntity.Name, jsonEntity.Probmethod, id);
+        foreach (KeyValuePair<string, string> attribute in jsonEntity.Attributes)
         {
             DatabaseInsertAttribute(attribute.Key, attribute.Value, id_entity);
         }
 
         List<Datapoint> datapoints = [];
         
-        foreach (JSONDatapoint jsonDatapoint in jsonEntity.datapoints)
+        foreach (JSONDatapoint jsonDatapoint in jsonEntity.Datapoints)
         {
-            Dictionary<string, float[]> embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.text, [.. jsonDatapoint.model], ollama, embeddingCache);
-            var probMethod_embedding = probmethods.GetMethod(jsonDatapoint.probmethod_embedding) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.probmethod_embedding}");
-            Datapoint datapoint = new(jsonDatapoint.name, probMethod_embedding, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
-            int id_datapoint = DatabaseInsertDatapoint(jsonDatapoint.name, jsonDatapoint.probmethod_embedding, id_entity);
+            Dictionary<string, float[]> embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], ollama, embeddingCache);
+            var probMethod_embedding = probmethods.GetMethod(jsonDatapoint.Probmethod_embedding) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.Probmethod_embedding}");
+            Datapoint datapoint = new(jsonDatapoint.Name, probMethod_embedding, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
+            int id_datapoint = DatabaseInsertDatapoint(jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, id_entity);
             foreach ((string, float[]) embedding in datapoint.embeddings)
             {
                 DatabaseInsertEmbedding(id_datapoint, embedding.Item1, BytesFromFloatArray(embedding.Item2));
@@ -294,8 +294,8 @@ public class Searchdomain
             datapoints.Add(datapoint);
         }
 
-        var probMethod = probmethods.GetMethod(jsonEntity.probmethod) ?? throw new Exception($"Unknown probmethod name {jsonEntity.probmethod}");
-        Entity entity = new(jsonEntity.attributes, probMethod, datapoints, jsonEntity.name)
+        var probMethod = probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new Exception($"Unknown probmethod name {jsonEntity.Probmethod}");
+        Entity entity = new(jsonEntity.Attributes, probMethod, datapoints, jsonEntity.Name)
         {
             id = id_entity
         };
@@ -314,15 +314,15 @@ public class Searchdomain
         Dictionary<string, List<string>> toBeCached = [];
         foreach (JSONEntity jSONEntity in jsonEntities)
         {
-            foreach (JSONDatapoint datapoint in jSONEntity.datapoints)
+            foreach (JSONDatapoint datapoint in jSONEntity.Datapoints)
             {
-                foreach (string model in datapoint.model)
+                foreach (string model in datapoint.Model)
                 {
                     if (!toBeCached.ContainsKey(model))
                     {
                         toBeCached[model] = [];
                     }
-                    toBeCached[model].Add(datapoint.text);
+                    toBeCached[model].Add(datapoint.Text);
                 }
             }
         }

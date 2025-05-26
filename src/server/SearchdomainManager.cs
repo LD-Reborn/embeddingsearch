@@ -42,6 +42,11 @@ public class SearchomainManager
         }
     }
 
+    public void InvalidateSearchdomainCache(string searchdomain)
+    {
+        searchdomains.Remove(searchdomain);
+    }
+
     public List<string> ListSearchdomains()
     {
         DbDataReader reader = ExecuteSQLCommand("SELECT name FROM searchdomain", []);

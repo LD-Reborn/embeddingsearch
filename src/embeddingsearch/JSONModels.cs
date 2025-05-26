@@ -2,17 +2,17 @@ namespace embeddingsearch;
 
 public class JSONEntity
 {
-    public required string name { get; set; }
-    public required string probmethod { get; set; }
-    public required string searchdomain { get; set; }
-    public required Dictionary<string, string> attributes { get; set; }
-    public required JSONDatapoint[] datapoints { get; set; }
+    public required string Name { get; set; }
+    public required string Probmethod { get; set; }
+    public required string Searchdomain { get; set; }
+    public required Dictionary<string, string> Attributes { get; set; }
+    public required JSONDatapoint[] Datapoints { get; set; }
 }
 
 public class JSONDatapoint
 {
-    public required string name { get; set; }
-    public required string text { get; set; }
-    public required string probmethod_embedding { get; set; }
-    public required string[] model { get; set; }
+    public required string Name { get; set; }
+    public required string Text { get; set; }
+    public required string Probmethod_embedding { get; set; }
+    public required string[] Model { get; set; }
 }

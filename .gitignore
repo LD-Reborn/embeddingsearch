@@ -10,3 +10,6 @@ src/Client/bin
 src/Client/obj
 src/Models/bin
 src/Models/obj
+src/Indexer/bin
+src/Indexer/obj
+src/Indexer/Scripts/__pycache__

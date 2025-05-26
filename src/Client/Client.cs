@@ -104,8 +104,9 @@ public class Client
 
         public async Task<EntityIndexResult> EntityIndexAsync(string searchdomain, string jsonEntity)
         {
-            var url = $"{baseUri}/Entity/Index?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&jsonEntity={HttpUtility.UrlEncode(jsonEntity)}";
-            return await GetUrlAndProcessJson<EntityIndexResult>(url);
+            var url = $"{baseUri}/Entity/Index?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}";
+            var content = new StringContent(jsonEntity, Encoding.UTF8, "application/json");
+            return await PostUrlAndProcessJson<EntityIndexResult>(url, content);//new FormUrlEncodedContent(values));
         }
 
         public async Task<EntityListResults> EntityListAsync(bool returnEmbeddings = false)
@@ -134,8 +135,19 @@ public class Client
         {
             using var client = new HttpClient();
             var response = await client.GetAsync(url);
-            string content = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<T>(content)
+            string responseContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<T>(responseContent)
+                ?? throw new Exception($"Failed to deserialize JSON to type {typeof(T).Name}");
+            return result;
+        }
+        private static async Task<T> PostUrlAndProcessJson<T>(string url, HttpContent content)
+        {
+            using var client = new HttpClient();
+            var response = await client.PostAsync(url, content);
+            string responseContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("DEBUG@GetUrlAndProcessJson");
+            Console.WriteLine(responseContent);
+            var result = JsonSerializer.Deserialize<T>(responseContent)
                 ?? throw new Exception($"Failed to deserialize JSON to type {typeof(T).Name}");
             return result;
         }
