@@ -1,0 +1,2 @@
+Genetic Inheritance
+Genes are segments of DNA that determine inherited traits, passed from parents to offspring. Mendelian inheritance follows predictable patterns, such as dominant and recessive alleles. However, many traits involve complex interactions between multiple genes and environmental factors. Chromosomes carry genes in pairs, with one inherited from each parent. Modern genetics also studies epigenetic modifications that influence gene expression without altering the DNA sequence.

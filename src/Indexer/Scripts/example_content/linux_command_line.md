@@ -1,0 +1,2 @@
+Linux Command Line
+The Linux command line interface (CLI) is a text-based way to interact with the operating system. Users can execute commands, manage files, and control system processes through terminals like bash or zsh. Mastery of the CLI is essential for system administration and automation tasks. Common commands include ls, cd, grep, and sudo. The CLI offers precise control and scripting capabilities that graphical interfaces lack.

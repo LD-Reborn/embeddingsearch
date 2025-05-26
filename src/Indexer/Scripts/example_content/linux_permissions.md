@@ -1,0 +1,2 @@
+Linux Permissions
+Linux uses user, group, and others permissions (rwx) to control file access. The chmod command modifies these permissions, while chown changes ownership. Special permission bits like SUID, SGID, and sticky bits enhance security. Permission conflicts can lead to security vulnerabilities. Regular audits ensure proper access controls.

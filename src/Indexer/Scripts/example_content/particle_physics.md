@@ -1,0 +1,2 @@
+Particle Physics
+Particle physics explores the fundamental particles that constitute matter and the forces that govern their interactions. The Standard Model classifies particles into quarks, leptons, and bosons, with the Higgs boson giving mass to particles. Quantum chromodynamics explains the strong force binding quarks into protons and neutrons. High-energy experiments at accelerators like the LHC probe these interactions. Neutrinos and dark matter remain active areas of research in this field.

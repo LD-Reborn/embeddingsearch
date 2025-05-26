@@ -1,0 +1,2 @@
+Urban vs. Rural Access
+Urban areas typically have dense transit networks with frequent bus and rail services, while rural regions often lack infrastructure. Suburban sprawl challenges public transit by increasing distances between stops. Rural communities may rely on infrequent shuttle services or shared rides, limiting mobility. Investments in rural transit require balancing cost with demand, often prioritizing routes with higher population density. Telecommuting and on-demand services are emerging solutions for remote areas.

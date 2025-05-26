@@ -1,0 +1,2 @@
+RAM
+Random Access Memory (RAM) provides temporary storage for data being actively used by the CPU. Higher RAM capacity allows multitasking and smoother performance in resource-intensive applications. DDR4 and DDR5 are common RAM types, with DDR5 offering faster speeds and lower power consumption. RAM modules are installed on the motherboard's memory slots for direct access by the processor. Insufficient RAM can lead to slower system responsiveness and increased reliance on slower storage solutions.

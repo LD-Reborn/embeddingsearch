@@ -1,0 +1,2 @@
+Astrophysics
+Astrophysics applies physics principles to study celestial objects and phenomena in the universe. It investigates stars, galaxies, black holes, and the cosmic microwave background radiation. Stellar evolution explains how stars form, live, and die, producing elements through nuclear fusion. Cosmology, a subset of astrophysics, seeks to understand the universe's origin and fate. Observatories using telescopes and space-based instruments drive discoveries in this field.

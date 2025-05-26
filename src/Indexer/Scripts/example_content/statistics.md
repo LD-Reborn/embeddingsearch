@@ -1,0 +1,2 @@
+Statistics
+Statistics involves collecting, analyzing, interpreting, and presenting data. It uses mathematical techniques to draw conclusions from samples and make predictions. Descriptive statistics summarize data, while inferential statistics test hypotheses. Probability theory forms the foundation for statistical methods. Its applications are widespread in social sciences and business analytics.

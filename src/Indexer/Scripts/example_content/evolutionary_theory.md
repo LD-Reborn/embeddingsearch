@@ -1,0 +1,2 @@
+Evolutionary Theory
+Charles Darwin's theory of natural selection explains how species adapt to their environment over time. Individuals with advantageous traits are more likely to survive and reproduce, passing these traits to offspring. Genetic variation within populations provides the raw material for evolution. Fossil records and comparative anatomy support the idea of common descent. Modern genetics has expanded our understanding of evolutionary mechanisms and rates.

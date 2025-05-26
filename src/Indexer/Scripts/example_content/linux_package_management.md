@@ -1,0 +1,2 @@
+Linux Package Management
+Linux distributions use package managers like apt, yum, or dnf to install software. These tools handle dependencies and repository updates. Commands such as apt-get install or dnf install add packages. Package managers also remove and upgrade software efficiently. Custom repositories extend package availability.

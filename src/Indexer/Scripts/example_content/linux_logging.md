@@ -1,0 +1,2 @@
+Linux Logging
+Linux systems use syslog or journald to collect logs. The /var/log directory stores logs for services like auth.log and kern.log. Journalctl commands query systemd journal entries. Log rotation prevents disk space exhaustion. Analyzing logs aids in diagnosing system issues.

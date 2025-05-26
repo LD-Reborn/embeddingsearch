@@ -1,0 +1,2 @@
+Quantum Mechanics
+Quantum mechanics is a fundamental theory in physics that describes the behavior of matter and energy at the atomic and subatomic levels. It introduces principles like wave-particle duality, superposition, and quantum entanglement, which defy classical intuition. The Schrödinger equation governs how quantum states evolve over time. Unlike classical physics, quantum mechanics incorporates probability amplitudes and uncertainty principles. It underpins modern technologies such as semiconductors and quantum computing.

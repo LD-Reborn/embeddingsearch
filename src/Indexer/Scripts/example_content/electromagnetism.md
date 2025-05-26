@@ -1,0 +1,2 @@
+Electromagnetism
+Electromagnetism is the study of electric and magnetic fields and their interactions with matter. James Clerk Maxwell unified these forces into four equations that describe electromagnetic waves. Electric charges produce electric fields, while moving charges generate magnetic fields. Electromagnetic radiation, including light, spans a spectrum from radio waves to gamma rays. This field underpins technologies like electricity generation and wireless communication.

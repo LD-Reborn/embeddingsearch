@@ -1,0 +1,2 @@
+Algebra
+Algebra is a branch of mathematics that deals with symbols and the rules for manipulating these symbols. It is used to represent mathematical objects and their relationships through equations and formulas. Key concepts include variables, coefficients, and operations like addition and multiplication. Algebraic structures such as groups and rings form the foundation for advanced mathematical theories. Its applications span physics, engineering, and computer science.

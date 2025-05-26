@@ -1,0 +1,2 @@
+Differential Equations
+Differential equations describe relationships between functions and their derivatives. They model dynamic systems in physics, biology, and engineering. Ordinary differential equations involve single variables, while partial differential equations handle multiple variables. Techniques like separation of variables and Laplace transforms are commonly used. Numerical methods approximate solutions when analytical solutions are intractable.

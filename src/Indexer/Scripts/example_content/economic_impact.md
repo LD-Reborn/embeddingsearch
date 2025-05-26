@@ -1,0 +1,2 @@
+Economic Impact
+Public transportation stimulates local economies by creating jobs in construction, operations, and maintenance. Efficient transit systems increase property values and attract businesses to urban areas. Reduced traffic congestion improves productivity by minimizing commute times. Transit investments often yield higher returns than road infrastructure projects. Global cities with strong transit networks experience faster economic growth.

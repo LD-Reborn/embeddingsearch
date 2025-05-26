@@ -1,0 +1,2 @@
+Human Anatomy
+The human body comprises systems such as the circulatory, respiratory, and nervous systems working together. The skeletal system provides structural support and protects vital organs. Muscles enable movement through contraction and relaxation in response to nerve signals. The integumentary system, including skin, acts as a barrier against pathogens and regulates body temperature. Understanding anatomy is essential for diagnosing and treating medical conditions.

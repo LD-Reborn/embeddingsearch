@@ -1,0 +1,2 @@
+Linux File System
+The Linux file system is organized in a hierarchical structure rooted at /, with directories like /home, /etc, and /var serving specific purposes. File permissions using chmod and chown ensure security and access control. Symbolic links and mount points allow flexible storage management. The /proc and /sys filesystems provide real-time kernel information. Understanding the file system layout is crucial for troubleshooting and configuration.

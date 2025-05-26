@@ -1,0 +1,2 @@
+Linux Security Hardening
+Securing Linux involves disabling unused services, updating software, and configuring firewalls. SELinux or AppArmor enforces access controls. Regular audits with tools like Lynis identify vulnerabilities. Strong SSH configurations prevent brute-force attacks. Proper user permissions minimize exploitation risks.

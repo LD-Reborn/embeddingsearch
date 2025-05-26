@@ -1,0 +1,2 @@
+Smart Card Systems
+Contactless smart cards streamline payments by allowing passengers to tap-in and tap-out. These systems reduce fare evasion and improve revenue collection. Integration with mobile apps enables real-time tracking and personalized travel insights. Data from smart cards helps optimize routes and adjust service frequencies. Cities adopting smart systems report increased ridership and enhanced user experiences.

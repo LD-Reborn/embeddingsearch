@@ -1,0 +1,2 @@
+Cooling Systems
+Effective cooling prevents overheating and maintains optimal performance in computer hardware. Air cooling uses fans and heat sinks, while liquid cooling employs pumps and radiators for superior heat dissipation. Thermal paste improves heat transfer between the CPU and heatsink. Overclocking often requires enhanced cooling solutions to manage increased temperatures. Case airflow design and component placement are critical for efficient cooling in enclosed systems.

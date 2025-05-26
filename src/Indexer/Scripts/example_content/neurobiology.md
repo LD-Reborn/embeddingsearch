@@ -1,0 +1,2 @@
+Neurobiology
+Neurons communicate through electrical and chemical signals via synapses, enabling complex brain functions. The nervous system processes sensory input and coordinates voluntary and involuntary responses. Neurotransmitters like dopamine and serotonin regulate mood and behavior. Brain regions such as the cerebellum and hippocampus specialize in motor control and memory formation. Neurodegenerative diseases result from the progressive loss of neuronal function.

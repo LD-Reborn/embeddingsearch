@@ -1,0 +1,2 @@
+DNA Repair
+DNA repair mechanisms fix damage caused by environmental factors or replication errors. Enzymes like DNA ligase and polymerase correct mismatches during replication. Double-strand breaks are repaired through homologous recombination or non-homologous end joining. Defects in repair processes can lead to mutations and diseases like cancer. Cells also use base excision repair to remove damaged nucleotides.

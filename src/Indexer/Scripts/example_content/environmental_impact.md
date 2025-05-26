@@ -1,0 +1,2 @@
+Environmental Impact
+Public transportation reduces carbon emissions by consolidating passenger trips, lowering per capita pollution. Buses and trains emit less CO2 per passenger mile compared to private vehicles. However, diesel-powered systems contribute to air pollution, necessitating cleaner fuels or electric alternatives. Urban rail networks decrease traffic congestion, indirectly cutting emissions from idling cars. Sustainable practices like renewable energy integration and waste reduction further enhance public transit's eco-friendly profile.

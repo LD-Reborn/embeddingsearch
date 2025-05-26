@@ -1,0 +1,2 @@
+Networking Hardware
+Networking hardware enables device communication over local and wide area networks. Routers direct data between devices, while switches connect multiple devices within a local network. Network interface cards (NICs) facilitate wired Ethernet connections, and Wi-Fi adapters enable wireless communication. Switches use MAC addresses to manage data traffic efficiently. Quality of Service (QoS) settings on networking hardware prioritize critical traffic for optimal performance.

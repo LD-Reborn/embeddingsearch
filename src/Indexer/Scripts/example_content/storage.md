@@ -1,0 +1,2 @@
+Storage
+Computer storage devices, such as HDDs and SSDs, retain data even when the system is powered off. HDDs use spinning disks and mechanical arms, while SSDs utilize flash memory for faster read/write speeds. NVMe SSDs offer significantly higher throughput compared to traditional SATA drives. Storage capacity is measured in terabytes, with options ranging from compact SSDs to large external drives. RAID configurations can enhance data redundancy and performance across multiple storage devices.

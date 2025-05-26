@@ -1,0 +1,2 @@
+Classical Mechanics
+Classical mechanics is the branch of physics that studies motion and forces acting on objects. It was formalized by Isaac Newton in the 17th century through his laws of motion and universal gravitation. This framework describes the behavior of macroscopic objects at everyday speeds and scales. Key concepts include inertia, acceleration, and energy conservation. Classical mechanics remains foundational for engineering and everyday physics applications.

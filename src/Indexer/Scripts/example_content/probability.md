@@ -1,0 +1,2 @@
+Probability
+Probability quantifies the likelihood of events occurring in uncertain situations. It uses mathematical models to predict outcomes based on statistical data. Random variables and probability distributions are central to its framework. The law of large numbers and central limit theorem underpin many real-world applications. It plays a crucial role in fields like finance and machine learning.

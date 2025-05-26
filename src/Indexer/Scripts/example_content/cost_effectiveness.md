@@ -1,0 +1,2 @@
+Cost Effectiveness
+Public transportation offers long-term savings for individuals and governments alike. Commuters often save money by avoiding car purchase, maintenance, and fuel costs. For cities, investing in transit infrastructure stimulates economic growth and reduces road wear. However, initial construction and operational expenses can be high, requiring careful planning. Subsidies and fare structures play critical roles in maintaining affordability and accessibility.

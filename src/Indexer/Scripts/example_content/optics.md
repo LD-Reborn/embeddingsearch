@@ -1,0 +1,2 @@
+Optics
+Optics is the branch of physics that studies the behavior and properties of light, including its interactions with matter. It encompasses reflection, refraction, diffraction, and interference phenomena. The development of lenses and mirrors enabled advancements in imaging and communication technologies. Modern optics includes quantum optics and fiber optics for data transmission. Applications range from corrective lenses to laser technology and astronomical instruments.

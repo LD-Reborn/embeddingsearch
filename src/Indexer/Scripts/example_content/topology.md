@@ -1,0 +1,2 @@
+Topology
+Topology studies the properties of spaces preserved under continuous deformations like stretching and bending. It focuses on concepts such as continuity, compactness, and connectedness. Unlike geometry, topology ignores distances and angles. Key areas include algebraic topology and differential topology. Its applications range from data analysis to quantum physics.

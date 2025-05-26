@@ -1,0 +1,2 @@
+Linux Shell Scripting
+Shell scripting automates repetitive tasks using commands in scripts. Bash is the default shell for most Linux distributions. Scripts can handle file manipulation, system monitoring, and service management. Conditional statements and loops add logic to scripts. Proper error handling ensures robust automation.

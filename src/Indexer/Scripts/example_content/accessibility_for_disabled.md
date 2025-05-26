@@ -1,0 +1,2 @@
+Accessibility for Disabled
+Modern public transportation prioritizes inclusivity through features like low-floor buses and wheelchair ramps. Tactile paving and audio announcements assist visually impaired passengers. Priority seating and designated spaces ensure comfort for mobility-impaired individuals. Many systems now offer real-time information via apps for visually impaired users. Continuous improvements aim to remove barriers and promote equal access for all.

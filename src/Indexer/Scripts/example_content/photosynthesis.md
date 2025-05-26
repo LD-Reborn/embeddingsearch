@@ -1,0 +1,2 @@
+Photosynthesis
+Photosynthesis occurs in chloroplasts, where chlorophyll absorbs light energy to convert CO2 and water into glucose. The light-dependent reactions produce ATP and NADPH, while the Calvin cycle fixes carbon dioxide into organic molecules. This process sustains plant growth and forms the foundation of most food chains. Oxygen is released as a byproduct, essential for aerobic life on Earth. Environmental changes like temperature and light intensity affect photosynthetic efficiency.

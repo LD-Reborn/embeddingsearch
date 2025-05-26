@@ -1,0 +1,2 @@
+Microbial Ecology
+Microorganisms inhabit diverse environments, from soil to the human gut, playing critical roles in nutrient cycling. Bacteria and archaea drive decomposition, breaking down organic matter into simpler compounds. Microbes also form symbiotic relationships with plants and animals, aiding in digestion and nutrient absorption. In marine ecosystems, phytoplankton contribute significantly to global oxygen production. Human activities can alter microbial communities, impacting ecosystem health.

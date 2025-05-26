@@ -1,0 +1,2 @@
+Thermodynamics
+Thermodynamics is the study of energy, heat, and their transformations in physical systems. It is governed by four laws that describe the behavior of energy and entropy. The first law, conservation of energy, states that energy cannot be created or destroyed. The second law introduces entropy as a measure of disorder, explaining why processes tend toward equilibrium. Thermodynamics is essential for understanding engines, refrigeration, and cosmic phenomena.

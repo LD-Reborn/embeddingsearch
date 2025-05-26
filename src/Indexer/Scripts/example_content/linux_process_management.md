@@ -1,0 +1,2 @@
+Linux Process Management
+Linux uses the process table to track running processes, managed by the kernel. Tools like ps, top, and htop display process details and resource usage. Signals such as SIGKILL and SIGTERM control process behavior. The init system (systemd or sysvinit) manages service processes. Proper process management ensures system stability and performance.

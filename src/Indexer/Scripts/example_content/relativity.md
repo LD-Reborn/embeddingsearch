@@ -1,0 +1,2 @@
+Relativity
+Relativity encompasses Einstein's theories of special and general relativity, which revolutionized our understanding of space and time. Special relativity introduces concepts like time dilation and length contraction at high velocities. General relativity describes gravity as the curvature of spacetime caused by mass. Black holes and gravitational waves are predictions of this theory. Relativity has been confirmed by experiments involving GPS satellites and cosmic observations.

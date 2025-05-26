@@ -1,0 +1,2 @@
+Nuclear Physics
+Nuclear physics examines the structure and behavior of atomic nuclei and their interactions. It explains how protons and neutrons bind in nuclei through the strong nuclear force. Nuclear reactions, such as fission and fusion, release vast amounts of energy. Radioactive decay processes are studied to understand half-lives and decay chains. This field has applications in energy production, medicine, and archaeology through radiocarbon dating.

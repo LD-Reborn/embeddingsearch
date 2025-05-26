@@ -1,0 +1,2 @@
+Motherboard
+The motherboard serves as the central hub connecting all computer components, including the CPU, RAM, and storage. It features expansion slots for GPUs and peripherals, as well as integrated ports for USB, HDMI, and Ethernet. Form factors like ATX, Micro-ATX, and Mini-ITX determine the motherboard's size and compatibility with cases. The BIOS/UEFI firmware on the motherboard manages hardware initialization and system settings. Motherboard quality impacts overall system stability and upgrade potential.

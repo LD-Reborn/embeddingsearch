@@ -1,0 +1,2 @@
+Cell Structure
+The cell is the basic unit of life, with all living organisms composed of one or more cells. Eukaryotic cells contain a nucleus enclosed by a nuclear membrane, while prokaryotic cells lack this structure. Organelles like mitochondria and chloroplasts perform specialized functions such as energy production and photosynthesis. The cell membrane regulates the movement of substances in and out of the cell. Together, these components work in harmony to maintain cellular function and homeostasis.

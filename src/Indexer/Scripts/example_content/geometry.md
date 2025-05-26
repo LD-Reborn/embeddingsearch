@@ -1,0 +1,2 @@
+Geometry
+Geometry is the study of shapes, sizes, positions, and properties of spaces. It encompasses points, lines, angles, and figures in both two and three dimensions. Euclidean geometry, based on axioms by Euclid, forms the classical framework. Non-Euclidean geometries, like hyperbolic and elliptic, describe curved spaces. Modern geometry applies algebraic and topological methods to solve complex problems.

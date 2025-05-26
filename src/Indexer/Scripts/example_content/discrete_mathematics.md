@@ -1,0 +1,2 @@
+Discrete Mathematics
+Discrete mathematics deals with discrete objects rather than continuous quantities. It includes topics like graph theory, combinatorics, and logic. Boolean algebra forms the basis of digital circuit design. Algorithms and complexity theory are central to computer science. Its principles underpin cryptography and data structures.

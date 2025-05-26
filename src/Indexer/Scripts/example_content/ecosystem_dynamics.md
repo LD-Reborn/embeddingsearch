@@ -1,0 +1,2 @@
+Ecosystem Dynamics
+Ecosystems consist of biotic (living) and abiotic (non-living) components interacting within an environment. Producers like plants form the base of the food chain through photosynthesis. Consumers, including herbivores and carnivores, transfer energy up the trophic levels. Decomposers break down organic matter, recycling nutrients back into the ecosystem. Human activities often disrupt these natural balances, leading to biodiversity loss and environmental degradation.

@@ -1,0 +1,2 @@
+Number Theory
+Number theory explores the properties and relationships of integers, particularly primes and divisibility. It includes the study of Diophantine equations and modular arithmetic. The distribution of prime numbers remains a central mystery in mathematics. Cryptographic systems rely on number-theoretic concepts like factorization. Recent advances involve analytic and algebraic methods to solve ancient problems.

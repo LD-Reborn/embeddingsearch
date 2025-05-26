@@ -1,0 +1,2 @@
+Linux Virtualization
+Linux supports virtualization through KVM, Xen, and containerization with Docker. Virtual machines isolate environments for testing and development. Containers provide lightweight, portable applications. The /proc/cpuinfo file shows virtualized CPU details. Virtualization enhances resource utilization and system flexibility.

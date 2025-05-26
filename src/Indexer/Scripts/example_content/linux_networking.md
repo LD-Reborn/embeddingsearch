@@ -1,0 +1,2 @@
+Linux Networking
+Linux provides tools like ifconfig, ip, and netstat to manage network interfaces. The /etc/networks directory contains configuration files. Firewalls such as iptables or nftables control traffic. Network services like SSH and DNS are configured via systemd or init scripts. Troubleshooting with ping and traceroute ensures connectivity.

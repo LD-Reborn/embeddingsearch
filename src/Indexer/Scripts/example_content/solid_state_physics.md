@@ -1,0 +1,2 @@
+Solid State Physics
+Solid state physics investigates the properties of solid materials, particularly crystals and their electronic structures. It explains phenomena like electrical conductivity, magnetism, and superconductivity in solids. Band theory describes how electrons occupy energy bands in crystalline lattices. Semiconductors, crucial for electronics, rely on controlled doping to manipulate conductivity. Research in this field drives innovations in nanotechnology and quantum materials.

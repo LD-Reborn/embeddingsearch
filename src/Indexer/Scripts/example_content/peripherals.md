@@ -1,0 +1,2 @@
+Peripherals
+Computer peripherals include input devices like keyboards and mice, as well as output devices such as monitors and printers. Wireless peripherals use Bluetooth or RF technology for connectivity, while wired devices rely on USB or HDMI ports. High-resolution gaming mice and mechanical keyboards offer enhanced control and tactile feedback. Monitors vary in resolution, refresh rate, and panel type (LCD, OLED) for different visual experiences. Peripheral compatibility with operating systems and drivers is essential for proper functionality.

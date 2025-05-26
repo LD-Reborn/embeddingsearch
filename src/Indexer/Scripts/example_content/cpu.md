@@ -1,0 +1,2 @@
+CPU
+The Central Processing Unit (CPU) is the primary component responsible for executing instructions and performing calculations. Modern CPUs feature multiple cores and threads to handle complex tasks efficiently. Clock speed, measured in GHz, determines how quickly a CPU can process data. Cache memory levels (L1, L2, L3) help reduce latency by storing frequently accessed data. CPUs are categorized by architecture, such as x86 or ARM, which influences compatibility and performance.

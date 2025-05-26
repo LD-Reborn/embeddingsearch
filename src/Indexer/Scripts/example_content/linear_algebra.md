@@ -1,0 +1,2 @@
+Linear Algebra
+Linear algebra studies vectors, vector spaces, and linear transformations between them. It focuses on matrices, determinants, and eigenvalues to solve systems of equations. Key applications include computer graphics and quantum mechanics. The concept of dimension underpins geometric interpretations. Its algorithms are vital for machine learning and data compression.

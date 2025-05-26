@@ -1,0 +1,2 @@
+Power Supply
+A power supply unit (PSU) converts AC power from the wall to DC power used by computer components. Wattage ratings indicate the maximum power a PSU can deliver, with higher wattage supporting more powerful systems. Efficiency ratings (80 Plus certified) measure how much power is wasted as heat. PSUs include features like modular cables and voltage regulation for stable performance. Faulty power supplies can cause system crashes or damage to other hardware.

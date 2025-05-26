@@ -1,0 +1,2 @@
+BIOS/UEFI
+The BIOS (Basic Input/Output System) or UEFI (Unified Extensible Firmware Interface) manages hardware initialization during boot. UEFI offers advanced features like secure boot and larger storage support compared to traditional BIOS. System settings, including boot order and power management, are configured through the BIOS/UEFI interface. Firmware updates can improve hardware compatibility and security. Dual-boot configurations often rely on BIOS/UEFI settings to select operating systems.

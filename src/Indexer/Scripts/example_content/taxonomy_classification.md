@@ -1,0 +1,2 @@
+Taxonomy Classification
+Taxonomy organizes living organisms into hierarchical categories based on shared characteristics. Carl Linnaeus established binomial nomenclature, assigning each species a unique two-part scientific name. Kingdom, phylum, class, order, family, genus, and species form the classification system. DNA analysis has refined traditional taxonomy by revealing genetic relationships. This system aids in biodiversity research and conservation efforts.

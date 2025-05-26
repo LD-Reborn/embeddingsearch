@@ -1,0 +1,2 @@
+Virtualization
+Computer virtualization allows multiple operating systems to run on a single physical machine through hypervisors. Virtual machines (VMs) isolate resources, enabling efficient testing and development environments. Hardware-assisted virtualization, like Intel VT-x or AMD-V, improves performance by offloading tasks to the CPU. Virtualization is used in cloud computing and server consolidation for cost-effective resource management. Paravirtualization optimizes guest OS performance by modifying drivers for virtualized environments.

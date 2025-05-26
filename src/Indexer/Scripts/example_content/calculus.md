@@ -1,0 +1,2 @@
+Calculus
+Calculus is the mathematical study of change, focusing on limits, derivatives, integrals, and infinite series. It provides tools to analyze functions and model dynamic systems in physics and economics. Differential calculus examines instantaneous rates of change, while integral calculus deals with accumulation of quantities. The Fundamental Theorem of Calculus connects differentiation and integration. Its principles are essential for understanding motion and growth in natural sciences.
