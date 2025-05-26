@@ -24,10 +24,11 @@ def update(toolset: Toolset):
     print("Py-DEBUG@update")
     print("This is the update function from the python example script")
     callbackInfos:ICallbackInfos = toolset.callbackInfos
-    if (callbackInfos is IntervalCallbackInfos):
+    if (str(callbackInfos) == "Indexer.Models.IntervalCallbackInfos"):
         print("It was called via an interval callback")
+    else:
+        print("It was called, but the origin of the call could not be determined")
     example_counter += 1
-    mycounter = example_counter
     print(f"example_counter: {example_counter}")
     index_files(toolset)
 

@@ -112,14 +112,15 @@ class Client:
         pass
     async def EntityDeleteAsync(searchdomain:str, entityName:str) -> EntityDeleteResults:
         pass
+
+@dataclass
 class ICallbackInfos:
     pass
-
 
 @dataclass
 class IntervalCallbackInfos(ICallbackInfos):
     sender: Optional[object]
-    e: object  
+    e: object
 
 @dataclass
 class Toolset:

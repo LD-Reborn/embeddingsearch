@@ -35,7 +35,7 @@ public class PythonScriptable : IScriptable
         }
         Init();
     }
-    
+
     public void Init()
     {
         using (Py.GIL())
@@ -52,8 +52,8 @@ public class PythonScriptable : IScriptable
         PythonEngine.Initialize();
         using (Py.GIL())
         {
-            ToolSet.callbackInfos = callbackInfos;
             pyToolSet = ToolSet.ToPython();
+            pyToolSet.SetAttr("callbackInfos", callbackInfos.ToPython());
             scope.Set("toolset", pyToolSet);
             scope.Exec("update(toolset)");
         }
