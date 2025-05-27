@@ -2,6 +2,7 @@ import os
 from tools import *
 import json
 from dataclasses import asdict
+import time
 
 example_content = "./Scripts/example_content"
 example_searchdomain = "example"
@@ -14,7 +15,10 @@ def init(toolset: Toolset):
     print("This is the init function from the python example script")
     print(f"example_counter: {example_counter}")
     searchdomainlist:SearchdomainListResults = toolset.client.SearchdomainListAsync().Result
-    print("Currently these searchdomains exist")
+    if example_searchdomain not in searchdomainlist.Searchdomains:
+        toolset.client.SearchdomainCreateAsync(example_searchdomain).Result
+        searchdomainlist = toolset.client.SearchdomainListAsync().Result
+    print("Currently these searchdomains exist:")
     for searchdomain in searchdomainlist.Searchdomains:
         print(f" - {searchdomain}")
     index_files(toolset)
@@ -47,5 +51,7 @@ def index_files(toolset: Toolset):
         jsonEntity:dict = asdict(JSONEntity(qualified_filepath, "wavg", example_searchdomain, {}, datapoints))
         jsonEntities.append(jsonEntity)
     jsonstring = json.dumps(jsonEntities)
+    timer_start = time.time()
     result:EntityIndexResult = toolset.client.EntityIndexAsync(jsonstring).Result
-    print(f"Update was successful: {result.Success}")
+    timer_end = time.time()
+    print(f"Update was successful: {result.Success} - and was done in {timer_end - timer_start} seconds.")
