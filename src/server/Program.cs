@@ -9,7 +9,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<SearchomainManager>();
+builder.Services.AddSingleton<SearchdomainManager>();
 
 var app = builder.Build();
 

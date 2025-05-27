@@ -2,25 +2,31 @@ using embeddingsearch;
 using MySql.Data.MySqlClient;
 using System.Data.Common;
 using OllamaSharp;
+using Microsoft.IdentityModel.Tokens;
+using server.Exceptions;
 
 namespace server;
 
-public class SearchomainManager
+public class SearchdomainManager
 {
     private Dictionary<string, Searchdomain> searchdomains = [];
-    private readonly ILogger<SearchomainManager> _logger;
+    private readonly ILogger<SearchdomainManager> _logger;
     private readonly IConfiguration _config;
     private readonly string ollamaURL;
     private readonly string connectionString;
     private OllamaApiClient client;
     private MySqlConnection connection;
 
-    public SearchomainManager(ILogger<SearchomainManager> logger, IConfiguration config)
+    public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config)
     {
         _logger = logger;
         _config = config;
         ollamaURL = _config.GetSection("Embeddingsearch")["OllamaURL"] ?? "";
         connectionString = _config.GetSection("Embeddingsearch").GetConnectionString("SQL") ?? "";
+        if (ollamaURL.IsNullOrEmpty() || connectionString.IsNullOrEmpty())
+        {
+            throw new ServerConfigurationException("Ollama URL or connection string is empty");
+        }
         client = new(new Uri(ollamaURL));
         connection = new MySqlConnection(connectionString);
         connection.Open();

@@ -10,9 +10,9 @@ public class SearchdomainController : ControllerBase
 {
     private readonly ILogger<SearchdomainController> _logger;
     private readonly IConfiguration _config;
-    private SearchomainManager _domainManager;
+    private SearchdomainManager _domainManager;
 
-    public SearchdomainController(ILogger<SearchdomainController> logger, IConfiguration config, SearchomainManager domainManager)
+    public SearchdomainController(ILogger<SearchdomainController> logger, IConfiguration config, SearchdomainManager domainManager)
     {
         _logger = logger;
         _config = config;

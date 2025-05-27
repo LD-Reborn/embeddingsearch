@@ -11,9 +11,9 @@ public class EntityController : ControllerBase
 {
     private readonly ILogger<EntityController> _logger;
     private readonly IConfiguration _config;
-    private SearchomainManager _domainManager;
+    private SearchdomainManager _domainManager;
 
-    public EntityController(ILogger<EntityController> logger, IConfiguration config, SearchomainManager domainManager)
+    public EntityController(ILogger<EntityController> logger, IConfiguration config, SearchdomainManager domainManager)
     {
         _logger = logger;
         _config = config;
