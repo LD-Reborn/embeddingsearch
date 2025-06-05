@@ -3,9 +3,9 @@ src/cli/obj
 src/embeddingsearch/bin
 src/embeddingsearch/obj
 src/debug
-src/server/appsettings.Development.json
-src/server/bin
-src/server/obj
+src/Server/appsettings.Development.json
+src/Server/bin
+src/Server/obj
 src/Client/bin
 src/Client/obj
 src/Models/bin
