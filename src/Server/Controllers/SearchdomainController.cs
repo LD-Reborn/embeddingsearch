@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using embeddingsearch;
 using Models;
 
-namespace server.Controllers;
+namespace Server.Controllers;
 
 [ApiController]
 [Route("[controller]")]

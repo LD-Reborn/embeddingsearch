@@ -1,5 +1,4 @@
 ﻿using System.Drawing.Printing;
-using embeddingsearch;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using OllamaSharp.Models;
@@ -11,6 +10,7 @@ using Org.BouncyCastle.Asn1.X509.Qualified;
 using Microsoft.Identity.Client;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using Server;
 
 // ParserSettings parserSettings = new()
 // {

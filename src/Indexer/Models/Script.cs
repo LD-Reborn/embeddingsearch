@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Timers;
-using embeddingsearch;
 using Python.Runtime;
 
 namespace Indexer.Models;

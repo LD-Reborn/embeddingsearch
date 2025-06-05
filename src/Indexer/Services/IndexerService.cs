@@ -6,7 +6,6 @@ using Indexer.Exceptions;
 using Indexer.Models;
 using System.Timers;
 using Microsoft.AspNetCore.Http.HttpResults;
-using embeddingsearch;
 using Python.Runtime;
 
 namespace Indexer.Services;

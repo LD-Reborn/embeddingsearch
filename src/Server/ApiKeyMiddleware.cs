@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Primitives;
 
-namespace server;
+namespace Server;
 
 public class ApiKeyMiddleware
 {
@@ -23,14 +23,14 @@ public class ApiKeyMiddleware
         }
 
         var validApiKeys = _configuration.GetSection("Embeddingsearch").GetSection("ApiKeys").Get<List<string>>();
-        #pragma warning disable CS8604
+#pragma warning disable CS8604
         if (validApiKeys == null || !validApiKeys.Contains(extractedApiKey)) // CS8604 extractedApiKey is not null here, but the compiler still thinks that it might be.
         {
             context.Response.StatusCode = 403;
             await context.Response.WriteAsync("Invalid API Key.");
             return;
         }
-        #pragma warning restore CS8604
+#pragma warning restore CS8604
 
         await _next(context);
     }

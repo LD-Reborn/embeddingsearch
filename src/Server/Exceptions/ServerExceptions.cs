@@ -1,4 +1,4 @@
-namespace server.Exceptions;
+namespace Server.Exceptions;
 
 public class ServerConfigurationException : Exception
 {

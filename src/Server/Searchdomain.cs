@@ -17,8 +17,9 @@ using Mysqlx.Resultset;
 using System.Collections.Immutable;
 using System.Text.Json;
 using System.Numerics.Tensors;
+using Server;
 
-namespace embeddingsearch;
+namespace Server;
 
 public class Searchdomain
 {

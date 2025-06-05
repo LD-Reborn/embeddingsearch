@@ -1,6 +1,6 @@
 using Indexer.Models;
 using Indexer.Services;
-using server;
+using Server;
 
 var builder = WebApplication.CreateBuilder(args);
 

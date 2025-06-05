@@ -1,11 +1,10 @@
-using embeddingsearch;
 using MySql.Data.MySqlClient;
 using System.Data.Common;
 using OllamaSharp;
 using Microsoft.IdentityModel.Tokens;
-using server.Exceptions;
+using Server.Exceptions;
 
-namespace server;
+namespace Server;
 
 public class SearchdomainManager
 {

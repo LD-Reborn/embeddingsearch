@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Text.Json;
 using Models;
-using embeddingsearch;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Reflection.Metadata.Ecma335;
@@ -87,12 +86,12 @@ public class Client
             return await GetUrlAndProcessJson<EntityQueryResults>(url);
         }
 
-        public async Task<EntityIndexResult> EntityIndexAsync(List<JSONEntity> jsonEntity)
+        public async Task<EntityIndexResult> EntityIndexAsync(List<Server.JSONEntity> jsonEntity)
         {
             return await EntityIndexAsync(searchdomain, jsonEntity);
         }
 
-        public async Task<EntityIndexResult> EntityIndexAsync(string searchdomain, List<JSONEntity> jsonEntity)
+        public async Task<EntityIndexResult> EntityIndexAsync(string searchdomain, List<Server.JSONEntity> jsonEntity)
         {
             return await EntityIndexAsync(searchdomain, JsonSerializer.Serialize(jsonEntity));
         }

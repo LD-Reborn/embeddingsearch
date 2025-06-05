@@ -2,7 +2,7 @@
 
 using System.Numerics.Tensors;
 
-namespace embeddingsearch;
+namespace Server;
 
 
 public class Probmethods

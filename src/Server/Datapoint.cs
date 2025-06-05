@@ -7,7 +7,7 @@ using Microsoft.Extensions.AI;
 using OllamaSharp;
 using OllamaSharp.Models;
 
-namespace embeddingsearch;
+namespace Server;
 
 public class Datapoint
 {

@@ -27,12 +27,12 @@ Download the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow t
 
 # Configuration
 ## Environments
-The configuration is located in `src/server/` and conforms to the [ASP.NET configuration design pattern](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0), i.e. `src/server/appsettings.json` is the base configuration, and `/src/server/appsettings.Development.json` overrides it.
+The configuration is located in `src/Server/` and conforms to the [ASP.NET configuration design pattern](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0), i.e. `src/Server/appsettings.json` is the base configuration, and `/src/Server/appsettings.Development.json` overrides it.
 
 If you plan to use multiple environments, create any `appsettings.{YourEnvironment}.json` (e.g. `Development`, `Staging`, `Prod`) and set the environment variable `DOTNET_ENVIRONMENT` accordingly on the target machine.
 ## Setup
 If you just installed the server and want to configure it:
-1. Open `src/server/appsettings.Development.json`
+1. Open `src/Server/appsettings.Development.json`
 2. Change the password in the "SQL" section (`pwd=<your password goes here>;`)
 3. If your Ollama instance does not run locally, update "OllamaURL" to point at your Ollama instance.
 4. If you plan on using the server in production:

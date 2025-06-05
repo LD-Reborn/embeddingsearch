@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using embeddingsearch;
 using System.Text.Json;
 using Models;
 using System.Text.Json.Nodes;
-namespace server.Controllers;
+namespace Server.Controllers;
 
 [ApiController]
 [Route("[controller]")]

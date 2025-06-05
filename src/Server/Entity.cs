@@ -1,6 +1,7 @@
 using System;
+using Server;
 
-namespace embeddingsearch;
+namespace Server;
 
 public class Entity(Dictionary<string, string> attributes, Probmethods.probMethodDelegate probMethod, List<Datapoint> datapoints, string name)
 {

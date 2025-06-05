@@ -1,4 +1,4 @@
-namespace embeddingsearch;
+namespace Server;
 
 public class JSONEntity
 {

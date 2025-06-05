@@ -16,7 +16,7 @@ The configuration is located in `src/Indexer` and conforms to the [ASP.NET confi
 If you plan to use multiple environments, create any `appsettings.{YourEnvironment}.json` (e.g. `Development`, `Staging`, `Prod`) and set the environment variable `DOTNET_ENVIRONMENT` accordingly on the target machine.
 ## Setup
 If you just installed the server and want to configure it:
-1. Open `src/server/appsettings.Development.json`
+1. Open `src/Server/appsettings.Development.json`
 2. If your search server is not on the same machine as the indexer, update "BaseUri" to reflect the URL to the server.
 3. If your search server requires API keys, (i.e. it's operating outside of the "Development" environment) set `"ApiKey": "<your key here>"` beneath `"BaseUri"` in the `"Embeddingsearch"` section.
 4. Create your own indexing script(s) in `src/Indexer/Scripts/` and configure their use as 
