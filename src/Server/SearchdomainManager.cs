@@ -3,6 +3,7 @@ using System.Data.Common;
 using OllamaSharp;
 using Microsoft.IdentityModel.Tokens;
 using Server.Exceptions;
+using Server.Migrations;
 
 namespace Server;
 
@@ -29,7 +30,10 @@ public class SearchdomainManager
         client = new(new Uri(ollamaURL));
         connection = new MySqlConnection(connectionString);
         connection.Open();
+        DatabaseMigrations.Migrate(new SQLHelper(connection));
     }
+
+
 
     public Searchdomain GetSearchdomain(string searchdomain)
     {
@@ -40,7 +44,8 @@ public class SearchdomainManager
         try
         {
             return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, client));
-        } catch (MySqlException)
+        }
+        catch (MySqlException)
         {
             _logger.LogError("Unable to find the searchdomain {searchdomain}", searchdomain);
             throw new Exception($"Unable to find the searchdomain {searchdomain}");
@@ -103,6 +108,18 @@ public class SearchdomainManager
             command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
         }
         return command.ExecuteReader();
+    }
+
+    public void ExecuteSQLNonQuery(string query, Dictionary<string, dynamic> parameters)
+    {
+        using MySqlCommand command = connection.CreateCommand();
+
+        command.CommandText = query;
+        foreach (KeyValuePair<string, dynamic> parameter in parameters)
+        {
+            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
+        }
+        command.ExecuteNonQuery();
     }
 
     public int ExecuteSQLCommandGetInsertedID(string query, Dictionary<string, dynamic> parameters)

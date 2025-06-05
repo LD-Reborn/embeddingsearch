@@ -82,6 +82,8 @@ All commands, parameters and examples are documented here: [docs/CLI.md](docs/CL
 - Remove the `id` collumns from the database tables where the table is actually identified (and should be unique by) the name, which should become the new primary key.
 - Improve performance & latency (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
 - Make the API server (and indexer, once it is done) a docker container
+- Implement dynamic invocation based database migrations
+- Remove remaining DRY violations using the SQLHelper
 
 # Future features
 - Support for other database types (MSSQL, SQLite)

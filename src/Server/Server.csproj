@@ -18,9 +18,4 @@
       <PackageReference Include="System.Data.Sqlite" Version="1.0.119" />
       <PackageReference Include="System.Numerics.Tensors" Version="9.0.3" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Models\Models.csproj" />
-  </ItemGroup>
-
 </Project>
