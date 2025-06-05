@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using Models;
 using System.Text.Json.Nodes;
+using Server.Models;
 namespace Server.Controllers;
 
 [ApiController]

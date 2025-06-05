@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Models;
+namespace Server.Models;
 
 
 public class EntityQueryResults
