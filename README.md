@@ -67,9 +67,14 @@ All commands, parameters and examples are documented here: [docs/CLI.md](docs/CL
         - ~~Database contents (MySQL, MSSQL)~~
         - ~~Web requests (E.g. manual crawling)~~
     - ~~Script call management (interval based & event based)~~
+- Implement hash value to reduce wasteful re-indexing (Perhaps as a default property for an entity, set by the default indexer)
 - Implement Healthz check
 - Implement [ReaderWriterLock](https://learn.microsoft.com/en-us/dotnet/api/system.threading.readerwriterlockslim?view=net-9.0&redirectedfrom=MSDN) for entityCache to allow for multithreaded read access while retaining single-threaded write access.
 - NuGet packaging and corresponding README documentation
+- Add option for query result detail levels. e.g.:
+  - Level 0: `{"Name": "...", "Value": 0.53}`
+  - Level 1: `{"Name": "...", "Value": 0.53, "Datapoints": [{"Name": "title", "Value": 0.65}, {...}]}`
+  - Level 2: `{"Name": "...", "Value": 0.53, "Datapoints": [{"Name": "title", "Value": 0.65, "Embeddings": [{"Model": "bge-m3", "Value": 0.87}, {...}]}, {...}]}`
 - Add "Click-Through" result evaluation (For each entity: store a list of queries that led to the entity being chosen by the user. Then at query-time choose the best-fitting entry and maybe use it as another datapoint? Or use a separate weight function?)
 - Reranker/Crossencoder/RAG (or anything else beyond initial retrieval) support
 - Remove the CLI
