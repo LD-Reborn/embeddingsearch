@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6AA0A9E0-A36
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "embeddingsearch", "src\embeddingsearch\embeddingsearch.csproj", "{67AA89C0-3630-4994-B4EE-FC86CFF407DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "server", "src\server\server.csproj", "{643CB1D1-02F6-4BCC-A1CC-6E403D78C442}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "server", "src\Server\Server.csproj", "{643CB1D1-02F6-4BCC-A1CC-6E403D78C442}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "cli", "cli", "{BC4F3063-B921-4C4A-A7CE-11FAF5B73D50}"
 EndProject
@@ -23,9 +23,6 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{67AA89C0-3630-4994-B4EE-FC86CFF407DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -52,6 +49,9 @@ Global
 		{5361FD10-E85C-496C-9BEF-9232F767F904}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5361FD10-E85C-496C-9BEF-9232F767F904}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5361FD10-E85C-496C-9BEF-9232F767F904}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{67AA89C0-3630-4994-B4EE-FC86CFF407DB} = {6AA0A9E0-A361-4E86-BA02-D5F6779C6DEF}
