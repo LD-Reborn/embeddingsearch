@@ -84,6 +84,7 @@ All commands, parameters and examples are documented here: [docs/CLI.md](docs/CL
 - Make the API server (and indexer, once it is done) a docker container
 - Implement dynamic invocation based database migrations
 - Remove remaining DRY violations using the SQLHelper
+- Update server setup in README.md to reflect the removal of the CLI
 
 # Future features
 - Support for other database types (MSSQL, SQLite)
