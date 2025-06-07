@@ -16,6 +16,7 @@ public class SearchdomainManager
     private readonly string connectionString;
     private OllamaApiClient client;
     private MySqlConnection connection;
+    private SQLHelper helper;
 
     public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config)
     {
@@ -30,10 +31,9 @@ public class SearchdomainManager
         client = new(new Uri(ollamaURL));
         connection = new MySqlConnection(connectionString);
         connection.Open();
-        DatabaseMigrations.Migrate(new SQLHelper(connection));
+        helper = new SQLHelper(connection);
+        DatabaseMigrations.Migrate(helper);
     }
-
-
 
     public Searchdomain GetSearchdomain(string searchdomain)
     {
@@ -59,7 +59,7 @@ public class SearchdomainManager
 
     public List<string> ListSearchdomains()
     {
-        DbDataReader reader = ExecuteSQLCommand("SELECT name FROM searchdomain", []);
+        DbDataReader reader = helper.ExecuteSQLCommand("SELECT name FROM searchdomain", []);
         List<string> results = [];
         while (reader.Read())
         {
@@ -80,7 +80,7 @@ public class SearchdomainManager
             { "name", searchdomain },
             { "settings", settings}
         };
-        return ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
+        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
     }
 
     public int DeleteSearchdomain(string searchdomain)
@@ -93,54 +93,14 @@ public class SearchdomainManager
             counter += 1;
         }
         _logger.LogDebug($"Number of entities deleted as part of deleting the searchdomain \"{searchdomain}\": {counter}");
-        searchdomain_.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
+        helper.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
         searchdomains.Remove(searchdomain);
         _logger.LogDebug($"Searchdomain has been successfully removed");
         return counter;
     }
-
-    public DbDataReader ExecuteSQLCommand(string query, Dictionary<string, dynamic> parameters)
-    {
-        using MySqlCommand command = connection.CreateCommand();
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
-        {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
-        }
-        return command.ExecuteReader();
-    }
-
-    public void ExecuteSQLNonQuery(string query, Dictionary<string, dynamic> parameters)
-    {
-        using MySqlCommand command = connection.CreateCommand();
-
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
-        {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
-        }
-        command.ExecuteNonQuery();
-    }
-
-    public int ExecuteSQLCommandGetInsertedID(string query, Dictionary<string, dynamic> parameters)
-    {
-        using MySqlCommand command = connection.CreateCommand();
-
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
-        {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
-        }
-        command.ExecuteNonQuery();
-        command.CommandText = "SELECT LAST_INSERT_ID();";
-        return Convert.ToInt32(command.ExecuteScalar());
-    }
-
     private Searchdomain SetSearchdomain(string name, Searchdomain searchdomain)
     {
         searchdomains[name] = searchdomain;
         return searchdomain;
     }
-
-
 }

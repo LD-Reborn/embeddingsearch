@@ -70,7 +70,7 @@ public class SearchdomainController : ControllerBase
                 {"settings", settings},
                 {"id", searchdomain_.id}
             };
-            searchdomain_.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);
+            searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);
         } catch (Exception)
         {
             return Ok(new SearchdomainUpdateResults(){Success = false});

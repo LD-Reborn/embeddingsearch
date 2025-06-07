@@ -35,6 +35,7 @@ public class Searchdomain
     public Dictionary<string, Dictionary<string, float[]>> embeddingCache;
     public int embeddingCacheMaxSize = 10000000;
     private readonly MySqlConnection connection;
+    public SQLHelper helper;
 
     // TODO Add settings and update cli/program.cs, as well as DatabaseInsertSearchdomain()
 
@@ -49,6 +50,7 @@ public class Searchdomain
         embeddingCache = [];
         connection = new MySqlConnection(connectionString);
         connection.Open();
+        helper = new SQLHelper(connection);
         probmethods = new();
         modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
         if (!runEmpty)
@@ -64,16 +66,8 @@ public class Searchdomain
         {
             ["id"] = this.id
         };
-        //(error) DbDataReader embeddingReader = ExecuteSQLCommand("SELECT id, id_datapoint, model, embedding FROM embedding JOIN datapoint on embedding.id as dp JOIN entity on dp.id_entity as en JOIN searchdomain on en.id_searchdomain as sd WHERE sd=@id", parametersIDSearchdomain);
-        //(produces endless amounts of data) DbDataReader embeddingReader = ExecuteSQLCommand("SELECT embedding.id, id_datapoint, model, embedding FROM embedding JOIN datapoint as dp on embedding.id JOIN entity as en on dp.id_entity JOIN searchdomain as sd on en.id_searchdomain WHERE sd.id=@id", parametersIDSearchdomain);
-        DbDataReader embeddingReader = ExecuteSQLCommand("SELECT embedding.id, id_datapoint, model, embedding FROM embedding", parametersIDSearchdomain);
-        //DbDataReader datapointReader = ExecuteSQLCommand("SELECT id, id_entity, name, probmethod_embedding FROM datapoint JOIN entity on Datapoint.id_entity as en JOIN searchdomain on en.id_searchdomain as sd WHERE sd=@id", parametersIDSearchdomain);
-        //DbDataReader attributeReader = ExecuteSQLCommand("SELECT id, id_entity, attribute, value FROM attribute JOIN entity on attribute.id_entity as en JOIN searchdomain on en.id_searchdomain as sd WHERE sd=@id", parametersIDSearchdomain);
-        //DbDataReader entityReader = ExecuteSQLCommand("SELECT id, name, probmethod FROM entity WHERE id_searchdomain=@id", parametersIDSearchdomain);
+        DbDataReader embeddingReader = helper.ExecuteSQLCommand("SELECT embedding.id, id_datapoint, model, embedding FROM embedding", parametersIDSearchdomain);
         Dictionary<int, Dictionary<string, float[]>> embedding_unassigned = [];
-        // embedding_unassigned.key = embedding.id_datapoint
-        // embedding_unassigned.Value.Key = model
-        // embedding_unassigned.Value.Value = Embeddings
         while (embeddingReader.Read())
         {
             int id_datapoint = embeddingReader.GetInt32(1);
@@ -83,7 +77,6 @@ public class Searchdomain
             embeddingReader.GetBytes(3, 0, embedding, 0, (int) length);
             if (embedding_unassigned.TryGetValue(id_datapoint, out Dictionary<string, float[]>? embedding_unassigned_id_datapoint))
             {
-                //embedding_unassigned_id_datapoint[model] = FloatArrayFromBytes(embedding);
                 embedding_unassigned[id_datapoint][model] = FloatArrayFromBytes(embedding);
             }
             else
@@ -96,8 +89,7 @@ public class Searchdomain
         }
         embeddingReader.Close();
         
-        //DbDataReader datapointReader = ExecuteSQLCommand("SELECT datapoint.id, id_entity, datapoint.name, probmethod_embedding FROM datapoint JOIN entity as en on Datapoint.id_entity JOIN searchdomain as sd on en.id_searchdomain WHERE sd.id=@id", parametersIDSearchdomain);
-        DbDataReader datapointReader = ExecuteSQLCommand("SELECT id, id_entity, name, probmethod_embedding FROM datapoint", parametersIDSearchdomain);
+        DbDataReader datapointReader = helper.ExecuteSQLCommand("SELECT id, id_entity, name, probmethod_embedding FROM datapoint", parametersIDSearchdomain);
         Dictionary<int, List<Datapoint>> datapoint_unassigned = [];
         while (datapointReader.Read())
         {
@@ -118,8 +110,7 @@ public class Searchdomain
         }
         datapointReader.Close();
 
-        //DbDataReader attributeReader = ExecuteSQLCommand("SELECT attribute.id, id_entity, attribute, value FROM attribute JOIN entity as en on attribute.id_entity JOIN searchdomain as sd on en.id_searchdomain WHERE sd.id=@id", parametersIDSearchdomain);        
-        DbDataReader attributeReader = ExecuteSQLCommand("SELECT id, id_entity, attribute, value FROM attribute", parametersIDSearchdomain);        
+        DbDataReader attributeReader = helper.ExecuteSQLCommand("SELECT id, id_entity, attribute, value FROM attribute", parametersIDSearchdomain);        
         Dictionary<int, Dictionary<string, string>> attributes_unassigned = [];
         while (attributeReader.Read())
         {
@@ -136,7 +127,7 @@ public class Searchdomain
         }
         attributeReader.Close();
 
-        DbDataReader entityReader = ExecuteSQLCommand("SELECT entity.id, name, probmethod FROM entity WHERE id_searchdomain=@id", parametersIDSearchdomain);
+        DbDataReader entityReader = helper.ExecuteSQLCommand("SELECT entity.id, name, probmethod FROM entity WHERE id_searchdomain=@id", parametersIDSearchdomain);
         while (entityReader.Read())
         {
             //SELECT id, name, probmethod FROM entity WHERE id_searchdomain=@id
@@ -158,9 +149,6 @@ public class Searchdomain
             }
         }
         entityReader.Close();
-
-        // TODO test this
-
         modelsInUse = GetModels(entityCache);
     }
 
@@ -223,7 +211,7 @@ public class Searchdomain
         {
             ["name"] = this.searchdomain
         };
-        DbDataReader reader = ExecuteSQLCommand("SELECT id from searchdomain WHERE name = @name", parameters);
+        DbDataReader reader = helper.ExecuteSQLCommand("SELECT id from searchdomain WHERE name = @name", parameters);
         reader.Read();
         this.id = reader.GetInt32(0);
         reader.Close();
@@ -356,10 +344,10 @@ public class Searchdomain
         {
             { "name", name }
         };
-        ExecuteSQLNonQuery("DELETE embedding.* FROM embedding JOIN datapoint dp ON id_datapoint = dp.id JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
-        ExecuteSQLNonQuery("DELETE datapoint.* FROM datapoint JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
-        ExecuteSQLNonQuery("DELETE attribute.* FROM attribute JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
-        ExecuteSQLNonQuery("DELETE FROM entity WHERE name = @name", parameters);
+        helper.ExecuteSQLNonQuery("DELETE embedding.* FROM embedding JOIN datapoint dp ON id_datapoint = dp.id JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
+        helper.ExecuteSQLNonQuery("DELETE datapoint.* FROM datapoint JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
+        helper.ExecuteSQLNonQuery("DELETE attribute.* FROM attribute JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
+        helper.ExecuteSQLNonQuery("DELETE FROM entity WHERE name = @name", parameters);
         entityCache.RemoveAll(entity => entity.name == name);
     }
 
@@ -370,7 +358,7 @@ public class Searchdomain
             { "name", name },
             { "settings", "{}"} // TODO add settings. It's not used yet, but maybe it's needed someday...
         };
-        return ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
+        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
     }
 
     public int DatabaseInsertEntity(string name, string probmethod, int id_searchdomain)
@@ -381,7 +369,7 @@ public class Searchdomain
             { "probmethod", probmethod },
             { "id_searchdomain", id_searchdomain }
         };
-        return ExecuteSQLCommandGetInsertedID("INSERT INTO entity (name, probmethod, id_searchdomain) VALUES (@name, @probmethod, @id_searchdomain)", parameters);
+        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO entity (name, probmethod, id_searchdomain) VALUES (@name, @probmethod, @id_searchdomain)", parameters);
     }
 
     public int DatabaseInsertAttribute(string attribute, string value, int id_entity)
@@ -392,7 +380,7 @@ public class Searchdomain
             { "value", value },
             { "id_entity", id_entity }
         };
-        return ExecuteSQLCommandGetInsertedID("INSERT INTO attribute (attribute, value, id_entity) VALUES (@attribute, @value, @id_entity)", parameters);
+        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO attribute (attribute, value, id_entity) VALUES (@attribute, @value, @id_entity)", parameters);
     }
 
 
@@ -404,7 +392,7 @@ public class Searchdomain
             { "probmethod_embedding", probmethod_embedding },
             { "id_entity", id_entity }
         };
-        return ExecuteSQLCommandGetInsertedID("INSERT INTO datapoint (name, probmethod_embedding, id_entity) VALUES (@name, @probmethod_embedding, @id_entity)", parameters);
+        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO datapoint (name, probmethod_embedding, id_entity) VALUES (@name, @probmethod_embedding, @id_entity)", parameters);
     }
 
     public int DatabaseInsertEmbedding(int id_datapoint, string model, byte[] embedding)
@@ -415,43 +403,6 @@ public class Searchdomain
             { "model", model },
             { "embedding", embedding }
         };
-        return ExecuteSQLCommandGetInsertedID("INSERT INTO embedding (id_datapoint, model, embedding) VALUES (@id_datapoint, @model, @embedding)", parameters);
-    }
-
-    public DbDataReader ExecuteSQLCommand(string query, Dictionary<string, dynamic> parameters)
-    {
-        using MySqlCommand command = connection.CreateCommand();
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
-        {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
-        }
-        return command.ExecuteReader();
-    }
-
-    public void ExecuteSQLNonQuery(string query, Dictionary<string, dynamic> parameters)
-    {
-        using MySqlCommand command = connection.CreateCommand();
-
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
-        {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
-        }
-        command.ExecuteNonQuery();
-    }
-
-    public int ExecuteSQLCommandGetInsertedID(string query, Dictionary<string, dynamic> parameters)
-    {
-        using MySqlCommand command = connection.CreateCommand();
-
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
-        {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
-        }
-        command.ExecuteNonQuery();
-        command.CommandText = "SELECT LAST_INSERT_ID();";
-        return Convert.ToInt32(command.ExecuteScalar());
+        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO embedding (id_datapoint, model, embedding) VALUES (@id_datapoint, @model, @embedding)", parameters);
     }
 }

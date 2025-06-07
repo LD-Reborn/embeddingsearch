@@ -12,38 +12,47 @@ public class SQLHelper
     }
     public DbDataReader ExecuteSQLCommand(string query, Dictionary<string, dynamic> parameters)
     {
-        using MySqlCommand command = connection.CreateCommand();
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
+        lock (connection)
         {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
+            using MySqlCommand command = connection.CreateCommand();
+            command.CommandText = query;
+            foreach (KeyValuePair<string, dynamic> parameter in parameters)
+            {
+                command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
+            }
+            return command.ExecuteReader();
         }
-        return command.ExecuteReader();
     }
 
     public void ExecuteSQLNonQuery(string query, Dictionary<string, dynamic> parameters)
     {
-        using MySqlCommand command = connection.CreateCommand();
-
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
+        lock (connection)
         {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
+            using MySqlCommand command = connection.CreateCommand();
+
+            command.CommandText = query;
+            foreach (KeyValuePair<string, dynamic> parameter in parameters)
+            {
+                command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
+            }
+            command.ExecuteNonQuery();
         }
-        command.ExecuteNonQuery();
     }
 
     public int ExecuteSQLCommandGetInsertedID(string query, Dictionary<string, dynamic> parameters)
     {
-        using MySqlCommand command = connection.CreateCommand();
-
-        command.CommandText = query;
-        foreach (KeyValuePair<string, dynamic> parameter in parameters)
+        lock (connection)
         {
-            command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
+            using MySqlCommand command = connection.CreateCommand();
+
+            command.CommandText = query;
+            foreach (KeyValuePair<string, dynamic> parameter in parameters)
+            {
+                command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
+            }
+            command.ExecuteNonQuery();
+            command.CommandText = "SELECT LAST_INSERT_ID();";
+            return Convert.ToInt32(command.ExecuteScalar());
         }
-        command.ExecuteNonQuery();
-        command.CommandText = "SELECT LAST_INSERT_ID();";
-        return Convert.ToInt32(command.ExecuteScalar());
     }
 }
