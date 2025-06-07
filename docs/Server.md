@@ -23,7 +23,6 @@ Download the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow t
 `CREATE DATABASE embeddingsearch; use embeddingsearch;`
 4. Create the user (replace "somepassword! with a secure password):
 `CREATE USER 'embeddingsearch'@'%' identified by "somepassword!"; GRANT ALL ON embeddingsearch.* TO embeddingsearch; FLUSH PRIVILEGES;`
-5. Create the tables using the CLI tool: `cd src/cli; dotnet build` and `bin/Debug/net8.0/cli -h $mysql_ip -p $mysql_port -U $mysql_username -P $mysql_password --database --setup` (replace the variables with the actual values)
 
 # Configuration
 ## Environments
