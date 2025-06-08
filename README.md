@@ -6,7 +6,6 @@ Embeddingsearch is a DotNet C# library that uses Embedding Similarity Search (si
 This repository comes with
 - a server (accessible via API calls & swagger)
 - a clientside library
-- a CLI module (deprecated)
 - a scripting based indexer service that supports
   - Python
   - Golang (WIP)
@@ -32,20 +31,12 @@ This repository comes with
 3. [Configure the indexer](docs/Indexer.md#configuration)
 4. [Set up your indexing script(s)](docs/Indexer.md#scripting)
 5. Run with `dotnet build && dotnet run` (Or `/usr/bin/dotnet build && /usr/bin/dotnet run`)
-## CLI
-Before anything follow these steps:
-1. Enter the project's `src` directory (used as the working directory in all examples)
-2. Build the project: `dotnet build`
-All user-defined parameters are denoted using the `$` symbol. I.e. `$mysql_ip` means: replace this with your MySQL IP address or set it as a local variable in your terminal session.
-
-All commands, parameters and examples are documented here: [docs/CLI.md](docs/CLI.md)
 # Known issues
 | Issue | Solution |
 | --- | --- |
-| Failed to load /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so, error: /snap/core20/current/lib/x86_64-linux-gnu/libstdc++.so.6: version `GLIBCXX_3.4.29' not found (required by /usr/lib/dotnet/host/fxr/8.0.15/libhostfxr.so) | You likely installed dotnet via snap instead of apt. Try running the CLI using `/usr/bin/dotnet` instead of `dotnet`. |
 | Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Invalid attempt to access a field before calling Read() | The searchdomain you entered does not exist |
 | Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Authentication to host 'localhost' for user 'embeddingsearch' using method 'caching_sha2_password' failed with message: Access denied for user 'embeddingsearch'@'localhost' (using password: YES) | TBD |
-| System.DllNotFoundException: Could not load libpython3.12.so with flags RTLD_NOW \| RTLD_GLOBAL: libpython3.12.so: cannot open shared object file: No such file or directory | Install python3.12-dev via apt |
+| System.DllNotFoundException: Could not load libpython3.12.so with flags RTLD_NOW \| RTLD_GLOBAL: libpython3.12.so: cannot open shared object file: No such file or directory | Install python3.12-dev via apt. Also: try running the indexer using `/usr/bin/dotnet` instead of `dotnet` (make sure dotnet is installed via apt) |
 # To-do
 - (High priority) Add default indexer
   - Library
@@ -77,7 +68,6 @@ All commands, parameters and examples are documented here: [docs/CLI.md](docs/CL
   - Level 2: `{"Name": "...", "Value": 0.53, "Datapoints": [{"Name": "title", "Value": 0.65, "Embeddings": [{"Model": "bge-m3", "Value": 0.87}, {...}]}, {...}]}`
 - Add "Click-Through" result evaluation (For each entity: store a list of queries that led to the entity being chosen by the user. Then at query-time choose the best-fitting entry and maybe use it as another datapoint? Or use a separate weight function?)
 - Reranker/Crossencoder/RAG (or anything else beyond initial retrieval) support
-- Remove the CLI
 - Improve error messaging for when retrieving a searchdomain fails.
 - Remove the `id` collumns from the database tables where the table is actually identified (and should be unique by) the name, which should become the new primary key.
 - Improve performance & latency (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
