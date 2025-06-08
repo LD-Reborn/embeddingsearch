@@ -48,7 +48,6 @@ public class PythonScriptable : IScriptable
 
     public void Update(ICallbackInfos callbackInfos)
     {
-        PythonEngine.Initialize();
         using (Py.GIL())
         {
             pyToolSet = ToolSet.ToPython();
@@ -56,7 +55,6 @@ public class PythonScriptable : IScriptable
             scope.Set("toolset", pyToolSet);
             scope.Exec("update(toolset)");
         }
-        PythonEngine.Shutdown();
     }
 
     public bool IsScript(string fileName)
