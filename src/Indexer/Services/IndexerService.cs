@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Indexer.Exceptions;
 using Indexer.Models;
-using System.Timers;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Python.Runtime;
+using ElmahCore;
 
 namespace Indexer.Services;
 
@@ -15,16 +9,18 @@ public class IndexerService : IHostedService
     private readonly WorkerCollection workerCollection;
     private readonly IConfiguration _config;
     private readonly Client.Client client;
+    public ILogger<IndexerService> _logger;
 
-    public IndexerService(WorkerCollection workerCollection, IConfiguration configuration, Client.Client client)
+    public IndexerService(WorkerCollection workerCollection, IConfiguration configuration, Client.Client client, ILogger<IndexerService> logger, IHttpContextAccessor httpContextAccessor)
     {
         this._config = configuration;
         this.client = client;
         this.workerCollection = workerCollection;
+        _logger = logger;
         // Load and configure all workers
         var sectionMain = _config.GetSection("EmbeddingsearchIndexer");
 
-        WorkerCollectionConfig? sectionWorker = (WorkerCollectionConfig?) sectionMain.Get(typeof(WorkerCollectionConfig)); //GetValue<WorkerCollectionConfig>("Worker");
+        WorkerCollectionConfig? sectionWorker = (WorkerCollectionConfig?)sectionMain.Get(typeof(WorkerCollectionConfig)); //GetValue<WorkerCollectionConfig>("Worker");
         if (sectionWorker is not null)
         {
             foreach (WorkerConfig workerConfig in sectionWorker.Worker)
@@ -34,26 +30,38 @@ public class IndexerService : IHostedService
                     client.searchdomain = workerConfig.Searchdomains.First();
                 }
                 ScriptToolSet toolSet = new(workerConfig.Script, client);
-                Worker worker = new(workerConfig, GetScriptable(toolSet));
+                Worker worker = new(workerConfig.Name, workerConfig, GetScriptable(toolSet));
                 workerCollection.Workers.Add(worker);
-                foreach (Call call in workerConfig.Calls)
+                foreach (CallConfig callConfig in workerConfig.Calls)
                 {
-                    switch (call.Type)
+                    switch (callConfig.Type)
                     {
                         case "interval":
-                            if (call.Interval is null)
+                            if (callConfig.Interval is null)
                             {
                                 throw new IndexerConfigurationException($"Interval not set for a Call in Worker \"{workerConfig.Name}\"");
                             }
-                            var timer = new System.Timers.Timer((double)call.Interval);
-                            timer.Elapsed += (sender, e) => worker.Scriptable.Update(new IntervalCallbackInfos() { sender = sender, e = e });
+                            var timer = new System.Timers.Timer((double)callConfig.Interval);
+                            timer.Elapsed += (sender, e) =>
+                            {
+                                try
+                                {
+                                    worker.Scriptable.Update(new IntervalCallbackInfos() { sender = sender, e = e });
+                                }
+                                catch (Exception ex)
+                                {
+                                    httpContextAccessor.HttpContext.RaiseError(ex);
+                                }                                
+                            };
                             timer.AutoReset = true;
                             timer.Enabled = true;
+                            IntervalCall call = new(timer, worker.Scriptable);
+                            worker.Calls.Add(call);
                             break;
                         case "schedule": // TODO implement scheduled tasks using Quartz
                             throw new NotImplementedException("schedule not implemented yet");
                         case "fileupdate":
-                            if (call.Path is null)
+                            if (callConfig.Path is null)
                             {
                                 throw new IndexerConfigurationException($"Path not set for a Call in Worker \"{workerConfig.Name}\"");
                             }
@@ -76,7 +84,7 @@ public class IndexerService : IHostedService
         string fileName = toolSet.filePath;
         foreach (Type type in workerCollection.types)
         {
-            IScriptable? instance = (IScriptable?)Activator.CreateInstance(type, toolSet);
+            IScriptable? instance = (IScriptable?)Activator.CreateInstance(type, [toolSet, _logger]);
             if (instance is not null && instance.IsScript(fileName))
             {
                 return instance;

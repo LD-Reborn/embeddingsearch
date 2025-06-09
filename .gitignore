@@ -13,3 +13,4 @@ src/Models/obj
 src/Indexer/bin
 src/Indexer/obj
 src/Indexer/Scripts/__pycache__
+src/Indexer/logs

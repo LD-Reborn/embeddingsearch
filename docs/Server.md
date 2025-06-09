@@ -2,7 +2,7 @@
 The server by default
 - runs on port 5146
 - Uses Swagger UI in development mode (`/swagger/index.html`)
-- Ignores API keys when not in development mode
+- Ignores API keys when in development mode
 
 # Installing the dependencies
 ## Ubuntu 24.04
