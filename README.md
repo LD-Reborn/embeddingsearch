@@ -12,7 +12,7 @@ This repository comes with
   - Javascript (WIP)
 
 # How to set up / use
-## server
+## Server
 1. Install [ollama](https://ollama.com/download)
 2. Pull a few models using ollama (e.g. `paraphrase-multilingual`, `bge-m3`, `mxbai-embed-large`, `nomic-embed-text`)
 3. [Install the depencencies](docs/Server.md#installing-the-dependencies)
@@ -20,12 +20,12 @@ This repository comes with
 5. [Set up the configuration](docs/Server.md#setup)
 6. In `src/server` execute `dotnet build && dotnet run` to start the server
 7. (optional) [Create a searchdomain using the web interface](docs/Server.md#accessing-the-api)
-## client
+## Client
 1. Download the package and add it to your project (TODO: NuGet)
 2. Create a new client by either:
     1. By injecting IConfiguration (e.g. `services.AddSingleton<Client>();`)
     2. By specifying the baseUri, apiKey, and searchdomain (e.g. `new Client.Client(baseUri, apiKey, searchdomain)`)
-## indexer
+## Indexer
 1. [Install the dependencies](docs/Indexer.md#installing-the-dependencies)
 2. [Set up the server](#server)
 3. [Configure the indexer](docs/Indexer.md#configuration)
