@@ -93,7 +93,6 @@ public class IntervalCall : ICall
     {
         if (!Scriptable.UpdateInfo.Successful)
         {
-            Debug.WriteLine(Scriptable.UpdateInfo.Exception);
             return HealthCheckResult.Unhealthy();
         }
         double timerInterval = Timer.Interval; // In ms
