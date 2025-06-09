@@ -59,7 +59,6 @@ This repository comes with
         - ~~Web requests (E.g. manual crawling)~~
     - ~~Script call management (interval based & event based)~~
 - Implement hash value to reduce wasteful re-indexing (Perhaps as a default property for an entity, set by the default indexer)
-- Implement Healthz check
 - Implement [ReaderWriterLock](https://learn.microsoft.com/en-us/dotnet/api/system.threading.readerwriterlockslim?view=net-9.0&redirectedfrom=MSDN) for entityCache to allow for multithreaded read access while retaining single-threaded write access.
 - NuGet packaging and corresponding README documentation
 - Add option for query result detail levels. e.g.:
