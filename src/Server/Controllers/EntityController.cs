@@ -47,8 +47,9 @@ public class EntityController : ControllerBase
         {
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogError("Unable to retrieve the searchdomain", [ex]);
             return Ok(new EntityIndexResult() { Success = false });
         }
         List<Entity>? entities = searchdomain_.EntitiesFromJSON(JsonSerializer.Serialize(jsonEntity));
@@ -59,7 +60,7 @@ public class EntityController : ControllerBase
         }
         else
         {
-            _logger.LogDebug("Unable to deserialize an entity");
+            _logger.LogError("Unable to deserialize an entity");
         }
 
         return Ok(new EntityIndexResult() { Success = false });
@@ -72,9 +73,10 @@ public class EntityController : ControllerBase
         try
         {
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (Exception)
+        } catch (Exception ex)
         {
-            return Ok(new EntityListResults() {Results = [], Success = false});
+            _logger.LogError("Unable to retrieve the searchdomain", [ex]);
+            return Ok(new EntityListResults() { Results = [], Success = false });
         }
         EntityListResults entityListResults = new() {Results = [], Success = true};
         foreach (Entity entity in searchdomain_.entityCache)

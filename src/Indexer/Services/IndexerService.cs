@@ -17,14 +17,21 @@ public class IndexerService : IHostedService
         this.client = client;
         this.workerCollection = workerCollection;
         _logger = logger;
+        _logger.LogInformation("Initializing IndexerService");
         // Load and configure all workers
         var sectionMain = _config.GetSection("EmbeddingsearchIndexer");
+        if (!sectionMain.Exists())
+        {
+            _logger.LogCritical("Unable to load section \"EmbeddingsearchIndexer\"");
+            throw new IndexerConfigurationException("Unable to load section \"EmbeddingsearchIndexer\"");
+        }
 
         WorkerCollectionConfig? sectionWorker = (WorkerCollectionConfig?)sectionMain.Get(typeof(WorkerCollectionConfig)); //GetValue<WorkerCollectionConfig>("Worker");
         if (sectionWorker is not null)
         {
             foreach (WorkerConfig workerConfig in sectionWorker.Worker)
             {
+                _logger.LogInformation("Initializing worker: {Name}", workerConfig.Name);
                 if (client.searchdomain == "" && workerConfig.Searchdomains.Count >= 1)
                 {
                     client.searchdomain = workerConfig.Searchdomains.First();
@@ -34,11 +41,14 @@ public class IndexerService : IHostedService
                 workerCollection.Workers.Add(worker);
                 foreach (CallConfig callConfig in workerConfig.Calls)
                 {
+                    _logger.LogInformation("Initializing call of type: {Type}", callConfig.Type);
+                    
                     switch (callConfig.Type)
                     {
                         case "interval":
                             if (callConfig.Interval is null)
                             {
+                                _logger.LogError("Interval not set for a Call in Worker \"{Name}\"", workerConfig.Name);
                                 throw new IndexerConfigurationException($"Interval not set for a Call in Worker \"{workerConfig.Name}\"");
                             }
                             var timer = new System.Timers.Timer((double)callConfig.Interval);
@@ -50,12 +60,13 @@ public class IndexerService : IHostedService
                                 }
                                 catch (Exception ex)
                                 {
+                                    _logger.LogError("Exception occurred in a Call of Worker \"{name}\": \"{ex}\"", worker.Name, ex.Message);
                                     httpContextAccessor.HttpContext.RaiseError(ex);
-                                }                                
+                                }
                             };
                             timer.AutoReset = true;
                             timer.Enabled = true;
-                            IntervalCall call = new(timer, worker.Scriptable);
+                            IntervalCall call = new(timer, worker.Scriptable, _logger);
                             worker.Calls.Add(call);
                             break;
                         case "schedule": // TODO implement scheduled tasks using Quartz
@@ -63,6 +74,7 @@ public class IndexerService : IHostedService
                         case "fileupdate":
                             if (callConfig.Path is null)
                             {
+                                _logger.LogError("Path not set for a Call in Worker \"{Name}\"", workerConfig.Name);
                                 throw new IndexerConfigurationException($"Path not set for a Call in Worker \"{workerConfig.Name}\"");
                             }
                             throw new NotImplementedException("fileupdate not implemented yet");
@@ -75,7 +87,8 @@ public class IndexerService : IHostedService
         }
         else
         {
-            throw new IndexerConfigurationException("Unable to find section \"Worker\"");
+            _logger.LogCritical("Unable to load section \"Worker\"");
+            throw new IndexerConfigurationException("Unable to load section \"Worker\"");
         }
     }
 
@@ -90,6 +103,7 @@ public class IndexerService : IHostedService
                 return instance;
             }
         }
+        _logger.LogError("Unable to determine the script's language: \"{fileName}\"", fileName);
 
         throw new UnknownScriptLanguageException(fileName);
     }

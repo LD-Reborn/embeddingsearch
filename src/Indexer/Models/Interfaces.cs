@@ -4,7 +4,7 @@ public interface IScriptable
 {
     ScriptToolSet ToolSet { get; set; }
     ScriptUpdateInfo UpdateInfo { get; set; }
-    ILogger Logger { get; set; }
+    ILogger _logger { get; set; }
     void Init();
     void Update(ICallbackInfos callbackInfos);
     bool IsScript(string filePath);

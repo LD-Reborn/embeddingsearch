@@ -82,17 +82,19 @@ public class IntervalCall : ICall
 {
     public System.Timers.Timer Timer;
     public IScriptable Scriptable;
-
-    public IntervalCall(System.Timers.Timer timer, IScriptable scriptable)
+    public ILogger _logger;
+    public IntervalCall(System.Timers.Timer timer, IScriptable scriptable, ILogger logger)
     {
         Timer = timer;
         Scriptable = scriptable;
+        _logger = logger;
     }
 
     public HealthCheckResult HealthCheck()
     {
         if (!Scriptable.UpdateInfo.Successful)
         {
+            _logger.LogWarning("HealthCheck revealed: The last execution of \"{name}\" was not successful", Scriptable.ToolSet.filePath);
             return HealthCheckResult.Unhealthy();
         }
         double timerInterval = Timer.Interval; // In ms
@@ -101,6 +103,7 @@ public class IntervalCall : ICall
         double millisecondsSinceLastExecution = now.Subtract(lastRunDateTime).TotalMilliseconds;
         if (millisecondsSinceLastExecution >= 2 * timerInterval)
         {
+            _logger.LogWarning("HealthCheck revealed: Since the last execution of \"{name}\" more than twice the interval has passed", Scriptable.ToolSet.filePath);
             return HealthCheckResult.Unhealthy();
         }
         return HealthCheckResult.Healthy();

@@ -11,10 +11,10 @@ public class PythonScriptable : IScriptable
     public dynamic sys;
     public string source;
     public ScriptUpdateInfo UpdateInfo { get; set; }
-    public ILogger Logger { get; set; }
+    public ILogger _logger { get; set; }
     public PythonScriptable(ScriptToolSet toolSet, ILogger logger)
     {
-        Logger = logger;
+        _logger = logger;
         Runtime.PythonDLL = @"libpython3.12.so";
         if (!PythonEngine.IsInitialized)
         {
@@ -56,11 +56,11 @@ public class PythonScriptable : IScriptable
             UpdateInfo = new() { DateTime = DateTime.Now, Successful = false, Exception = ex };
             if (retryCounter < 3)
             {
-                Logger.LogWarning("Unable to init the scriptable - retrying", [ToolSet.filePath, ex]);
+                _logger.LogWarning("Unable to init the scriptable - retrying", [ToolSet.filePath, ex]);
                 retryCounter++;
                 goto retry;
             }
-            Logger.LogError("Unable to init the scriptable", [ToolSet.filePath, ex]);
+            _logger.LogError("Unable to init the scriptable", [ToolSet.filePath, ex]);
             throw;
         }
         UpdateInfo = new() { DateTime = DateTime.Now, Successful = true };
@@ -85,11 +85,11 @@ public class PythonScriptable : IScriptable
             UpdateInfo = new() { DateTime = DateTime.Now, Successful = false, Exception = ex };
             if (retryCounter < 3)
             {
-                Logger.LogWarning("Execution of script failed to an exception - retrying", [ToolSet.filePath, ex]);
+                _logger.LogWarning("Execution of script failed to an exception - retrying", [ToolSet.filePath, ex]);
                 retryCounter++;
                 goto retry;
             }
-            Logger.LogError("Execution of script failed to an exception", [ToolSet.filePath, ex]);
+            _logger.LogError("Execution of script failed to an exception", [ToolSet.filePath, ex]);
             throw;
         }
         UpdateInfo = new() { DateTime = DateTime.Now, Successful = true };
