@@ -17,9 +17,13 @@ public static class DatabaseMigrations
                 databaseVersion = UpdateFrom1(helper); // TODO: Implement reflection based dynamic invocation.
                 goto case 2;
             case 2:
+                databaseVersion = UpdateFrom2(helper);
+                goto case 3;
+            case 3:
             default:
                 break;
         }
+        helper.ExecuteSQLNonQuery("UPDATE settings SET value = @databaseVersion", new() { ["databaseVersion"] = databaseVersion.ToString() });
     }
     public static int DatabaseGetVersion(SQLHelper helper)
     {
@@ -65,5 +69,12 @@ public static class DatabaseMigrations
         helper.ExecuteSQLNonQuery("CREATE TABLE settings (name varchar(512), value varchar(8192));", []);
         helper.ExecuteSQLNonQuery("INSERT INTO settings (name, value) VALUES (\"DatabaseVersion\", \"2\");", []);
         return 2;
+    }
+
+    public static int UpdateFrom2(SQLHelper helper)
+    {
+        helper.ExecuteSQLNonQuery("ALTER TABLE datapoint ADD hash VARCHAR(44);", []);
+        helper.ExecuteSQLNonQuery("UPDATE datapoint SET hash='';", []);
+        return 3;
     }
 }
