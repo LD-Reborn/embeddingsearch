@@ -10,7 +10,7 @@ The indexer by default
 (On Linux you might need root privileges, thus use `sudo` where necessary)
 1. Navigate to the `src` directory
 2. Build the docker container: `docker build -t indexer -f Indexer/Dockerfile .`
-3. Run the docker container: `docker run -t indexer` (the `-t` is optional, but you get more meaningful output)
+3. Run the docker container: `docker run --net=host -t indexer` (the `-t` is optional, but you get more meaningful output)
 
 ## Installing the dependencies
 ## Ubuntu 24.04

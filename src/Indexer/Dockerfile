@@ -11,4 +11,5 @@ RUN dotnet publish /src/Indexer/Indexer.csproj -c Release -o /app
 RUN cp -r /src/Indexer/Scripts /app/Scripts
 RUN rm -r /src
 ENV PYTHONIOENCODING=utf8
+EXPOSE 5120
 ENTRYPOINT ["./Indexer"]
