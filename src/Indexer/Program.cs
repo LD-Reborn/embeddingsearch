@@ -32,22 +32,31 @@ builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 });
 
 var app = builder.Build();
-app.Map("/elmah", builder => // Add a middleware before Elmah that authorizes only the development environment
+List<string>? allowedIps = builder.Configuration.GetSection("EmbeddingsearchIndexer:Elmah:AllowedHosts")
+    .Get<List<string>>();
+
+app.Use(async (context, next) =>
 {
-    builder.Use(async (context, next) =>
+    if (context.Request.Path.StartsWithSegments("/elmah"))
     {
-        if (!app.Environment.IsDevelopment()) // TODO add configuration option to allow for elmah (i.e. opt-in)
+
+        var remoteIp = context.Connection.RemoteIpAddress?.ToString();
+        bool blockRequest = allowedIps is null
+            || remoteIp is null
+            || !allowedIps.Contains(remoteIp);
+        if (blockRequest)
         {
             context.Response.StatusCode = 403;
             await context.Response.WriteAsync("Forbidden");
             return;
         }
+    }
 
-        await next();
-    });
-
-    builder.UseElmah();
+    await next();
 });
+
+app.UseElmah();
+
 app.MapHealthChecks("/healthz");
 
 // Configure the HTTP request pipeline.
