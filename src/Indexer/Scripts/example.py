@@ -40,7 +40,7 @@ def index_files(toolset: Toolset):
     jsonEntities:list = []
     for filename in os.listdir(example_content):
         qualified_filepath = example_content + "/" + filename
-        with open(qualified_filepath, "r") as file:
+        with open(qualified_filepath, "r", encoding='utf-8') as file:
             title = file.readline()
             text = file.read()
         datapoints:list = [

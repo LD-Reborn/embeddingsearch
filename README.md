@@ -26,6 +26,7 @@ This repository comes with
     1. By injecting IConfiguration (e.g. `services.AddSingleton<Client>();`)
     2. By specifying the baseUri, apiKey, and searchdomain (e.g. `new Client.Client(baseUri, apiKey, searchdomain)`)
 ## Indexer
+(Docker now available! See [Docker installation](docs/Indexer.md#docker-installation))
 1. [Install the dependencies](docs/Indexer.md#installing-the-dependencies)
 2. [Set up the server](#server)
 3. [Configure the indexer](docs/Indexer.md#configuration)
