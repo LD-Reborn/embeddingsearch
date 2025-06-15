@@ -32,7 +32,22 @@ builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 });
 
 var app = builder.Build();
-app.UseElmah();
+app.Map("/elmah", builder => // Add a middleware before Elmah that authorizes only the development environment
+{
+    builder.Use(async (context, next) =>
+    {
+        if (!app.Environment.IsDevelopment()) // TODO add configuration option to allow for elmah (i.e. opt-in)
+        {
+            context.Response.StatusCode = 403;
+            await context.Response.WriteAsync("Forbidden");
+            return;
+        }
+
+        await next();
+    });
+
+    builder.UseElmah();
+});
 app.MapHealthChecks("/healthz");
 
 // Configure the HTTP request pipeline.
