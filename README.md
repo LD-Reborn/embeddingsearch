@@ -71,7 +71,7 @@ This repository comes with
 - Improve error messaging for when retrieving a searchdomain fails.
 - Remove the `id` collumns from the database tables where the table is actually identified (and should be unique by) the name, which should become the new primary key.
 - Improve performance & latency (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
-- Make the API server (and indexer, once it is done) a docker container
+- Make the API server (~~and indexer, once it is done~~ Indexer: done, Server: todo) a docker container
 - Implement dynamic invocation based database migrations
 
 # Future features
