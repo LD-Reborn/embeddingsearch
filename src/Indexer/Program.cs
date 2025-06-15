@@ -16,7 +16,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)  // Output files with daily rolling
+    .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 builder.Logging.AddSerilog();
 builder.Services.AddHttpContextAccessor();
@@ -28,7 +28,7 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
-    Options.LogPath = "~/logs";
+    Options.LogPath = builder.Configuration.GetValue<string>("EmbeddingsearchIndexer:Elmah:LogFolder") ?? "~/logs";
 });
 
 var app = builder.Build();
@@ -39,7 +39,6 @@ app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/elmah"))
     {
-
         var remoteIp = context.Connection.RemoteIpAddress?.ToString();
         bool blockRequest = allowedIps is null
             || remoteIp is null
