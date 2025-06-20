@@ -28,6 +28,7 @@ public class EntityController : ControllerBase
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
         } catch (Exception)
         {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]); // TODO DRY violation; perhaps move this logging to the SearchdomainManager?
             return Ok(new EntityQueryResults() {Results = []});
         }
         var results = searchdomain_.Search(query);
@@ -47,9 +48,9 @@ public class EntityController : ControllerBase
         {
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError("Unable to retrieve the searchdomain", [ex]);
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
             return Ok(new EntityIndexResult() { Success = false });
         }
         List<Entity>? entities = searchdomain_.EntitiesFromJSON(JsonSerializer.Serialize(jsonEntity));
@@ -73,9 +74,9 @@ public class EntityController : ControllerBase
         try
         {
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (Exception ex)
+        } catch (Exception)
         {
-            _logger.LogError("Unable to retrieve the searchdomain", [ex]);
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
             return Ok(new EntityListResults() { Results = [], Success = false });
         }
         EntityListResults entityListResults = new() {Results = [], Success = true};
@@ -115,7 +116,7 @@ public class EntityController : ControllerBase
     }
 
     [HttpGet("Delete")]
-    public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName) // TODO test this
+    public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName)
     {
         Searchdomain searchdomain_;
         try
@@ -123,11 +124,13 @@ public class EntityController : ControllerBase
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
         } catch (Exception)
         {
+            _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - the searchdomain likely does not exist", [entityName, searchdomain]);
             return Ok(new EntityDeleteResults() {Success = false});
         }
         Entity? entity_ = searchdomain_.GetEntity(entityName);
         if (entity_ is null)
         {
+            _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
             return Ok(new EntityDeleteResults() {Success = false});
         }
         searchdomain_.RemoveEntity(entityName);

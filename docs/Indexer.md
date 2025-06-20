@@ -9,9 +9,8 @@ The indexer by default
 ## Docker installation
 (On Linux you might need root privileges, thus use `sudo` where necessary)
 1. Navigate to the `src` directory
-2. Build the docker container: `docker build -t indexer -f Indexer/Dockerfile .`
-3. Run the docker container: `docker run --net=host -t indexer` (the `-t` is optional, but you get more meaningful output)
-
+2. Build the docker container: `docker build -t embeddingsearch-indexer -f Indexer/Dockerfile .`
+3. Run the docker container: `docker run --net=host -t embeddingsearch-indexer` (the `-t` is optional, but you get more meaningful output. Or use `-d` to run it in the background)
 ## Installing the dependencies
 ## Ubuntu 24.04
 1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-8.0 -y`

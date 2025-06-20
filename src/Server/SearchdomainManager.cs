@@ -32,7 +32,15 @@ public class SearchdomainManager
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection);
-        DatabaseMigrations.Migrate(helper);
+        try
+        {
+            DatabaseMigrations.Migrate(helper);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical("Unable to migrate the database due to the exception: {ex}", [ex.Message]);
+            throw;
+        }
     }
 
     public Searchdomain GetSearchdomain(string searchdomain)
@@ -73,6 +81,7 @@ public class SearchdomainManager
     {
         if (searchdomains.TryGetValue(searchdomain, out Searchdomain? value))
         {
+            _logger.LogError("Searchdomain {searchdomain} could not be created, as it already exists", [searchdomain]);
             throw new Exception("Searchdomain already exists"); // TODO create proper SearchdomainAlreadyExists exception
         }
         Dictionary<string, dynamic> parameters = new()
