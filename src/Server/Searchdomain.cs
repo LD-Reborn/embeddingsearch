@@ -29,7 +29,6 @@ public class Searchdomain
     private readonly string _connectionString;
     private readonly string _provider;
     public OllamaApiClient ollama;
-    public Probmethods probmethods;
     public string searchdomain;
     public int id;
     public Dictionary<string, List<(DateTime, List<(float, string)>)>> searchCache; // Yeah look at this abomination. searchCache[x][0] = last accessed time, searchCache[x][1] = results for x
@@ -54,7 +53,6 @@ public class Searchdomain
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection);
-        probmethods = new();
         modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
         if (!runEmpty)
         {
@@ -101,7 +99,7 @@ public class Searchdomain
             string name = datapointReader.GetString(2);
             string probmethodString = datapointReader.GetString(3);
             string hash = datapointReader.GetString(4);
-            Probmethods.probMethodDelegate? probmethod = probmethods.GetMethod(probmethodString);
+            Probmethods.probMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
             if (embedding_unassigned.TryGetValue(id, out Dictionary<string, float[]>? embeddings) && probmethod is not null)
             {
                 embedding_unassigned.Remove(id);
@@ -142,7 +140,7 @@ public class Searchdomain
             {
                 attributes = [];
             }
-            Probmethods.probMethodDelegate? probmethod = probmethods.GetMethod(probmethodString);
+            Probmethods.probMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
             if (datapoint_unassigned.TryGetValue(id, out List<Datapoint>? datapoints) && probmethod is not null)
             {
                 Entity entity = new(attributes, probmethod, datapoints, name)
@@ -292,7 +290,7 @@ public class Searchdomain
             {
                 embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], ollama, embeddingCache);
             }
-            var probMethod_embedding = probmethods.GetMethod(jsonDatapoint.Probmethod_embedding) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.Probmethod_embedding}");
+            var probMethod_embedding = Probmethods.GetMethod(jsonDatapoint.Probmethod_embedding) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.Probmethod_embedding}");
             Datapoint datapoint = new(jsonDatapoint.Name, probMethod_embedding, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
             int id_datapoint = DatabaseInsertDatapoint(jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, hash, id_entity);
             List<(string model, byte[] embedding)> data = [];
@@ -304,7 +302,7 @@ public class Searchdomain
             datapoints.Add(datapoint);
         }
 
-        var probMethod = probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new Exception($"Unknown probmethod name {jsonEntity.Probmethod}");
+        var probMethod = Probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new Exception($"Unknown probmethod name {jsonEntity.Probmethod}");
         Entity entity = new(jsonEntity.Attributes, probMethod, datapoints, jsonEntity.Name)
         {
             id = id_entity

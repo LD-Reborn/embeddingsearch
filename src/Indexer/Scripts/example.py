@@ -8,6 +8,8 @@ example_content = "./Scripts/example_content"
 example_searchdomain = "example"
 example_counter = 0
 models = ["bge-m3", "mxbai-embed-large"]
+probmethod_datapoint = "HighValueEmphasisWeightedAverage"
+probmethod_entity = "HighValueEmphasisWeightedAverage"
 
 def init(toolset: Toolset):
     global example_counter
@@ -44,11 +46,11 @@ def index_files(toolset: Toolset):
             title = file.readline()
             text = file.read()
         datapoints:list = [
-            JSONDatapoint("filename", qualified_filepath, "wavg", models),
-            JSONDatapoint("title", title, "wavg", models),
-            JSONDatapoint("text", text, "wavg", models)
+            JSONDatapoint("filename", qualified_filepath, probmethod_datapoint, models),
+            JSONDatapoint("title", title, probmethod_datapoint, models),
+            JSONDatapoint("text", text, probmethod_datapoint, models)
         ]
-        jsonEntity:dict = asdict(JSONEntity(qualified_filepath, "wavg", example_searchdomain, {}, datapoints))
+        jsonEntity:dict = asdict(JSONEntity(qualified_filepath, probmethod_entity, example_searchdomain, {}, datapoints))
         jsonEntities.append(jsonEntity)
     jsonstring = json.dumps(jsonEntities)
     timer_start = time.time()
