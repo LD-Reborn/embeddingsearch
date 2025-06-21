@@ -14,6 +14,7 @@ public class SQLHelper
     {
         lock (connection)
         {
+            EnsureConnected();
             using MySqlCommand command = connection.CreateCommand();
             command.CommandText = query;
             foreach (KeyValuePair<string, dynamic> parameter in parameters)
@@ -28,6 +29,7 @@ public class SQLHelper
     {
         lock (connection)
         {
+            EnsureConnected();
             using MySqlCommand command = connection.CreateCommand();
 
             command.CommandText = query;
@@ -43,6 +45,7 @@ public class SQLHelper
     {
         lock (connection)
         {
+            EnsureConnected();
             using MySqlCommand command = connection.CreateCommand();
 
             command.CommandText = query;
@@ -54,5 +57,22 @@ public class SQLHelper
             command.CommandText = "SELECT LAST_INSERT_ID();";
             return Convert.ToInt32(command.ExecuteScalar());
         }
+    }
+
+    public bool EnsureConnected()
+    {
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            try
+            {
+                connection.Close();
+                connection.Open();
+            }
+            catch (Exception)
+            {
+                throw; // TODO add logging here
+            }
+        }
+        return true;
     }
 }
