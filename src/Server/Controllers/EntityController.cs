@@ -41,22 +41,28 @@ public class EntityController : ControllerBase
     }
 
     [HttpPost("Index")]
-    public ActionResult<EntityIndexResult> Index(string searchdomain, [FromBody] List<JSONEntity>? jsonEntity)
+    public ActionResult<EntityIndexResult> Index([FromBody] List<JSONEntity>? jsonEntities)
     {
-        Searchdomain searchdomain_;
-        try
+        List<Entity>? entities = SearchdomainHelper.EntitiesFromJSON(
+            [],
+            _domainManager.embeddingCache,
+            _domainManager.client,
+            _domainManager.helper,
+            JsonSerializer.Serialize(jsonEntities));
+        if (entities is not null && jsonEntities is not null)
         {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        }
-        catch (Exception)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new EntityIndexResult() { Success = false });
-        }
-        List<Entity>? entities = searchdomain_.EntitiesFromJSON(JsonSerializer.Serialize(jsonEntity));
-        if (entities is not null)
-        {
-            _domainManager.InvalidateSearchdomainCache(searchdomain);
+            List<string> invalidatedSearchdomains = [];
+            foreach (var jsonEntity in jsonEntities)
+            {
+                string jsonEntityName = jsonEntity.Name;
+                if (entities.Select(x => x.name == jsonEntityName).Any()
+                    && !invalidatedSearchdomains.Contains(jsonEntityName))
+                {
+                    string jsonEntitySearchdomain = jsonEntity.Searchdomain;
+                    invalidatedSearchdomains.Add(jsonEntitySearchdomain);
+                    _domainManager.InvalidateSearchdomainCache(jsonEntitySearchdomain);
+                }
+            }
             return Ok(new EntityIndexResult() { Success = true });
         }
         else
@@ -118,22 +124,13 @@ public class EntityController : ControllerBase
     [HttpGet("Delete")]
     public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName)
     {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (Exception)
-        {
-            _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - the searchdomain likely does not exist", [entityName, searchdomain]);
-            return Ok(new EntityDeleteResults() {Success = false});
-        }
-        Entity? entity_ = searchdomain_.GetEntity(entityName);
+        Entity? entity_ = SearchdomainHelper.CacheGetEntity([], entityName);
         if (entity_ is null)
         {
             _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
             return Ok(new EntityDeleteResults() {Success = false});
         }
-        searchdomain_.RemoveEntity(entityName);
+        DatabaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
         return Ok(new EntityDeleteResults() {Success = true});
     }
 }

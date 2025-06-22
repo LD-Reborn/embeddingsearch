@@ -41,18 +41,18 @@ public class Searchdomain
 
     // TODO Add settings and update cli/program.cs, as well as DatabaseInsertSearchdomain()
 
-    public Searchdomain(string searchdomain, string connectionString, OllamaApiClient ollama, string provider = "sqlserver", bool runEmpty = false)
+    public Searchdomain(string searchdomain, string connectionString, OllamaApiClient ollama, Dictionary<string, Dictionary<string, float[]>> embeddingCache, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
         this.searchdomain = searchdomain;
         this.ollama = ollama;
+        this.embeddingCache = embeddingCache;
         searchCache = [];
         entityCache = [];
-        embeddingCache = [];
         connection = new MySqlConnection(connectionString);
         connection.Open();
-        helper = new SQLHelper(connection);
+        helper = new SQLHelper(connection, connectionString);
         modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
         if (!runEmpty)
         {
@@ -78,13 +78,13 @@ public class Searchdomain
             embeddingReader.GetBytes(3, 0, embedding, 0, (int) length);
             if (embedding_unassigned.TryGetValue(id_datapoint, out Dictionary<string, float[]>? embedding_unassigned_id_datapoint))
             {
-                embedding_unassigned[id_datapoint][model] = FloatArrayFromBytes(embedding);
+                embedding_unassigned[id_datapoint][model] = SearchdomainHelper.FloatArrayFromBytes(embedding);
             }
             else
             {
                 embedding_unassigned[id_datapoint] = new()
                 {
-                    [model] = FloatArrayFromBytes(embedding)
+                    [model] = SearchdomainHelper.FloatArrayFromBytes(embedding)
                 };
             }
         }
@@ -218,219 +218,5 @@ public class Searchdomain
         this.id = reader.GetInt32(0);
         reader.Close();
         return this.id;
-    }
-
-    public static float[] FloatArrayFromBytes(byte[] bytes)
-    {
-        var floatArray = new float[bytes.Length / 4];
-        Buffer.BlockCopy(bytes, 0, floatArray, 0, bytes.Length);
-        return floatArray;
-    }
-
-    public static byte[] BytesFromFloatArray(float[] floats)
-    {
-        var byteArray = new byte[floats.Length * 4];
-        var floatArray = floats.ToArray();
-        Buffer.BlockCopy(floatArray, 0, byteArray, 0, byteArray.Length);
-        return byteArray;
-    }
-
-    public Entity? GetEntity(string name)
-    {
-        foreach (Entity entity in entityCache)
-        {
-            if (entity.name == name)
-            {
-                return entity;
-            }
-        }
-        return null;
-    }
-
-    public bool HasEntity(string name)
-    {
-        return GetEntity(name) is not null;
-    }
-
-    public Entity? EntityFromJSON(string json)
-    {
-        JSONEntity? jsonEntity = JsonSerializer.Deserialize<JSONEntity>(json);
-        if (jsonEntity is null)
-        {
-            return null;
-        }
-        bool hasPreexistingEntity = HasEntity(jsonEntity.Name);
-        Entity? preexistingEntity = null;
-        if (hasPreexistingEntity)
-        {
-            preexistingEntity = GetEntity(jsonEntity.Name);
-            RemoveEntity(jsonEntity.Name); // TODO only remove entity if there is actually a change somewhere. Perhaps create 3 datapoint lists to operate with: 1. delete, 2. update, 3. create
-        }
-        int id_entity = DatabaseInsertEntity(jsonEntity.Name, jsonEntity.Probmethod, id);
-        foreach (KeyValuePair<string, string> attribute in jsonEntity.Attributes)
-        {
-            DatabaseInsertAttribute(attribute.Key, attribute.Value, id_entity);
-        }
-        
-        List<Datapoint> datapoints = [];
-        foreach (JSONDatapoint jsonDatapoint in jsonEntity.Datapoints)
-        {
-            Dictionary<string, float[]> embeddings = [];
-            string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(jsonDatapoint.Text)));
-            if (hasPreexistingEntity && preexistingEntity is not null)
-            {
-                IEnumerable<Datapoint> preexistingDatapoints = preexistingEntity.datapoints.Where(x => x.name == jsonDatapoint.Name && x.hash == hash);
-                if (preexistingDatapoints.Any())
-                {
-                    var preexistingDatapoint = preexistingDatapoints.First();
-                    embeddings = preexistingDatapoint.embeddings.ToDictionary(item => item.Item1, item => item.Item2);
-                }
-            }
-            if (embeddings.Count == 0)
-            {
-                embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], ollama, embeddingCache);
-            }
-            var probMethod_embedding = Probmethods.GetMethod(jsonDatapoint.Probmethod_embedding) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.Probmethod_embedding}");
-            Datapoint datapoint = new(jsonDatapoint.Name, probMethod_embedding, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
-            int id_datapoint = DatabaseInsertDatapoint(jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, hash, id_entity);
-            List<(string model, byte[] embedding)> data = [];
-            foreach ((string, float[]) embedding in datapoint.embeddings)
-            {
-                data.Add((embedding.Item1, BytesFromFloatArray(embedding.Item2)));
-            }
-            DatabaseInsertEmbeddingBulk(id_datapoint, data);
-            datapoints.Add(datapoint);
-        }
-
-        var probMethod = Probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new Exception($"Unknown probmethod name {jsonEntity.Probmethod}");
-        Entity entity = new(jsonEntity.Attributes, probMethod, datapoints, jsonEntity.Name)
-        {
-            id = id_entity
-        };
-        entityCache.Add(entity);
-        return entity;
-    }
-
-    public List<Entity>? EntitiesFromJSON(string json)
-    {
-        List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>>(json);
-        if (jsonEntities is null)
-        {
-            return null;
-        }
-
-        Dictionary<string, List<string>> toBeCached = [];
-        foreach (JSONEntity jSONEntity in jsonEntities)
-        {
-            foreach (JSONDatapoint datapoint in jSONEntity.Datapoints)
-            {
-                foreach (string model in datapoint.Model)
-                {
-                    if (!toBeCached.ContainsKey(model))
-                    {
-                        toBeCached[model] = [];
-                    }
-                    toBeCached[model].Add(datapoint.Text);
-                }
-            }
-        }
-        ConcurrentQueue<Entity> retVal = [];
-        Parallel.ForEach(jsonEntities, jSONEntity =>
-        {
-            var entity = EntityFromJSON(JsonSerializer.Serialize(jSONEntity));
-            if (entity is not null)
-            {
-                retVal.Enqueue(entity);
-            }
-        });
-        return retVal.ToList();
-    }
-
-    public void RemoveEntity(string name)
-    {
-        Dictionary<string, dynamic> parameters = new()
-        {
-            { "name", name }
-        };
-        helper.ExecuteSQLNonQuery("DELETE embedding.* FROM embedding JOIN datapoint dp ON id_datapoint = dp.id JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
-        helper.ExecuteSQLNonQuery("DELETE datapoint.* FROM datapoint JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
-        helper.ExecuteSQLNonQuery("DELETE attribute.* FROM attribute JOIN entity ON id_entity = entity.id WHERE entity.name = @name", parameters);
-        helper.ExecuteSQLNonQuery("DELETE FROM entity WHERE name = @name", parameters);
-        entityCache.RemoveAll(entity => entity.name == name);
-    }
-
-    public int DatabaseInsertSearchdomain(string name)
-    {
-        Dictionary<string, dynamic> parameters = new()
-        {
-            { "name", name },
-            { "settings", "{}"} // TODO add settings. It's not used yet, but maybe it's needed someday...
-        };
-        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
-    }
-
-    public int DatabaseInsertEntity(string name, string probmethod, int id_searchdomain)
-    {
-        Dictionary<string, dynamic> parameters = new()
-        {
-            { "name", name },
-            { "probmethod", probmethod },
-            { "id_searchdomain", id_searchdomain }
-        };
-        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO entity (name, probmethod, id_searchdomain) VALUES (@name, @probmethod, @id_searchdomain)", parameters);
-    }
-
-    public int DatabaseInsertAttribute(string attribute, string value, int id_entity)
-    {
-        Dictionary<string, dynamic> parameters = new()
-        {
-            { "attribute", attribute },
-            { "value", value },
-            { "id_entity", id_entity }
-        };
-        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO attribute (attribute, value, id_entity) VALUES (@attribute, @value, @id_entity)", parameters);
-    }
-
-
-    public int DatabaseInsertDatapoint(string name, string probmethod_embedding, string hash, int id_entity)
-    {
-        Dictionary<string, dynamic> parameters = new()
-        {
-            { "name", name },
-            { "probmethod_embedding", probmethod_embedding },
-            { "hash", hash },
-            { "id_entity", id_entity }
-        };
-        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO datapoint (name, probmethod_embedding, hash, id_entity) VALUES (@name, @probmethod_embedding, @hash, @id_entity)", parameters);
-    }
-
-    public int DatabaseInsertEmbedding(int id_datapoint, string model, byte[] embedding)
-    {
-        Dictionary<string, dynamic> parameters = new()
-        {
-            { "id_datapoint", id_datapoint },
-            { "model", model },
-            { "embedding", embedding }
-        };
-        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO embedding (id_datapoint, model, embedding) VALUES (@id_datapoint, @model, @embedding)", parameters);
-    }
-    
-    public void DatabaseInsertEmbeddingBulk(int id_datapoint, List<(string model, byte[] embedding)> data)
-    {
-        Dictionary<string, object> parameters = [];
-        parameters["id_datapoint"] = id_datapoint;
-        var query = new StringBuilder("INSERT INTO embedding (id_datapoint, model, embedding) VALUES ");
-        foreach (var (model, embedding) in data)
-        {
-            string modelParam = $"model_{Guid.NewGuid()}".Replace("-", "");
-            string embeddingParam = $"embedding_{Guid.NewGuid()}".Replace("-", "");
-            parameters[modelParam] = model;
-            parameters[embeddingParam] = embedding;
-
-            query.Append($"(@id_datapoint, @{modelParam}, @{embeddingParam}), ");
-        }
-
-        query.Length -= 2; // remove trailing comma
-        helper.ExecuteSQLNonQuery(query.ToString(), parameters);
     }
 }

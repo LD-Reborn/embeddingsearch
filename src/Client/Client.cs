@@ -88,22 +88,12 @@ public class Client
 
         public async Task<EntityIndexResult> EntityIndexAsync(List<Server.JSONEntity> jsonEntity)
         {
-            return await EntityIndexAsync(searchdomain, jsonEntity);
-        }
-
-        public async Task<EntityIndexResult> EntityIndexAsync(string searchdomain, List<Server.JSONEntity> jsonEntity)
-        {
-            return await EntityIndexAsync(searchdomain, JsonSerializer.Serialize(jsonEntity));
+            return await EntityIndexAsync(JsonSerializer.Serialize(jsonEntity));
         }
 
         public async Task<EntityIndexResult> EntityIndexAsync(string jsonEntity)
         {
-            return await EntityIndexAsync(searchdomain, jsonEntity);
-        }
-
-        public async Task<EntityIndexResult> EntityIndexAsync(string searchdomain, string jsonEntity)
-        {
-            var url = $"{baseUri}/Entity/Index?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}";
+            var url = $"{baseUri}/Entity/Index?apiKey={HttpUtility.UrlEncode(apiKey)}";
             var content = new StringContent(jsonEntity, Encoding.UTF8, "application/json");
             return await PostUrlAndProcessJson<EntityIndexResult>(url, content);//new FormUrlEncodedContent(values));
         }

@@ -14,14 +14,16 @@ public class SearchdomainManager
     private readonly IConfiguration _config;
     private readonly string ollamaURL;
     private readonly string connectionString;
-    private OllamaApiClient client;
+    public OllamaApiClient client;
     private MySqlConnection connection;
-    private SQLHelper helper;
+    public SQLHelper helper;
+    public Dictionary<string, Dictionary<string, float[]>> embeddingCache;
 
     public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config)
     {
         _logger = logger;
         _config = config;
+        embeddingCache = [];
         ollamaURL = _config.GetSection("Embeddingsearch")["OllamaURL"] ?? "";
         connectionString = _config.GetSection("Embeddingsearch").GetConnectionString("SQL") ?? "";
         if (ollamaURL.IsNullOrEmpty() || connectionString.IsNullOrEmpty())
@@ -31,7 +33,7 @@ public class SearchdomainManager
         client = new(new Uri(ollamaURL));
         connection = new MySqlConnection(connectionString);
         connection.Open();
-        helper = new SQLHelper(connection);
+        helper = new SQLHelper(connection, connectionString);
         try
         {
             DatabaseMigrations.Migrate(helper);
@@ -51,7 +53,7 @@ public class SearchdomainManager
         }
         try
         {
-            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, client));
+            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, client, embeddingCache));
         }
         catch (MySqlException)
         {
@@ -67,14 +69,17 @@ public class SearchdomainManager
 
     public List<string> ListSearchdomains()
     {
-        DbDataReader reader = helper.ExecuteSQLCommand("SELECT name FROM searchdomain", []);
-        List<string> results = [];
-        while (reader.Read())
+        lock (helper.connection)
         {
-            results.Add(reader.GetString(0));
+            DbDataReader reader = helper.ExecuteSQLCommand("SELECT name FROM searchdomain", []);
+            List<string> results = [];
+            while (reader.Read())
+            {
+                results.Add(reader.GetString(0));
+            }
+            reader.Close();
+            return results;
         }
-        reader.Close();
-        return results;
     }
 
     public int CreateSearchdomain(string searchdomain, string settings = "{}")
@@ -98,7 +103,7 @@ public class SearchdomainManager
         int counter = 0;
         while (searchdomain_.entityCache.Count > 0)
         {
-            searchdomain_.RemoveEntity(searchdomain_.entityCache.First().name);
+            DatabaseHelper.RemoveEntity(searchdomain_.entityCache, helper, searchdomain_.entityCache.First().name, searchdomain);
             counter += 1;
         }
         _logger.LogDebug($"Number of entities deleted as part of deleting the searchdomain \"{searchdomain}\": {counter}");

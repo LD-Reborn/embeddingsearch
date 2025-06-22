@@ -6,10 +6,19 @@ namespace Server;
 public class SQLHelper
 {
     public MySqlConnection connection;
-    public SQLHelper(MySqlConnection connection)
+    public string connectionString;
+    public SQLHelper(MySqlConnection connection, string connectionString)
     {
         this.connection = connection;
+        this.connectionString = connectionString;
     }
+
+    public SQLHelper DuplicateConnection()
+    {
+        MySqlConnection newConnection = new(connectionString);
+        return new SQLHelper(newConnection, connectionString);
+    }
+
     public DbDataReader ExecuteSQLCommand(string query, Dictionary<string, dynamic> parameters)
     {
         lock (connection)

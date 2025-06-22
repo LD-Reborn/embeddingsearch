@@ -32,10 +32,6 @@ public class IndexerService : IHostedService
             foreach (WorkerConfig workerConfig in sectionWorker.Worker)
             {
                 _logger.LogInformation("Initializing worker: {Name}", workerConfig.Name);
-                if (client.searchdomain == "" && workerConfig.Searchdomains.Count >= 1)
-                {
-                    client.searchdomain = workerConfig.Searchdomains.First();
-                }
                 ScriptToolSet toolSet = new(workerConfig.Script, client);
                 Worker worker = new(workerConfig.Name, workerConfig, GetScriptable(toolSet));
                 workerCollection.Workers.Add(worker);

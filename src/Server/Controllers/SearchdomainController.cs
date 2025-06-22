@@ -1,3 +1,4 @@
+using ElmahCore;
 using Microsoft.AspNetCore.Mvc;
 using Server.Models;
 
@@ -58,11 +59,13 @@ public class SearchdomainController : ControllerBase
         {
             success = true;
             deletedEntries = _domainManager.DeleteSearchdomain(searchdomain);
-        } catch (Exception)
+        }
+        catch (Exception ex)
         {
             _logger.LogError("Unable to delete searchdomain {searchdomain}", [searchdomain]);
             success = false;
             deletedEntries = 0;
+            ElmahExtensions.RaiseError(ex);
         }
         return Ok(new SearchdomainDeleteResults(){Success = success, DeletedEntities = deletedEntries});
     }
