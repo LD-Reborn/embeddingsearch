@@ -38,16 +38,17 @@ If you just installed the server and want to configure it:
     [ // This is a list; you can have as many "workers" as you want
       {
         "Name": "example",
-        "Searchdomains": [
-          "example"
-        ],
         "Script": "Scripts/example.py",
-        "Calls": [ // This is also a list. You can have as many different calls as you need.
+        "Calls": [ // This is also a list. A worker may have multiple different calls.
           {
             "Type": "interval", // See: Call types
             "Interval": 60000
           }
         ]
+      },
+      {
+        "Name": "secondWorker",
+        /* ... */
       }
     ]
   }
@@ -64,6 +65,24 @@ If you just installed the server and want to configure it:
     - What does it do: The script gets called whenever a file is updated in the specified subdirectory
     - Parameters: (WIP)
 # Scripting
+## General
+## probMethods
+Probmethods are used to join the multiple similarity results from multiple models, and multiple datapoints into one single value.
+
+The probMethod is given a list where each element consists of a string and a floating point value (0-1).
+
+### `probmethod_embedding` (also referred to as `probmethod_datapoint`)
+Takes list where each element contains:
+- model name (e.g. "bge-m3")
+- Result of the similarity calculation between query embeddings and the embeddings for this datapoint (per model)
+
+Returns a single floating point value that represents the resulting similarity for this datapoint.
+### `probmethod` (also referred to as `probmethod_entity`)
+Takes list where each element contains:
+- datapoint name (e.g. "title", "text", "filename")
+- Result from `probmethod_embedding`
+
+Returns a single floating point value that represents the resulting similarity for this Entity.
 ## Python
 To ease scripting, tools.py contains all definitions of the .NET objects passed to the script. This includes attributes and methods.
 
@@ -79,7 +98,7 @@ def init(toolset: Toolset): # defining an init() function with 1 parameter is re
     # This function prevents the application from initializing and maintains exclusive control over the GIL
 
 def update(toolset: Toolset): # defining an update() function with 1 parameter is required.
-    pass # Your code would go here.
+    pass # Your code - including possibly a main loop - would go here.
 ```
 ### Using the toolset passed by the .NET CLR
 The use of the toolset is laid out in good example by `src/Indexer/Scripts/example.py`.
