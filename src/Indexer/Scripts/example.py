@@ -5,7 +5,7 @@ from dataclasses import asdict
 import time
 
 example_content = "./Scripts/example_content"
-probmethod = "DictionaryWeightedAverage"
+probmethod = "LVEWAvg"
 example_searchdomain = "example_" + probmethod
 example_counter = 0
 models = ["bge-m3", "mxbai-embed-large"]

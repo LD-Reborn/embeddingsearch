@@ -38,16 +38,18 @@ public class Searchdomain
     public int embeddingCacheMaxSize = 10000000;
     private readonly MySqlConnection connection;
     public SQLHelper helper;
+    private readonly ILogger _logger;
 
     // TODO Add settings and update cli/program.cs, as well as DatabaseInsertSearchdomain()
 
-    public Searchdomain(string searchdomain, string connectionString, OllamaApiClient ollama, Dictionary<string, Dictionary<string, float[]>> embeddingCache, string provider = "sqlserver", bool runEmpty = false)
+    public Searchdomain(string searchdomain, string connectionString, OllamaApiClient ollama, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
         this.searchdomain = searchdomain;
         this.ollama = ollama;
         this.embeddingCache = embeddingCache;
+        this._logger = logger;
         searchCache = [];
         entityCache = [];
         connection = new MySqlConnection(connectionString);
@@ -57,12 +59,13 @@ public class Searchdomain
         if (!runEmpty)
         {
             GetID();
-            UpdateSearchDomain();
+            UpdateEntityCache();
         }
     }
 
-    public void UpdateSearchDomain()
+    public void UpdateEntityCache()
     {
+        entityCache = [];
         Dictionary<string, dynamic> parametersIDSearchdomain = new()
         {
             ["id"] = this.id
@@ -99,7 +102,7 @@ public class Searchdomain
             string name = datapointReader.GetString(2);
             string probmethodString = datapointReader.GetString(3);
             string hash = datapointReader.GetString(4);
-            Probmethods.probMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
+            ProbMethod probmethod = new(probmethodString, _logger);
             if (embedding_unassigned.TryGetValue(id, out Dictionary<string, float[]>? embeddings) && probmethod is not null)
             {
                 embedding_unassigned.Remove(id);
@@ -179,7 +182,7 @@ public class Searchdomain
                     float value = Probmethods.Similarity(queryEmbeddings[embedding.Item1], embedding.Item2);
                     list.Add((key, value));
                 }
-                datapointProbs.Add((datapoint.name, datapoint.probMethod(list)));
+                datapointProbs.Add((datapoint.name, datapoint.probMethod.method(list)));
             }
             result.Add((entity.probMethod(datapointProbs), entity.name));
         }

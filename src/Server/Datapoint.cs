@@ -12,11 +12,11 @@ namespace Server;
 public class Datapoint
 {
     public string name;
-    public Probmethods.probMethodDelegate probMethod;
+    public ProbMethod probMethod;
     public List<(string, float[])> embeddings;
     public string hash;
 
-    public Datapoint(string name, Probmethods.probMethodDelegate probMethod, string hash, List<(string, float[])> embeddings)
+    public Datapoint(string name, ProbMethod probMethod, string hash, List<(string, float[])> embeddings)
     {
         this.name = name;
         this.probMethod = probMethod;
@@ -24,21 +24,9 @@ public class Datapoint
         this.embeddings = embeddings;
     }
 
-    // public Datapoint(string name, Probmethods.probMethodDelegate probmethod, string content, List<string> models, OllamaApiClient ollama)
-    // {
-    //     this.name = name;
-    //     this.probMethod = probmethod;
-    //     embeddings = GenerateEmbeddings(content, models, ollama);
-    // }
-
-    // public float CalcProbability()
-    // {
-    //     return probMethod(embeddings); // <--- prob method is not used with the embeddings!
-    // }
-
     public float CalcProbability(List<(string, float)> probabilities)
     {
-        return probMethod(probabilities);
+        return probMethod.method(probabilities);
     }
 
     public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, OllamaApiClient ollama)
@@ -106,11 +94,10 @@ public class Datapoint
                 Input = [content]
             };
 
-            var response = ollama.GenerateEmbeddingAsync(content, new EmbeddingGenerationOptions(){ModelId=model}).Result;
+            var response = ollama.EmbedAsync(request).Result;
             if (response is not null)
             {
-                float[] var = new float[response.Vector.Length];
-                response.Vector.CopyTo(var);
+                float[] var = [.. response.Embeddings.First()];
                 retVal[model] = var;
                 if (!embeddingCache.ContainsKey(model))
                 {

@@ -48,6 +48,7 @@ public class EntityController : ControllerBase
             _domainManager.embeddingCache,
             _domainManager.client,
             _domainManager.helper,
+            _logger,
             JsonSerializer.Serialize(jsonEntities));
         if (entities is not null && jsonEntities is not null)
         {
@@ -58,9 +59,9 @@ public class EntityController : ControllerBase
                 if (entities.Select(x => x.name == jsonEntityName).Any()
                     && !invalidatedSearchdomains.Contains(jsonEntityName))
                 {
-                    string jsonEntitySearchdomain = jsonEntity.Searchdomain;
-                    invalidatedSearchdomains.Add(jsonEntitySearchdomain);
-                    _domainManager.InvalidateSearchdomainCache(jsonEntitySearchdomain);
+                    string jsonEntitySearchdomainName = jsonEntity.Searchdomain;
+                    invalidatedSearchdomains.Add(jsonEntitySearchdomainName);
+                    _domainManager.InvalidateSearchdomainCache(jsonEntitySearchdomainName);
                 }
             }
             return Ok(new EntityIndexResult() { Success = true });
@@ -103,11 +104,11 @@ public class EntityController : ControllerBase
                     {
                         embeddingResults.Add(new EmbeddingResult() {Model = embedding.Item1, Embeddings = embedding.Item2});
                     }
-                    datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.Method.Name, Embeddings = embeddingResults});
+                    datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.name, Embeddings = embeddingResults});
                 }
                 else
                 {
-                    datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.Method.Name, Embeddings = null});
+                    datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.name, Embeddings = null});
                 }
             }
             EntityListResult entityListResult = new()

@@ -3,6 +3,24 @@ using System.Text.Json;
 
 namespace Server;
 
+public class ProbMethod
+{
+    public Probmethods.probMethodDelegate method;
+    public string name;
+
+    public ProbMethod(string name, ILogger logger)
+    {
+        this.name = name;
+        Probmethods.probMethodDelegate? probMethod = Probmethods.GetMethod(name);
+        if (probMethod is null)
+        {
+            logger.LogError("Unable to retrieve probMethod {name}", [name]);
+            throw new Exception("Unable to retrieve probMethod");
+        }
+        method = probMethod;
+    }
+}
+
 public static class Probmethods
 {
     public delegate float probMethodProtoDelegate(List<(string, float)> list, string parameters);

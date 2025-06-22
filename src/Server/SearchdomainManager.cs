@@ -53,7 +53,7 @@ public class SearchdomainManager
         }
         try
         {
-            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, client, embeddingCache));
+            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, client, embeddingCache, _logger));
         }
         catch (MySqlException)
         {
@@ -62,9 +62,12 @@ public class SearchdomainManager
         }
     }
 
-    public void InvalidateSearchdomainCache(string searchdomain)
+    public void InvalidateSearchdomainCache(string searchdomainName)
     {
-        searchdomains.Remove(searchdomain);
+        if (searchdomains.TryGetValue(searchdomainName, out var searchdomain))
+        {
+            searchdomain.UpdateEntityCache();
+        }
     }
 
     public List<string> ListSearchdomains()

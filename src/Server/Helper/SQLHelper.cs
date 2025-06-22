@@ -3,7 +3,7 @@ using MySql.Data.MySqlClient;
 
 namespace Server;
 
-public class SQLHelper
+public class SQLHelper:IDisposable
 {
     public MySqlConnection connection;
     public string connectionString;
@@ -17,6 +17,12 @@ public class SQLHelper
     {
         MySqlConnection newConnection = new(connectionString);
         return new SQLHelper(newConnection, connectionString);
+    }
+
+    public void Dispose()
+    {
+        connection.Close();
+        GC.SuppressFinalize(this);
     }
 
     public DbDataReader ExecuteSQLCommand(string query, Dictionary<string, dynamic> parameters)

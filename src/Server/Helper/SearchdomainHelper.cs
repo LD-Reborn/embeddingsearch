@@ -41,7 +41,7 @@ public static class SearchdomainHelper
         return null;
     }
     
-    public static List<Entity>? EntitiesFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, OllamaApiClient ollama, SQLHelper helper, string json)
+    public static List<Entity>? EntitiesFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, OllamaApiClient ollama, SQLHelper helper, ILogger logger, string json)
     {
         List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>>(json);
         if (jsonEntities is null)
@@ -67,8 +67,8 @@ public static class SearchdomainHelper
         ConcurrentQueue<Entity> retVal = [];
         Parallel.ForEach(jsonEntities, jSONEntity =>
         {
-            var tempHelper = helper.DuplicateConnection();
-            var entity = EntityFromJSON(entityCache, embeddingCache, ollama, tempHelper, jSONEntity);
+            using var tempHelper = helper.DuplicateConnection();
+            var entity = EntityFromJSON(entityCache, embeddingCache, ollama, tempHelper, logger, jSONEntity);
             if (entity is not null)
             {
                 retVal.Enqueue(entity);
@@ -77,7 +77,7 @@ public static class SearchdomainHelper
         return [.. retVal];
     }
     
-    public static Entity? EntityFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, OllamaApiClient ollama, SQLHelper helper, JSONEntity jsonEntity) //string json)
+    public static Entity? EntityFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, OllamaApiClient ollama, SQLHelper helper, ILogger logger, JSONEntity jsonEntity) //string json)
     {
         Dictionary<string, Dictionary<string, float[]>> embeddingsLUT = [];
         int? preexistingEntityID = DatabaseHelper.GetEntityID(helper, jsonEntity.Name, jsonEntity.Searchdomain);
@@ -123,7 +123,7 @@ public static class SearchdomainHelper
             {
                 embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], ollama, embeddingCache);
             }
-            var probMethod_embedding = Probmethods.GetMethod(jsonDatapoint.Probmethod_embedding) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.Probmethod_embedding}");
+            var probMethod_embedding = new ProbMethod(jsonDatapoint.Probmethod_embedding, logger) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.Probmethod_embedding}");
             Datapoint datapoint = new(jsonDatapoint.Name, probMethod_embedding, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
             int id_datapoint = DatabaseHelper.DatabaseInsertDatapoint(helper, jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, hash, id_entity); // TODO make this a bulk add action to reduce number of queries
             List<(string model, byte[] embedding)> data = [];
