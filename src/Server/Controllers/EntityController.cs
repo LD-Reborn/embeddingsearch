@@ -56,10 +56,10 @@ public class EntityController : ControllerBase
             foreach (var jsonEntity in jsonEntities)
             {
                 string jsonEntityName = jsonEntity.Name;
+                string jsonEntitySearchdomainName = jsonEntity.Searchdomain;
                 if (entities.Select(x => x.name == jsonEntityName).Any()
-                    && !invalidatedSearchdomains.Contains(jsonEntityName))
+                    && !invalidatedSearchdomains.Contains(jsonEntitySearchdomainName))
                 {
-                    string jsonEntitySearchdomainName = jsonEntity.Searchdomain;
                     invalidatedSearchdomains.Add(jsonEntitySearchdomainName);
                     _domainManager.InvalidateSearchdomainCache(jsonEntitySearchdomainName);
                 }

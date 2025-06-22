@@ -65,7 +65,6 @@ public class Searchdomain
 
     public void UpdateEntityCache()
     {
-        entityCache = [];
         Dictionary<string, dynamic> parametersIDSearchdomain = new()
         {
             ["id"] = this.id
@@ -92,7 +91,7 @@ public class Searchdomain
             }
         }
         embeddingReader.Close();
-        
+
         DbDataReader datapointReader = helper.ExecuteSQLCommand("SELECT id, id_entity, name, probmethod_embedding, hash FROM datapoint", parametersIDSearchdomain);
         Dictionary<int, List<Datapoint>> datapoint_unassigned = [];
         while (datapointReader.Read())
@@ -115,7 +114,7 @@ public class Searchdomain
         }
         datapointReader.Close();
 
-        DbDataReader attributeReader = helper.ExecuteSQLCommand("SELECT id, id_entity, attribute, value FROM attribute", parametersIDSearchdomain);        
+        DbDataReader attributeReader = helper.ExecuteSQLCommand("SELECT id, id_entity, attribute, value FROM attribute", parametersIDSearchdomain);
         Dictionary<int, Dictionary<string, string>> attributes_unassigned = [];
         while (attributeReader.Read())
         {
@@ -132,6 +131,7 @@ public class Searchdomain
         }
         attributeReader.Close();
 
+        entityCache = [];
         DbDataReader entityReader = helper.ExecuteSQLCommand("SELECT entity.id, name, probmethod FROM entity WHERE id_searchdomain=@id", parametersIDSearchdomain);
         while (entityReader.Read())
         {
@@ -155,6 +155,7 @@ public class Searchdomain
         }
         entityReader.Close();
         modelsInUse = GetModels(entityCache);
+        embeddingCache = []; // TODO remove this and implement proper remediation to improve performance
     }
 
     public List<(float, string)> Search(string query, bool sort=true)
@@ -166,7 +167,7 @@ public class Searchdomain
             { // Idea: Add access count to each entry. On limit hit, sort the entries by access count and remove the bottom 10% of entries
                 embeddingCache.Add(query, queryEmbeddings);
             }
-        }
+        } // TODO implement proper cache remediation for embeddingCache here
 
         List<(float, string)> result = [];
 

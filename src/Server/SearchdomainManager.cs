@@ -64,10 +64,7 @@ public class SearchdomainManager
 
     public void InvalidateSearchdomainCache(string searchdomainName)
     {
-        if (searchdomains.TryGetValue(searchdomainName, out var searchdomain))
-        {
-            searchdomain.UpdateEntityCache();
-        }
+        GetSearchdomain(searchdomainName).UpdateEntityCache();
     }
 
     public List<string> ListSearchdomains()

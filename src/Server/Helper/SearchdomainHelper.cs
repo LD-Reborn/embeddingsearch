@@ -118,8 +118,24 @@ public static class SearchdomainHelper
         foreach (JSONDatapoint jsonDatapoint in jsonEntity.Datapoints)
         {
             string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(jsonDatapoint.Text)));
-            Dictionary<string, float[]> embeddings = embeddingsLUT.ContainsKey(hash) ? embeddingsLUT[hash] : [];
-            if (embeddings.Count == 0)
+            Dictionary<string, float[]> embeddings = [];
+            if (embeddingsLUT.ContainsKey(hash))
+            {
+                Dictionary<string, float[]> hashLUT = embeddingsLUT[hash];
+                foreach (string model in jsonDatapoint.Model)
+                {
+                    if (hashLUT.ContainsKey(model))
+                    {
+                        embeddings.Add(model, hashLUT[model]);
+                    }
+                    else
+                    {
+                        var additionalEmbeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [model], ollama, embeddingCache);
+                        embeddings.Add(model, additionalEmbeddings.First().Value);
+                    }
+                }
+            }
+            else
             {
                 embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], ollama, embeddingCache);
             }
