@@ -5,11 +5,15 @@ from dataclasses import asdict
 import time
 
 example_content = "./Scripts/example_content"
-example_searchdomain = "example"
+probmethod = "DictionaryWeightedAverage"
+example_searchdomain = "example_" + probmethod
 example_counter = 0
 models = ["bge-m3", "mxbai-embed-large"]
-probmethod_datapoint = "HighValueEmphasisWeightedAverage"
-probmethod_entity = "HighValueEmphasisWeightedAverage"
+probmethod_datapoint = probmethod
+probmethod_entity = probmethod
+# Example for a dictionary based weighted average:
+#   probmethod_datapoint = "DictionaryWeightedAverage:{\"bge-m3\": 4, \"mxbai-embed-large\": 1}"
+#   probmethod_entity = "DictionaryWeightedAverage:{\"title\": 2, \"filename\": 0.1, \"text\": 0.25}"
 
 def init(toolset: Toolset):
     global example_counter

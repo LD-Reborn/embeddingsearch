@@ -5,12 +5,13 @@ namespace Server;
 
 public static class Probmethods
 {
+    public delegate float probMethodProtoDelegate(List<(string, float)> list, string parameters);
     public delegate float probMethodDelegate(List<(string, float)> list);
-    public static readonly Dictionary<string, probMethodDelegate> probMethods;
+    public static readonly Dictionary<string, probMethodProtoDelegate> probMethods;
 
     static Probmethods()
     {
-        probMethods = new Dictionary<string, probMethodDelegate>
+        probMethods = new Dictionary<string, probMethodProtoDelegate>
         {
             ["Mean"] = Mean,
             ["HarmonicMean"] = HarmonicMean,
@@ -21,23 +22,32 @@ public static class Probmethods
             ["HighValueEmphasisWeightedAverage"] = HighValueEmphasisWeightedAverage,
             ["HVEWAvg"] = HighValueEmphasisWeightedAverage,
             ["LowValueEmphasisWeightedAverage"] = LowValueEmphasisWeightedAverage,
-            ["LVEWAvg"] = LowValueEmphasisWeightedAverage
+            ["LVEWAvg"] = LowValueEmphasisWeightedAverage,
+            ["DictionaryWeightedAverage"] = DictionaryWeightedAverage
         };
     }
 
     public static probMethodDelegate? GetMethod(string name)
     {
-        try
+        string methodName = name;
+        string? jsonArg = "";
+
+        // Detect if parameters are embedded
+        int colonIndex = name.IndexOf(':');
+        if (colonIndex != -1)
         {
-            return probMethods[name];
+            methodName = name[..colonIndex];
+            jsonArg = name[(colonIndex + 1)..];
         }
-        catch
+
+        if (!probMethods.TryGetValue(methodName, out probMethodProtoDelegate? method))
         {
             return null;
         }
+        return list => method(list, jsonArg);
     }
 
-    public static float Mean(List<(string, float)> list)
+    public static float Mean(List<(string, float)> list, string __)
     {
         if (list.Count == 0) return 0;
         float sum = 0;
@@ -48,7 +58,7 @@ public static class Probmethods
         return sum / list.Count;
     }
 
-    public static float HarmonicMean(List<(string, float)> list)
+    public static float HarmonicMean(List<(string, float)> list, string _)
     {
         int n_T = list.Count;
         float[] nonzeros = [.. list.Select(t => t.Item2).Where(t => t != 0)];
@@ -59,7 +69,7 @@ public static class Probmethods
         return n_nz / nzSum * (n_nz / (float)n_T);
     }
 
-    public static float QuadraticMean(List<(string, float)> list)
+    public static float QuadraticMean(List<(string, float)> list, string _)
     {
         float sum = 0;
         foreach (var (_, value) in list)
@@ -69,7 +79,7 @@ public static class Probmethods
         return (float)Math.Sqrt(sum / list.Count);
     }
 
-    public static float GeometricMean(List<(string, float)> list)
+    public static float GeometricMean(List<(string, float)> list, string __)
     {
         if (list.Count == 0) return 0;
         float product = 1;
@@ -80,7 +90,7 @@ public static class Probmethods
         return (float)Math.Pow(product, 1f / list.Count);
     }
 
-    public static float ExtremeValuesEmphasisWeightedAverage(List<(string, float)> list)
+    public static float ExtremeValuesEmphasisWeightedAverage(List<(string, float)> list, string _)
     {
         float[] arr = [.. list.Select(x => x.Item2)];
         if (arr.Contains(1)) return 1;
@@ -95,7 +105,7 @@ public static class Probmethods
         return f / fm;
     }
 
-    public static float HighValueEmphasisWeightedAverage(List<(string, float)> list)
+    public static float HighValueEmphasisWeightedAverage(List<(string, float)> list, string _)
     {
         float[] arr = [.. list.Select(x => x.Item2)];
         if (arr.Contains(1)) return 1;
@@ -109,7 +119,7 @@ public static class Probmethods
         return f / fm;
     }
 
-    public static float LowValueEmphasisWeightedAverage(List<(string, float)> list)
+    public static float LowValueEmphasisWeightedAverage(List<(string, float)> list, string _)
     {
         float[] arr = [.. list.Select(x => x.Item2)];
         if (arr.Contains(0)) return 0;
