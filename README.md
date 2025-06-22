@@ -1,12 +1,12 @@
 # embeddingsearch
 <img src="https://github.com/LD-Reborn/embeddingsearch/blob/main/logo.png" alt="Logo" width="100">
 
-Embeddingsearch is a DotNet C# library that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of pre-processed entries.
+embeddingsearch is a search server that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of indexed entries.
 
 This repository comes with
 - a server (accessible via API calls & swagger)
-- a clientside library
-- a scripting based indexer service that supports
+- a clientside library (C#)
+- a scripting based indexer service that supports the use of
   - Python
   - Golang (WIP)
   - Javascript (WIP)
