@@ -21,6 +21,7 @@ using Server;
 using System.Security.Cryptography;
 using System.Text;
 using System.Collections.Concurrent;
+using server;
 
 namespace Server;
 
@@ -28,7 +29,7 @@ public class Searchdomain
 {
     private readonly string _connectionString;
     private readonly string _provider;
-    public OllamaApiClient ollama;
+    public AIProvider aIProvider;
     public string searchdomain;
     public int id;
     public Dictionary<string, List<(DateTime, List<(float, string)>)>> searchCache; // Yeah look at this abomination. searchCache[x][0] = last accessed time, searchCache[x][1] = results for x
@@ -42,12 +43,12 @@ public class Searchdomain
 
     // TODO Add settings and update cli/program.cs, as well as DatabaseInsertSearchdomain()
 
-    public Searchdomain(string searchdomain, string connectionString, OllamaApiClient ollama, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
+    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
         this.searchdomain = searchdomain;
-        this.ollama = ollama;
+        this.aIProvider = aIProvider;
         this.embeddingCache = embeddingCache;
         this._logger = logger;
         searchCache = [];
@@ -69,7 +70,7 @@ public class Searchdomain
         {
             ["id"] = this.id
         };
-        DbDataReader embeddingReader = helper.ExecuteSQLCommand("SELECT embedding.id, id_datapoint, model, embedding FROM embedding", parametersIDSearchdomain);
+        DbDataReader embeddingReader = helper.ExecuteSQLCommand("SELECT embedding.id, id_datapoint, model, embedding FROM embedding", parametersIDSearchdomain); // TODO fix: parametersIDSearchdomain defined, but not used
         Dictionary<int, Dictionary<string, float[]>> embedding_unassigned = [];
         while (embeddingReader.Read())
         {
@@ -162,7 +163,7 @@ public class Searchdomain
     {
         if (!embeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings))
         {
-            queryEmbeddings = Datapoint.GenerateEmbeddings(query, modelsInUse, ollama);
+            queryEmbeddings = Datapoint.GenerateEmbeddings(query, modelsInUse, aIProvider);
             if (embeddingCache.Count < embeddingCacheMaxSize) // TODO add better way of managing cache limit hits
             { // Idea: Add access count to each entry. On limit hit, sort the entries by access count and remove the bottom 10% of entries
                 embeddingCache.Add(query, queryEmbeddings);

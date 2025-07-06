@@ -1,6 +1,7 @@
 using ElmahCore;
 using ElmahCore.Mvc;
 using Serilog;
+using server;
 using Server;
 using Server.HealthChecks;
 
@@ -17,6 +18,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Logging.AddSerilog();
 builder.Services.AddSingleton<SearchdomainManager>();
+builder.Services.AddSingleton<AIProvider>();
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("DatabaseHealthCheck")
     .AddCheck<AIProviderHealthCheck>("AIProviderHealthChecck");

@@ -46,7 +46,7 @@ public class EntityController : ControllerBase
         List<Entity>? entities = SearchdomainHelper.EntitiesFromJSON(
             [],
             _domainManager.embeddingCache,
-            _domainManager.client,
+            _domainManager.aIProvider,
             _domainManager.helper,
             _logger,
             JsonSerializer.Serialize(jsonEntities));

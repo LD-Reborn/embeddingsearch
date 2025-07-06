@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using MySql.Data.MySqlClient;
 using OllamaSharp;
+using server;
 
 namespace Server;
 
@@ -41,7 +42,7 @@ public static class SearchdomainHelper
         return null;
     }
     
-    public static List<Entity>? EntitiesFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, OllamaApiClient ollama, SQLHelper helper, ILogger logger, string json)
+    public static List<Entity>? EntitiesFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, AIProvider aIProvider, SQLHelper helper, ILogger logger, string json)
     {
         List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>>(json);
         if (jsonEntities is null)
@@ -65,10 +66,11 @@ public static class SearchdomainHelper
             }
         }
         ConcurrentQueue<Entity> retVal = [];
-        Parallel.ForEach(jsonEntities, jSONEntity =>
+        ParallelOptions parallelOptions = new() { MaxDegreeOfParallelism = 16 }; // <-- This is needed! Otherwise if we try to index 100+ entities at once, it spawns 100 threads, exploding the SQL pool
+        Parallel.ForEach(jsonEntities, parallelOptions, jSONEntity =>
         {
             using var tempHelper = helper.DuplicateConnection();
-            var entity = EntityFromJSON(entityCache, embeddingCache, ollama, tempHelper, logger, jSONEntity);
+            var entity = EntityFromJSON(entityCache, embeddingCache, aIProvider, tempHelper, logger, jSONEntity);
             if (entity is not null)
             {
                 retVal.Enqueue(entity);
@@ -77,7 +79,7 @@ public static class SearchdomainHelper
         return [.. retVal];
     }
     
-    public static Entity? EntityFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, OllamaApiClient ollama, SQLHelper helper, ILogger logger, JSONEntity jsonEntity) //string json)
+    public static Entity? EntityFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, AIProvider aIProvider, SQLHelper helper, ILogger logger, JSONEntity jsonEntity) //string json)
     {
         Dictionary<string, Dictionary<string, float[]>> embeddingsLUT = [];
         int? preexistingEntityID = DatabaseHelper.GetEntityID(helper, jsonEntity.Name, jsonEntity.Searchdomain);
@@ -130,14 +132,14 @@ public static class SearchdomainHelper
                     }
                     else
                     {
-                        var additionalEmbeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [model], ollama, embeddingCache);
+                        var additionalEmbeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [model], aIProvider, embeddingCache);
                         embeddings.Add(model, additionalEmbeddings.First().Value);
                     }
                 }
             }
             else
             {
-                embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], ollama, embeddingCache);
+                embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], aIProvider, embeddingCache);
             }
             var probMethod_embedding = new ProbMethod(jsonDatapoint.Probmethod_embedding, logger) ?? throw new Exception($"Unknown probmethod name {jsonDatapoint.Probmethod_embedding}");
             Datapoint datapoint = new(jsonDatapoint.Name, probMethod_embedding, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using OllamaSharp.Models;
+using server;
 
 namespace Server;
 
@@ -29,9 +30,9 @@ public class Datapoint
         return probMethod.method(probabilities);
     }
 
-    public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, OllamaApiClient ollama)
+    public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, AIProvider aIProvider)
     {
-        return GenerateEmbeddings(content, models, ollama, []);
+        return GenerateEmbeddings(content, models, aIProvider, []);
     }
 
     public static Dictionary<string, float[]> GenerateEmbeddings(List<string> contents, string model, OllamaApiClient ollama, Dictionary<string, Dictionary<string, float[]>> embeddingCache)
@@ -78,7 +79,7 @@ public class Datapoint
         return retVal;
     }
 
-    public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, OllamaApiClient ollama, Dictionary<string, Dictionary<string, float[]>> embeddingCache)
+    public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache)
     {
         Dictionary<string, float[]> retVal = [];
         foreach (string model in models)
@@ -88,24 +89,17 @@ public class Datapoint
                 retVal[model] = embeddingCache[model][content];
                 continue;
             }
-            EmbedRequest request = new()
-            {
-                Model = model,
-                Input = [content]
-            };
-
-            var response = ollama.EmbedAsync(request).Result;
+            var response = aIProvider.GenerateEmbeddings(model, [content]);
             if (response is not null)
             {
-                float[] var = [.. response.Embeddings.First()];
-                retVal[model] = var;
+                retVal[model] = response;
                 if (!embeddingCache.ContainsKey(model))
                 {
                     embeddingCache[model] = [];
                 }
                 if (!embeddingCache[model].ContainsKey(content))
                 {
-                    embeddingCache[model][content] = var;
+                    embeddingCache[model][content] = response;
                 }
             }
         }

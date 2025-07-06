@@ -8,11 +8,11 @@ example_content = "./Scripts/example_content"
 probmethod = "LVEWAvg"
 example_searchdomain = "example_" + probmethod
 example_counter = 0
-models = ["bge-m3", "mxbai-embed-large"]
+models = ["ollama:bge-m3", "ollama:mxbai-embed-large"]
 probmethod_datapoint = probmethod
 probmethod_entity = probmethod
 # Example for a dictionary based weighted average:
-#   probmethod_datapoint = "DictionaryWeightedAverage:{\"bge-m3\": 4, \"mxbai-embed-large\": 1}"
+#   probmethod_datapoint = "DictionaryWeightedAverage:{\"ollama:bge-m3\": 4, \"ollama:mxbai-embed-large\": 1}"
 #   probmethod_entity = "DictionaryWeightedAverage:{\"title\": 2, \"filename\": 0.1, \"text\": 0.25}"
 
 def init(toolset: Toolset):

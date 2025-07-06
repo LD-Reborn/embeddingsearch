@@ -4,6 +4,7 @@ using OllamaSharp;
 using Microsoft.IdentityModel.Tokens;
 using Server.Exceptions;
 using Server.Migrations;
+using server;
 
 namespace Server;
 
@@ -12,25 +13,20 @@ public class SearchdomainManager
     private Dictionary<string, Searchdomain> searchdomains = [];
     private readonly ILogger<SearchdomainManager> _logger;
     private readonly IConfiguration _config;
+    public readonly AIProvider aIProvider;
     private readonly string ollamaURL;
     private readonly string connectionString;
-    public OllamaApiClient client;
     private MySqlConnection connection;
     public SQLHelper helper;
     public Dictionary<string, Dictionary<string, float[]>> embeddingCache;
 
-    public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config)
+    public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config, AIProvider aIProvider)
     {
         _logger = logger;
         _config = config;
+        this.aIProvider = aIProvider;
         embeddingCache = [];
-        ollamaURL = _config.GetSection("Embeddingsearch")["OllamaURL"] ?? "";
         connectionString = _config.GetSection("Embeddingsearch").GetConnectionString("SQL") ?? "";
-        if (ollamaURL.IsNullOrEmpty() || connectionString.IsNullOrEmpty())
-        {
-            throw new ServerConfigurationException("Ollama URL or connection string is empty");
-        }
-        client = new(new Uri(ollamaURL));
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection, connectionString);
@@ -53,12 +49,17 @@ public class SearchdomainManager
         }
         try
         {
-            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, client, embeddingCache, _logger));
+            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, aIProvider, embeddingCache, _logger));
         }
         catch (MySqlException)
         {
             _logger.LogError("Unable to find the searchdomain {searchdomain}", searchdomain);
             throw new Exception($"Unable to find the searchdomain {searchdomain}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Unable to load the searchdomain {searchdomain} due to the following exception: {ex}", [searchdomain, ex.Message]);
+            throw;
         }
     }
 

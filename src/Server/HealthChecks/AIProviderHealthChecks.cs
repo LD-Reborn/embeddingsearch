@@ -17,7 +17,7 @@ public class AIProviderHealthCheck : IHealthCheck
     {
         try
         {
-            var _ = _searchdomainManager.client.ListLocalModelsAsync(cancellationToken).Result;
+            //var _ = _searchdomainManager.client.ListLocalModelsAsync(cancellationToken).Result; // TODO reimplement this
         }
         catch (Exception ex)
         {
