@@ -2,6 +2,7 @@ using ElmahCore;
 using ElmahCore.Mvc;
 using Serilog;
 using Server;
+using Server.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Logging.AddSerilog();
 builder.Services.AddSingleton<SearchdomainManager>();
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("DatabaseHealthCheck")
+    .AddCheck<AIProviderHealthCheck>("AIProviderHealthChecck");
 
 builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
@@ -47,6 +51,8 @@ app.Use(async (context, next) =>
 });
 
 app.UseElmah();
+
+app.MapHealthChecks("/healthz");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -3,7 +3,9 @@ The server by default
 - runs on port 5146
 - Uses Swagger UI in development mode (`/swagger/index.html`)
 - Ignores API keys when in development mode
-
+- Uses Elmah error logging (endpoint: `/elmah`, local files: `~/logs`)
+- Uses serilog logging (local files: `~/logs`)
+- Uses HealthChecks (endpoint: `/healthz`)
 # Installing the dependencies
 ## Ubuntu 24.04
 1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-8.0 -y`
