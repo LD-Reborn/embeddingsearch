@@ -100,12 +100,7 @@ public class SearchdomainManager
     public int DeleteSearchdomain(string searchdomain)
     {
         Searchdomain searchdomain_ = GetSearchdomain(searchdomain);
-        int counter = 0;
-        while (searchdomain_.entityCache.Count > 0)
-        {
-            DatabaseHelper.RemoveEntity(searchdomain_.entityCache, helper, searchdomain_.entityCache.First().name, searchdomain);
-            counter += 1;
-        }
+        int counter = DatabaseHelper.RemoveAllEntities(helper, searchdomain);
         _logger.LogDebug($"Number of entities deleted as part of deleting the searchdomain \"{searchdomain}\": {counter}");
         helper.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
         searchdomains.Remove(searchdomain);

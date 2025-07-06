@@ -40,7 +40,7 @@ public class SQLHelper:IDisposable
         }
     }
 
-    public void ExecuteSQLNonQuery(string query, Dictionary<string, dynamic> parameters)
+    public int ExecuteSQLNonQuery(string query, Dictionary<string, dynamic> parameters)
     {
         lock (connection)
         {
@@ -52,7 +52,7 @@ public class SQLHelper:IDisposable
             {
                 command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
             }
-            command.ExecuteNonQuery();
+            return command.ExecuteNonQuery();
         }
     }
 

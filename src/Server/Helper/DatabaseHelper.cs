@@ -117,6 +117,19 @@ public static class DatabaseHelper
         entityCache.RemoveAll(entity => entity.name == name);
     }
 
+    public static int RemoveAllEntities(SQLHelper helper, string searchdomain)
+    {
+        Dictionary<string, dynamic> parameters = new()
+        {
+            { "searchdomain", GetSearchdomainID(helper, searchdomain)}
+        };
+
+        helper.ExecuteSQLNonQuery("DELETE embedding.* FROM embedding JOIN datapoint dp ON id_datapoint = dp.id JOIN entity ON id_entity = entity.id WHERE entity.id_searchdomain = @searchdomain", parameters);
+        helper.ExecuteSQLNonQuery("DELETE datapoint.* FROM datapoint JOIN entity ON id_entity = entity.id WHERE entity.id_searchdomain = @searchdomain", parameters);
+        helper.ExecuteSQLNonQuery("DELETE attribute.* FROM attribute JOIN entity ON id_entity = entity.id WHERE entity.id_searchdomain = @searchdomain", parameters);
+        return helper.ExecuteSQLNonQuery("DELETE FROM entity WHERE entity.id_searchdomain = @searchdomain", parameters);
+    }
+
     public static bool HasEntity(SQLHelper helper, string name, string searchdomain)
     {
         Dictionary<string, dynamic> parameters = new()
