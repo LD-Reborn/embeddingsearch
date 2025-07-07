@@ -3,10 +3,21 @@
 
 embeddingsearch is a search server that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of indexed entries.
 
-This repository comes with
-- a server (accessible via API calls & swagger)
-- a clientside library (C#)
-- a scripting based indexer service that supports the use of
+embeddingsearch offers:
+- Privacy and flexibility through self-hosted solutions like:
+  - ollama
+  - OpenAI-compatible APIs (like LocalAI)
+- Great flexibility through deep control over
+  - the amount of datapoints per entity (i.e. the thing you're trying to find)
+  - which models are used (multiple per datapoint possible to improve accuracy)
+  - which models are sourced from where (multiple Ollama/OpenAI-compatible sources possible)
+  - similarity calculation methods (WIP)
+  - aggregation of results (when multiple models are used per datapoint)
+
+This repository comes with a
+- server (accessible via API calls & swagger)
+- clientside library (C#)
+- scripting based indexer service that supports the use of
   - Python
   - Golang (WIP)
   - Javascript (WIP)

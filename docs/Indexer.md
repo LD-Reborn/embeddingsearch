@@ -67,22 +67,99 @@ If you just installed the server and want to configure it:
 # Scripting
 ## General
 ## probMethods
-Probmethods are used to join the multiple similarity results from multiple models, and multiple datapoints into one single value.
+Probmethods are used to join the multiple similarity values from multiple models and multiple datapoints into one single result.
 
-The probMethod is given a list where each element consists of a string and a floating point value (0-1).
+They need to be specified when constructing a datapoint or an entity (see: [src/Indexer/Scripts/example.py](/src/Indexer/Scripts/example.py) in method `index_files`)
 
-### `probmethod_embedding` (also referred to as `probmethod_datapoint`)
-Takes list where each element contains:
-- model name (e.g. "bge-m3")
-- Result of the similarity calculation between query embeddings and the embeddings for this datapoint (per model)
+Currently the following probMethods are implemented:
+- "Mean"
+- "HarmonicMean"
+- "QuadraticMean"
+- "GeometricMean"
+- "ExtremeValuesEmphasisWeightedAverage" or "EVEWavg"
+- "HighValueEmphasisWeightedAverage" or "HVEWAvg"
+- "LowValueEmphasisWeightedAverage" or "LVEWAvg"
+- "DictionaryWeightedAverage"
 
-Returns a single floating point value that represents the resulting similarity for this datapoint.
-### `probmethod` (also referred to as `probmethod_entity`)
-Takes list where each element contains:
-- datapoint name (e.g. "title", "text", "filename")
-- Result from `probmethod_embedding`
+### Mean
+Averages the values by accumulating the sums and dividing by the number of entries.
 
-Returns a single floating point value that represents the resulting similarity for this Entity.
+$\frac{1}{n} \sum_{i=1}^{n} x_i$
+
+### HarmonicMean
+Calculates the harmonic mean, but also avoids division by 0 issues
+$$
+\text{HarmonicMean}(L) = \begin{cases}0,
+& \text{if } n_{nz} = 0 \\\left( \frac{n_{nz}}{\sum\limits_{x_i \in L,\ x_i \neq 0} \frac{1}{x_i}} \right) \cdot \left( \frac{n_{nz}}{n_T} \right), & \text{otherwise}
+\end{cases}
+$$
+with
+- $n_{nz}$ being the number of non-zero elements
+- $n_T$ being the total number of elements
+### QuadraticMean
+Calculates the quadratic mean.
+$$
+\text{QuadraticMean}(L) = \sqrt{ \frac{1}{n} \sum_{i=1}^{n} x_i^2 }
+$$
+### GeometricMean
+Calculates the geometric mean.
+$$
+\text{GeometricMean}(L) = \begin{cases}0, & \text{if } n = 0\\\left(\prod\limits_{i=1}^{n} x_i \right)^{\frac{1}{n}}, & \text{otherwise}\end{cases}
+$$
+
+### ExtremeValuesEmphasisWeightedAverage
+aka. EVEWavg
+
+Calculates a weighted average where values near 0 or 1 are weighted much more heavily.
+
+A single `1` makes the whole function return 1, as it has "infinite" weight.
+Similarly any `0` causes the function to return 0.
+
+(If both a `0` and a `1` are present, the function returns 1)
+$$
+\text{EVEWA}(L) = \begin{cases}1, & \text{if } \exists, x_i = 1 \\0, & \text{if } \exists, x_i = 0 \\\frac{ \sum\limits_{i=1}^{n} \frac{x_i}{x_i(1 - x_i)} }{ \sum\limits_{i=1}^{n} \frac{1}{x_i(1 - x_i)} }, & \text{otherwise}\end{cases}
+$$
+
+### HighValueEmphasisWeightedAverage
+aka. HVEWAvg
+
+Calculates a weighted average where values near 1 are weighted much more heavily. Lower values are weighted less.
+
+A single `1` makes the whole function return 1, as it has "infinite" weight.
+A `0` has zero weight.
+$$
+\text{HVEWA}(L) = \begin{cases}1, & \text{if } \exists, x_i = 1 \\\frac{ \sum\limits_{i=1}^{n} \frac{x_i}{1 - x_i} }{ \sum\limits_{i=1}^{n} \frac{1}{1 - x_i} }, & \text{otherwise}\end{cases}
+$$
+### LowValueEmphasisWeightedAverage
+aka. LVEWAvg
+
+Calculates a weighted average where values near 0 are weighted much more heavily. Higher values are weighted less.
+
+A single `0` makes the whole function return 0, as it has "infinite" weight.
+A `1` has zero weight.
+$$
+\text{LVEWA}(L) = \begin{cases}1, & \text{if } \exists, x_i = 1 \\\frac{ n}{ \sum\limits_{i=1}^{n} \frac{1}{x_i} }, & \text{otherwise}\end{cases}
+$$
+### DictionaryWeightedAverage
+Calculates a weighted average as specified by the user.
+
+$$
+\text{DWA}(L, D) = \frac{ \sum\limits_{i=1}^{n} w_i x_i }{ \sum\limits_{i=1}^{n} w_i }
+$$
+
+Where:
+- $L = \{(k_1, x_1), (k_2, x_2), \dots, (k_n, x_n)\}$ is the list of key–value pairs
+  - $x_i$ is the float value associated with key $k_i$
+- $D : k_i \mapsto w_i$ is a dictionary mapping keys $k_i$ to weights $w_i \in \mathbb{R}$
+$
+
+
+e.g.:
+```
+probmethod_datapoint = "DictionaryWeightedAverage:{\"ollama:bge-m3\": 4, \"ollama:mxbai-embed-large\": 1}"
+probmethod_entity = "DictionaryWeightedAverage:{\"title\": 2, \"filename\": 0.1, \"text\": 0.25}"
+```
+
 ## Python
 To ease scripting, tools.py contains all definitions of the .NET objects passed to the script. This includes attributes and methods.
 
