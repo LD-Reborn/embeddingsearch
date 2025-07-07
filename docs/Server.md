@@ -35,11 +35,68 @@ If you plan to use multiple environments, create any `appsettings.{YourEnvironme
 If you just installed the server and want to configure it:
 1. Open `src/Server/appsettings.Development.json`
 2. Change the password in the "SQL" section (`pwd=<your password goes here>;`)
-3. If your Ollama instance does not run locally, update "OllamaURL" to point at your Ollama instance.
+3. Check the "AiProviders" section. If your Ollama/LocalAI/etc. instance does not run locally, update the "baseURL" to point to the correct URL.
 4. If you plan on using the server in production:
     1. Set the environment variable `DOTNET_ENVIRONMENT` to something that is not "Development". (e.g. "Prod")
     2. Rename the `appsettings.Development.json` - replace "Development" with whatever you chose. (e.g. "Prod")
     3. Set API keys in the "ApiKeys" section (generate keys using the `uuid` command on Linux)
+## Structure
+```json
+  "Embeddingsearch": {
+    "ConnectionStrings": {
+      "SQL": "server=localhost;database=embeddingsearch;uid=embeddingsearch;pwd=somepassword!;"
+    },
+    "Elmah": {
+      "AllowedHosts": [ // Specify which IP addresses can access /elmah
+        "127.0.0.1",
+        "::1",
+        "172.17.0.1"
+      ]
+    },
+    "AiProviders": {
+      "ollama": { // Name of the provider. Used when defining models for a datapoint, e.g. "ollama:mxbai-embed-large"
+        "handler": "ollama", // The type of API located at baseURL
+        "baseURL": "http://localhost:11434" // Location of the API
+      },
+      "localAI": {
+        "handler": "openai",
+        "baseURL": "http://localhost:8080",
+        "ApiKey": "Some API key here"
+      }
+    },
+    "ApiKeys": ["Some UUID here", "Another UUID here"], // Restrict access in non-development environments to the server's API using your own generated API keys
+    "UseHttpsRedirection": true // tbh I don't even know why this is still here. // TODO implement HttpsRedirection or remove this line
+  }
+```
+## AiProviders
+Each AI provider (Ollama/LocalAI/OpenAI/etc.) can be specified individually.
+
+One can even specify multiple Ollama instances and name them however one pleases. E.g.:
+```json
+    "AiProviders": {
+      "ollama_1": {
+        "handler": "ollama",
+        "baseURL": "http://x.x.x.x:11434",
+      },
+      "ollama_2": {
+        "handler": "ollama",
+        "baseURL": "http://y.y.y.y:11434",
+      }
+    }
+```
+### handler
+Currently two handlers are implemented for embeddings generation:
+- ollama
+    - requests embeddings from `/api/embed`
+- localai
+    - requests embeddings from `/v1/embeddings`
+### baseURL
+Specified by `scheme://host:port`. E.g.: `"baseUrl": "http://localhost:11434"`
+
+Any specified absolute path will be disregarded. (e.g. "http://x.x.x.x/any/subroute" -> "http://x.x.x.x/api/embed")
+### ApiKey
+- `ollama` currently does not support API keys. Specifying a key does not have any effect.
+- `openai` implements the use of ApiKey. E.g. `"ApiKey": "Some API key here"`
 
 # API
 ## Accessing the api
