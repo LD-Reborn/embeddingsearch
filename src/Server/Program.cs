@@ -70,7 +70,7 @@ if (IsDevelopment || useSwagger)
     app.UseSwaggerUI();
     //app.UseElmahExceptionPage(); // Messes with JSON response for API calls. Leaving this here so I don't accidentally put this in again later on.
 }
-if (UseMiddleware == true || IsDevelopment)
+if (UseMiddleware == true && !IsDevelopment)
 {
     app.UseMiddleware<ApiKeyMiddleware>();
 }
