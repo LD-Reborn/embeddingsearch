@@ -24,6 +24,7 @@ This repository comes with a
 
 # How to set up / use
 ## Server
+(Docker now available! See [Docker installation](docs/Server.md#docker-installation))
 1. Install [ollama](https://ollama.com/download)
 2. Pull a few models using ollama (e.g. `paraphrase-multilingual`, `bge-m3`, `mxbai-embed-large`, `nomic-embed-text`)
 3. [Install the depencencies](docs/Server.md#installing-the-dependencies)
@@ -80,7 +81,6 @@ This repository comes with a
 - Reranker/Crossencoder/RAG (or anything else beyond initial retrieval) support
 - Remove the `id` collumns from the database tables where the table is actually identified (and should be unique by) the name, which should become the new primary key.
 - Improve performance & latency (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
-- Make the API server (~~and indexer, once it is done~~ Indexer: done, Server: todo) a docker container
 - Implement dynamic invocation based database migrations
 
 # Future features
