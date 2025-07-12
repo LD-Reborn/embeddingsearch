@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
 using OllamaSharp.Models;
-using server;
 
 namespace Server;
 

@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Server.Exceptions;
 
-namespace server;
+namespace Server;
 
 public class AIProvider
 {

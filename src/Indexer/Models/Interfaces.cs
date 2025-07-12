@@ -7,6 +7,8 @@ public interface IScriptable
     ILogger _logger { get; set; }
     void Init();
     void Update(ICallbackInfos callbackInfos);
+    void Stop();
+
     bool IsScript(string filePath);
 }
 

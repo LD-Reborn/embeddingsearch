@@ -17,8 +17,9 @@ public class WorkerHealthCheck : IHealthCheck
         bool hasDegraded = false;
         bool hasUnhealthy = false;
         Dictionary<string, HealthStatus> degradedWorkerList = [];
-        foreach (Worker worker in _workerCollection.Workers)
+        foreach (KeyValuePair<string, Worker> workerKVPair in _workerCollection.Workers)
         {
+            Worker worker = workerKVPair.Value;
             HealthCheckResult workerHealth = worker.HealthCheck();
             hasDegraded |= workerHealth.Status == HealthStatus.Degraded;
             hasUnhealthy |= workerHealth.Status == HealthStatus.Unhealthy;

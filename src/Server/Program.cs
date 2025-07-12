@@ -1,7 +1,6 @@
 using ElmahCore;
 using ElmahCore.Mvc;
 using Serilog;
-using server;
 using Server;
 using Server.HealthChecks;
 
@@ -72,7 +71,7 @@ if (IsDevelopment || useSwagger)
 }
 if (UseMiddleware == true && !IsDevelopment)
 {
-    app.UseMiddleware<ApiKeyMiddleware>();
+    app.UseMiddleware<Shared.ApiKeyMiddleware>();
 }
 
 app.UseAuthorization();

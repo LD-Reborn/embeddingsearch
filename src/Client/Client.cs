@@ -7,7 +7,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Reflection.Metadata.Ecma335;
-using Server.Models;
+using Shared.Models;
 
 namespace Client;
 
@@ -86,7 +86,7 @@ public class Client
             return await GetUrlAndProcessJson<EntityQueryResults>(url);
         }
 
-        public async Task<EntityIndexResult> EntityIndexAsync(List<Server.JSONEntity> jsonEntity)
+        public async Task<EntityIndexResult> EntityIndexAsync(List<JSONEntity> jsonEntity)
         {
             return await EntityIndexAsync(JsonSerializer.Serialize(jsonEntity));
         }

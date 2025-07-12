@@ -4,7 +4,6 @@ using OllamaSharp;
 using Microsoft.IdentityModel.Tokens;
 using Server.Exceptions;
 using Server.Migrations;
-using server;
 
 namespace Server;
 

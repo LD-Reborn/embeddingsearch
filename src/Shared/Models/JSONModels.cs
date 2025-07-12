@@ -1,4 +1,4 @@
-namespace Server;
+namespace Shared.Models;
 
 public class JSONEntity
 {

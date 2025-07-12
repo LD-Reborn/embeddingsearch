@@ -10,12 +10,14 @@ public class PythonScriptable : IScriptable
     public PyModule scope;
     public dynamic sys;
     public string source;
+    public bool SourceLoaded { get; set; }
     public ScriptUpdateInfo UpdateInfo { get; set; }
     public ILogger _logger { get; set; }
     public PythonScriptable(ScriptToolSet toolSet, ILogger logger)
     {
         _logger = logger;
-        Runtime.PythonDLL = @"libpython3.12.so";
+        SourceLoaded = false;
+        Runtime.PythonDLL ??= @"libpython3.12.so";
         if (!PythonEngine.IsInitialized)
         {
             PythonEngine.Initialize();
@@ -39,36 +41,22 @@ public class PythonScriptable : IScriptable
 
     public void Init()
     {
-        int retryCounter = 0;
-        retry:
-        try
-        {
-            using (Py.GIL())
-            {
-                pyToolSet = ToolSet.ToPython();
-                scope.Set("toolset", pyToolSet);
-                scope.Exec(source);
-                scope.Exec("init(toolset)");
-            }
-        }
-        catch (Exception ex)
-        {
-            UpdateInfo = new() { DateTime = DateTime.Now, Successful = false, Exception = ex };
-            if (retryCounter < 3)
-            {
-                _logger.LogWarning("Unable to init the scriptable - retrying", [ToolSet.filePath, ex]);
-                retryCounter++;
-                goto retry;
-            }
-            _logger.LogError("Unable to init the scriptable", [ToolSet.filePath, ex]);
-            throw;
-        }
-        UpdateInfo = new() { DateTime = DateTime.Now, Successful = true };
+        ExecFunction("init");
     }
 
     public void Update(ICallbackInfos callbackInfos)
     {
-        int retryCounter = 0;
+        ExecFunction("update");
+    }
+
+    public void Stop()
+    {
+        ExecFunction("stop");
+    }
+
+    public void ExecFunction(string name, ICallbackInfos? callbackInfos = null)
+    {
+       int retryCounter = 0;
         retry:
         try
         {
@@ -77,7 +65,12 @@ public class PythonScriptable : IScriptable
                 pyToolSet = ToolSet.ToPython();
                 pyToolSet.SetAttr("callbackInfos", callbackInfos.ToPython());
                 scope.Set("toolset", pyToolSet);
-                scope.Exec("update(toolset)");
+                if (!SourceLoaded)
+                {
+                    scope.Exec(source);
+                    SourceLoaded = true;
+                }
+                scope.Exec($"{name}(toolset)");
             }
         }
         catch (Exception ex)
@@ -85,12 +78,11 @@ public class PythonScriptable : IScriptable
             UpdateInfo = new() { DateTime = DateTime.Now, Successful = false, Exception = ex };
             if (retryCounter < 3)
             {
-                _logger.LogWarning("Execution of script failed to an exception - retrying", [ToolSet.filePath, ex]);
+                _logger.LogWarning("Execution of {name} function in script {Toolset.filePath} failed to an exception {ex.Message}", [name, ToolSet.filePath, ex.Message]);
                 retryCounter++;
                 goto retry;
             }
-            _logger.LogError("Execution of script failed to an exception", [ToolSet.filePath, ex]);
-            throw;
+            _logger.LogError("Execution of {name} function in script {Toolset.filePath} failed to an exception {ex.Message}", [name, ToolSet.filePath, ex.Message]);
         }
         UpdateInfo = new() { DateTime = DateTime.Now, Successful = true };
     }
@@ -127,6 +119,8 @@ public class IntervalCallbackInfos : ICallbackInfos
     public required ElapsedEventArgs e;
 
 }
+
+public class ManualTriggerCallbackInfos : ICallbackInfos {}
 
 public struct ScriptUpdateInfo
 {

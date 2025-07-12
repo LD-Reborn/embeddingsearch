@@ -15,3 +15,5 @@ src/Indexer/obj
 src/Indexer/Scripts/__pycache__
 src/Indexer/logs
 src/Server/logs
+src/Shared/bin
+src/Shared/obj

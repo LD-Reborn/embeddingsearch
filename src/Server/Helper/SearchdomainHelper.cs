@@ -2,11 +2,9 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using MySql.Data.MySqlClient;
-using OllamaSharp;
-using server;
+using Shared.Models;
 
-namespace Server;
+namespace Server.Helper;
 
 public static class SearchdomainHelper
 {
@@ -41,7 +39,7 @@ public static class SearchdomainHelper
         }
         return null;
     }
-    
+
     public static List<Entity>? EntitiesFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, AIProvider aIProvider, SQLHelper helper, ILogger logger, string json)
     {
         List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>>(json);
@@ -78,14 +76,14 @@ public static class SearchdomainHelper
         });
         return [.. retVal];
     }
-    
+
     public static Entity? EntityFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, AIProvider aIProvider, SQLHelper helper, ILogger logger, JSONEntity jsonEntity) //string json)
     {
         Dictionary<string, Dictionary<string, float[]>> embeddingsLUT = [];
         int? preexistingEntityID = DatabaseHelper.GetEntityID(helper, jsonEntity.Name, jsonEntity.Searchdomain);
         if (preexistingEntityID is not null)
         {
-            lock (helper.connection)
+            lock (helper.connection) // TODO change this to helper and do A/B tests (i.e. before/after)
             {
                 Dictionary<string, dynamic> parameters = new()
                 {

@@ -3,7 +3,6 @@ using Indexer.Models;
 using Indexer.Services;
 using ElmahCore;
 using ElmahCore.Mvc;
-using Server;
 using ElmahCore.Mvc.Logger;
 using Serilog;
 
@@ -20,12 +19,12 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Logging.AddSerilog();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<IConfigurationRoot>(builder.Configuration);
 builder.Services.AddSingleton<Client.Client>();
 builder.Services.AddSingleton<WorkerCollection>();
 builder.Services.AddHostedService<IndexerService>();
 builder.Services.AddHealthChecks()
     .AddCheck<WorkerHealthCheck>("WorkerHealthCheck");
-
 builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
     Options.LogPath = builder.Configuration.GetValue<string>("EmbeddingsearchIndexer:Elmah:LogFolder") ?? "~/logs";
@@ -67,9 +66,11 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseMiddleware<ApiKeyMiddleware>();
+    app.UseMiddleware<Shared.ApiKeyMiddleware>();
 }
 
 // app.UseHttpsRedirection();
+
+app.MapControllers();
 
 app.Run();

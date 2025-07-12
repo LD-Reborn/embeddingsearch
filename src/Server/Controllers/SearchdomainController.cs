@@ -1,6 +1,6 @@
 using ElmahCore;
 using Microsoft.AspNetCore.Mvc;
-using Server.Models;
+using Shared.Models;
 
 namespace Server.Controllers;
 
