@@ -35,7 +35,10 @@ List<string>? allowedIps = builder.Configuration.GetSection("Embeddingsearch:Elm
 
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments("/elmah"))
+    bool requestIsElmah = context.Request.Path.StartsWithSegments("/elmah");
+    bool requestIsSwagger = context.Request.Path.StartsWithSegments("/swagger");
+    
+    if (requestIsElmah || requestIsSwagger)
     {
         var remoteIp = context.Connection.RemoteIpAddress?.ToString();
         bool blockRequest = allowedIps is null
@@ -56,14 +59,18 @@ app.UseElmah();
 
 app.MapHealthChecks("/healthz");
 
+bool IsDevelopment = app.Environment.IsDevelopment();
+bool useSwagger = app.Configuration.GetValue<bool>("UseSwagger");
+bool? UseMiddleware = app.Configuration.GetValue<bool?>("UseMiddleware");
+
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (IsDevelopment || useSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
     //app.UseElmahExceptionPage(); // Messes with JSON response for API calls. Leaving this here so I don't accidentally put this in again later on.
 }
-else
+if (UseMiddleware == true || IsDevelopment)
 {
     app.UseMiddleware<ApiKeyMiddleware>();
 }
