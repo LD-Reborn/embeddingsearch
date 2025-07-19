@@ -41,7 +41,8 @@ public class CallsController : ControllerBase
                 CallListResult callListResult = new()
                 {
                     CallConfig = call.CallConfig,
-                    IsRunning = call.IsRunning,
+                    IsActive = call.IsEnabled,
+                    IsExecuting = call.IsExecuting,
                     LastExecution = call.LastExecution,
                     LastSuccessfulExecution = call.LastSuccessfulExecution,
                     HealthStatus = call.HealthCheck().Status.ToString()

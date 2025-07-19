@@ -79,9 +79,20 @@ public class WorkerCollection
                     {
                         try
                         {
-                            call.LastExecution = DateTime.Now;
-                            worker.Scriptable.Update(new IntervalCallbackInfos() { sender = sender, e = e });
-                            call.LastSuccessfulExecution = DateTime.Now;
+                            DateTime beforeExecution = DateTime.Now;
+                            call.IsExecuting = true;
+                            try
+                            {
+                                worker.Scriptable.Update(new IntervalCallbackInfos() { sender = sender, e = e });
+                            }
+                            finally
+                            {
+                                call.IsExecuting = false;
+                                call.LastExecution = beforeExecution;
+                                worker.LastExecution = beforeExecution;
+                            }
+                            DateTime afterExecution = DateTime.Now;
+                            UpdateCallAndWorkerTimestamps(call, worker, beforeExecution, afterExecution);
                         }
                         catch (Exception ex)
                         {
@@ -104,6 +115,32 @@ public class WorkerCollection
                     throw new IndexerConfigurationException($"Unknown Type specified for a Call in Worker \"{workerConfig.Name}\"");
             }
         }
+    }
+
+    public static void UpdateCallAndWorkerTimestamps(ICall call, Worker worker, DateTime beforeExecution, DateTime afterExecution)
+    {
+        UpdateCallTimestamps(call, beforeExecution, afterExecution);
+        UpdateWorkerTimestamps(worker, beforeExecution, afterExecution);
+    }
+
+    public static void UpdateCallTimestamps(ICall call, DateTime beforeExecution, DateTime afterExecution)
+    {
+        call.LastSuccessfulExecution = GetNewestDateTime(call.LastSuccessfulExecution, afterExecution);        
+    }
+
+    public static void UpdateWorkerTimestamps(Worker worker, DateTime beforeExecution, DateTime afterExecution)
+    {
+        worker.LastSuccessfulExecution = GetNewestDateTime(worker.LastSuccessfulExecution, afterExecution);
+    }
+
+
+    public static DateTime? GetNewestDateTime(DateTime? preexistingDateTime, DateTime incomingDateTime)
+    {
+        if (preexistingDateTime is null || preexistingDateTime.Value.CompareTo(incomingDateTime) < 0)
+        {
+            return incomingDateTime;
+        }
+        return preexistingDateTime;
     }
 
     public IScriptable GetScriptable(ScriptToolSet toolSet)
@@ -129,12 +166,16 @@ public class Worker
     public WorkerConfig Config { get; set; }
     public IScriptable Scriptable { get; set; }
     public List<ICall> Calls { get; set; }
+    public bool IsExecuting { get; set; }
+    public DateTime? LastExecution { get; set; }
+    public DateTime? LastSuccessfulExecution { get; set; }
 
-    public Worker(string Name, WorkerConfig workerConfig, IScriptable scriptable)
+    public Worker(string name, WorkerConfig workerConfig, IScriptable scriptable)
     {
-        this.Name = Name;
-        this.Config = workerConfig;
-        this.Scriptable = scriptable;
+        Name = name;
+        Config = workerConfig;
+        Scriptable = scriptable;
+        IsExecuting = false;
         Calls = [];
     }
 
@@ -188,7 +229,8 @@ public interface ICall
     public HealthCheckResult HealthCheck();
     public void Start();
     public void Stop();
-    public bool IsRunning { get; set; }
+    public bool IsEnabled { get; set; }
+    public bool IsExecuting { get; set; }
     public CallConfig CallConfig { get; set; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
@@ -199,7 +241,8 @@ public class IntervalCall : ICall
     public System.Timers.Timer Timer;
     public IScriptable Scriptable;
     public ILogger _logger;
-    public bool IsRunning { get; set; }
+    public bool IsEnabled { get; set; }
+    public bool IsExecuting { get; set; }
     public CallConfig CallConfig { get; set; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
@@ -210,20 +253,21 @@ public class IntervalCall : ICall
         Scriptable = scriptable;
         _logger = logger;
         CallConfig = callConfig;
-        IsRunning = true;
+        IsEnabled = true;
+        IsExecuting = false;
     }
 
     public void Start()
     {
         Timer.Start();
-        IsRunning = true;
+        IsEnabled = true;
     }
 
     public void Stop()
     {
         Scriptable.Stop();
         Timer.Stop();
-        IsRunning = false;
+        IsEnabled = false;
     }
 
     public HealthCheckResult HealthCheck()
@@ -249,7 +293,8 @@ public class IntervalCall : ICall
 
 public class ScheduleCall : ICall
 {
-    public bool IsRunning { get; set; }
+    public bool IsEnabled { get; set; }
+    public bool IsExecuting { get; set; }
     public CallConfig CallConfig { get; set; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
@@ -257,6 +302,8 @@ public class ScheduleCall : ICall
     public ScheduleCall(CallConfig callConfig)
     {
         CallConfig = callConfig;
+        IsEnabled = true;
+        IsExecuting = false;
     }
 
     public void Start()
@@ -275,7 +322,8 @@ public class ScheduleCall : ICall
 
 public class FileUpdateCall : ICall
 {
-    public bool IsRunning { get; set; }
+    public bool IsEnabled { get; set; }
+    public bool IsExecuting { get; set; }
     public CallConfig CallConfig { get; set; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
@@ -283,6 +331,8 @@ public class FileUpdateCall : ICall
     public FileUpdateCall(CallConfig callConfig)
     {
         CallConfig = callConfig;
+        IsEnabled = true;
+        IsExecuting = false;
     }
 
     public void Start()

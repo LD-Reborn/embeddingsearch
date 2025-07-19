@@ -17,6 +17,12 @@ public class WorkerListResult
     public required string Name { get; set; }
     [JsonPropertyName("Script")]
     public required string Script { get; set; }
+    [JsonPropertyName("IsExecuting")]
+    public required bool IsExecuting { get; set; }
+    [JsonPropertyName("LastExecution")]
+    public required DateTime? LastExecution { get; set; }
+    [JsonPropertyName("LastSuccessfulExecution")]
+    public required DateTime? LastSuccessfulExecution { get; set; }
     [JsonPropertyName("HealthStatus")]
     public required string HealthStatus { get; set; }
 }
@@ -33,8 +39,10 @@ public class CallListResult
 {
     [JsonPropertyName("CallConfig")]
     public required CallConfig CallConfig { get; set; }
-    [JsonPropertyName("IsRunning")]
-    public required bool IsRunning { get; set; }
+    [JsonPropertyName("IsActive")]
+    public required bool IsActive { get; set; }
+    [JsonPropertyName("IsExecuting")]
+    public required bool IsExecuting { get; set; }
     [JsonPropertyName("LastExecution")]
     public required DateTime? LastExecution { get; set; }
     [JsonPropertyName("LastSuccessfulExecution")]

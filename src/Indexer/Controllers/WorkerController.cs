@@ -35,6 +35,9 @@ public class WorkerController : ControllerBase
                 {
                     Name = worker.Name,
                     Script = worker.Config.Script,
+                    IsExecuting = worker.IsExecuting,
+                    LastExecution = worker.LastExecution,
+                    LastSuccessfulExecution = worker.LastSuccessfulExecution,
                     HealthStatus = worker.HealthCheck().Status.ToString()
                 };
                 workerListResultList.Add(workerListResult);
@@ -65,7 +68,26 @@ public class WorkerController : ControllerBase
         }
         _logger.LogInformation("triggering worker {name}.", [name]);
         ManualTriggerCallbackInfos callbackInfos = new();
-        worker.Scriptable.Update(callbackInfos);
+        lock (worker.Scriptable)
+        {
+            worker.IsExecuting = true;
+            worker.Scriptable.Update(callbackInfos);
+            worker.IsExecuting = false;
+
+            DateTime beforeExecution = DateTime.Now;
+            worker.IsExecuting = true;
+            try
+            {
+                worker.Scriptable.Update(callbackInfos);
+            }
+            finally
+            {
+                worker.IsExecuting = false;
+                worker.LastExecution = beforeExecution;
+            }
+            DateTime afterExecution = DateTime.Now;
+            WorkerCollection.UpdateWorkerTimestamps(worker, beforeExecution, afterExecution);
+        }
         _logger.LogInformation("triggered worker {name}.", [name]);
         return new WorkerTriggerUpdateResult { Success = true };
 
