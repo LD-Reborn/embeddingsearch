@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Indexer.Models;
 

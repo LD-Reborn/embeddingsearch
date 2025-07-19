@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Server.Migrations;
 
 namespace Server.HealthChecks;
 

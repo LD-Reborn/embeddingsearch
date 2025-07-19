@@ -1,7 +1,7 @@
 using System.Data.Common;
 using MySql.Data.MySqlClient;
 
-namespace Server;
+namespace Server.Helper;
 
 public class SQLHelper:IDisposable
 {

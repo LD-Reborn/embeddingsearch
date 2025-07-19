@@ -1,6 +1,3 @@
-using System;
-using Server;
-
 namespace Server;
 
 public class Entity(Dictionary<string, string> attributes, Probmethods.probMethodDelegate probMethod, List<Datapoint> datapoints, string name)

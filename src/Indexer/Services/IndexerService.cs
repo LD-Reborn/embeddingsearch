@@ -1,6 +1,4 @@
-using Indexer.Exceptions;
 using Indexer.Models;
-using ElmahCore;
 
 namespace Indexer.Services;
 

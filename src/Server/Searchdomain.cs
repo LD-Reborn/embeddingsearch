@@ -1,25 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-//using System.Data.SqlClient;
-//using Microsoft.Data.SqlClient;
-using MySql.Data;
 using MySql.Data.MySqlClient;
-using System.Threading.Tasks;
-using Npgsql;
-using System.Collections.Generic;
-using OllamaSharp;
-using OllamaSharp.Models;
-using System.Configuration;
-using System.Data.SqlClient;
-using Mysqlx.Resultset;
-using System.Collections.Immutable;
-using System.Text.Json;
-using System.Numerics.Tensors;
-using System.Security.Cryptography;
-using System.Text;
-using System.Collections.Concurrent;
 using Server.Helper;
 
 namespace Server;

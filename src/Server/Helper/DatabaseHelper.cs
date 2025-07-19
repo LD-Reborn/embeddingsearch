@@ -1,7 +1,7 @@
 using System.Data.Common;
 using System.Text;
 
-namespace Server;
+namespace Server.Helper;
 
 public static class DatabaseHelper
 {

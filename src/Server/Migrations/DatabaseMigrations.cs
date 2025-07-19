@@ -1,5 +1,6 @@
 using System.Data.Common;
 using Server.Exceptions;
+using Server.Helper;
 
 namespace Server.Migrations;
 

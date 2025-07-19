@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Indexer.Exceptions;
 
