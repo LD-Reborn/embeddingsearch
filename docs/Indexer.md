@@ -42,7 +42,7 @@ If you just installed the server and want to configure it:
         "Calls": [ // This is also a list. A worker may have multiple different calls.
           {
             "Type": "interval", // See: Call types
-            "Interval": 60000
+            "Interval": 60000 // Parameter(s) as specified for the call type
           }
         ]
       },
