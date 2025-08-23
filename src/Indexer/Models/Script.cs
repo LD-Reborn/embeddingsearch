@@ -120,6 +120,8 @@ public class IntervalCallbackInfos : ICallbackInfos
 
 }
 
+public class ScheduleCallbackInfos : ICallbackInfos {}
+
 public class ManualTriggerCallbackInfos : ICallbackInfos {}
 
 public struct ScriptUpdateInfo

@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Indexer.Exceptions;
+using Quartz;
+using Quartz.Impl;
 
 namespace Indexer.Models;
 
@@ -69,7 +71,7 @@ public class WorkerCollection
                     timer.AutoReset = true;
                     timer.Enabled = true;
                     DateTime now = DateTime.Now;
-                    IntervalCall call = new(timer, worker.Scriptable, _logger, callConfig)
+                    IntervalCall intervallCall = new(timer, worker.Scriptable, _logger, callConfig)
                     {
                         LastExecution = now,
                         LastSuccessfulExecution = now
@@ -79,29 +81,32 @@ public class WorkerCollection
                         try
                         {
                             DateTime beforeExecution = DateTime.Now;
-                            call.IsExecuting = true;
+                            intervallCall.IsExecuting = true;
                             try
                             {
                                 worker.Scriptable.Update(new IntervalCallbackInfos() { sender = sender, e = e });
                             }
                             finally
                             {
-                                call.IsExecuting = false;
-                                call.LastExecution = beforeExecution;
+                                intervallCall.IsExecuting = false;
+                                intervallCall.LastExecution = beforeExecution;
                                 worker.LastExecution = beforeExecution;
                             }
                             DateTime afterExecution = DateTime.Now;
-                            UpdateCallAndWorkerTimestamps(call, worker, beforeExecution, afterExecution);
+                            UpdateCallAndWorkerTimestamps(intervallCall, worker, beforeExecution, afterExecution);
                         }
                         catch (Exception ex)
                         {
                             _logger.LogError("Exception occurred in a Call of Worker \"{name}\": \"{ex}\"", worker.Name, ex.Message);
                         }
                     };
-                    worker.Calls.Add(call);
+                    worker.Calls.Add(intervallCall);
                     break;
                 case "schedule": // TODO implement scheduled tasks using Quartz
-                    throw new NotImplementedException("schedule not implemented yet");
+                    ScheduleCall scheduleCall = new(worker, callConfig, _logger);
+                    worker.Calls.Add(scheduleCall);
+                    break;
+                    //throw new NotImplementedException("schedule not implemented yet");
                 case "fileupdate":
                     if (callConfig.Path is null)
                     {
@@ -221,6 +226,7 @@ public class CallConfig
     public required string Type { get; set; }
     public long? Interval { get; set; } // For Type: Interval
     public string? Path { get; set; } // For Type: FileSystemWatcher
+    public string? Schedule { get; set; } // For Type: Schedule
 }
 
 public interface ICall
@@ -294,23 +300,96 @@ public class ScheduleCall : ICall
 {
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
+    public Worker Worker { get; }
+    public JobKey JobKey { get; }
+    public JobDataMap JobDataMap { get; }
     public CallConfig CallConfig { get; set; }
+    private ILogger _logger { get; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
+    private StdSchedulerFactory SchedulerFactory { get; }
+    private IScheduler Scheduler { get; }
 
-    public ScheduleCall(CallConfig callConfig)
+    public ScheduleCall(Worker worker, CallConfig callConfig, ILogger logger)
     {
+        Worker = worker;
         CallConfig = callConfig;
+        _logger = logger;
         IsEnabled = true;
         IsExecuting = false;
+        JobKey = new(worker.Name);
+        SchedulerFactory = new();
+        Scheduler = SchedulerFactory.GetScheduler(CancellationToken.None).Result;
+        JobDataMap = [];
+        JobDataMap["action"] = () =>
+        {
+            try
+            {
+                DateTime beforeExecution = DateTime.Now;
+                IsExecuting = true;
+                try
+                {
+                    worker.Scriptable.Update(new ScheduleCallbackInfos());
+                }
+                finally
+                {
+                    IsExecuting = false;
+                    LastExecution = beforeExecution;
+                    worker.LastExecution = beforeExecution;
+                }
+                DateTime afterExecution = DateTime.Now;
+                WorkerCollection.UpdateCallAndWorkerTimestamps(this, worker, beforeExecution, afterExecution);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred in a Call of Worker \"{name}\": \"{ex}\"", worker.Name, ex.Message);
+            }
+        };
+        CreateJob().Wait();
+        Start();
     }
 
     public void Start()
     {
+        if (!IsExecuting)
+        {
+            Scheduler.Start(CancellationToken.None).Wait();
+            IsExecuting = true;
+        }
     }
 
     public void Stop()
     {
+        Scheduler.PauseAll();
+    }
+
+
+    private async Task CreateJob()
+    {
+        if (CallConfig.Schedule is null)
+        {
+            throw new IndexerConfigurationException($"Interval not set for a Call in Worker \"{Worker.Name}\"");
+        }
+        try
+        {
+
+            await Scheduler.ScheduleJob(
+                JobBuilder.Create<ActionJob>()
+                .WithIdentity(JobKey)
+                .Build(),
+                TriggerBuilder.Create()
+                .ForJob(JobKey)
+                .WithIdentity(Worker.Name + "-trigger")
+                .UsingJobData(JobDataMap)
+                .WithCronSchedule(CallConfig.Schedule)
+                .Build(),
+                CancellationToken.None);
+        }
+        catch (FormatException)
+        {
+            _logger.LogCritical("Malformed Quartz Cron expression! Check your configuration and consult the documentation.");
+            throw;
+        }
     }
 
     public HealthCheckResult HealthCheck()

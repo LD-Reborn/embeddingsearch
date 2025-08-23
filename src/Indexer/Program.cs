@@ -5,6 +5,7 @@ using ElmahCore;
 using ElmahCore.Mvc;
 using ElmahCore.Mvc.Logger;
 using Serilog;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,8 @@ builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
     Options.LogPath = builder.Configuration.GetValue<string>("EmbeddingsearchIndexer:Elmah:LogFolder") ?? "~/logs";
 });
+
+builder.Services.AddQuartz();
 
 var app = builder.Build();
 List<string>? allowedIps = builder.Configuration.GetSection("EmbeddingsearchIndexer:Elmah:AllowedHosts")
