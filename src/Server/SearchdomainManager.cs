@@ -11,7 +11,6 @@ public class SearchdomainManager
     private readonly ILogger<SearchdomainManager> _logger;
     private readonly IConfiguration _config;
     public readonly AIProvider aIProvider;
-    private readonly string ollamaURL;
     private readonly string connectionString;
     private MySqlConnection connection;
     public SQLHelper helper;

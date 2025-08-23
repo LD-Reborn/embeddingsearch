@@ -20,7 +20,7 @@ builder.Services.AddSingleton<SearchdomainManager>();
 builder.Services.AddSingleton<AIProvider>();
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("DatabaseHealthCheck")
-    .AddCheck<AIProviderHealthCheck>("AIProviderHealthChecck");
+    .AddCheck<AIProviderHealthCheck>("AIProviderHealthCheck");
 
 builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
