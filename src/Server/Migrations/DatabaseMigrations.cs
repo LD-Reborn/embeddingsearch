@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Server.Exceptions;
 using Server.Helper;
+using System.Reflection;
 
 namespace Server.Migrations;
 
@@ -8,24 +9,30 @@ public static class DatabaseMigrations
 {
     public static void Migrate(SQLHelper helper)
     {
-        int databaseVersion = DatabaseGetVersion(helper);
-        switch (databaseVersion)
+        int initialDatabaseVersion = DatabaseGetVersion(helper);
+        int databaseVersion = initialDatabaseVersion;
+
+        var updateMethods = typeof(DatabaseMigrations)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => m.Name.StartsWith("UpdateFrom") && m.ReturnType == typeof(int))
+            .OrderBy(m => int.Parse(m.Name["UpdateFrom".Length..]))
+            .ToList();
+
+        foreach (var method in updateMethods)
         {
-            case 0:
-                databaseVersion = Create(helper);
-                goto case 1; // Here lies a dead braincell.
-            case 1:
-                databaseVersion = UpdateFrom1(helper); // TODO: Implement reflection based dynamic invocation.
-                goto case 2;
-            case 2:
-                databaseVersion = UpdateFrom2(helper);
-                goto case 3;
-            case 3:
-            default:
-                break;
+            var version = int.Parse(method.Name["UpdateFrom".Length..]);
+            if (version >= databaseVersion)
+            {
+                databaseVersion = (int)method.Invoke(null, new object[] { helper });
+            }
         }
-        helper.ExecuteSQLNonQuery("UPDATE settings SET value = @databaseVersion", new() { ["databaseVersion"] = databaseVersion.ToString() });
+
+        if (databaseVersion != initialDatabaseVersion)
+        {
+            helper.ExecuteSQLNonQuery("UPDATE settings SET value = @databaseVersion", new() { ["databaseVersion"] = databaseVersion.ToString() });
+        }
     }
+
     public static int DatabaseGetVersion(SQLHelper helper)
     {
         DbDataReader reader = helper.ExecuteSQLCommand("show tables", []);
