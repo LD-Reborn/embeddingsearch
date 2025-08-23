@@ -55,6 +55,8 @@ public class DatapointResult
     public required string Name { get; set; }
     [JsonPropertyName("ProbMethod")]
     public required string ProbMethod { get; set; }
+    [JsonPropertyName("SimilarityMethod")]
+    public required string SimilarityMethod { get; set; }
     [JsonPropertyName("Embeddings")]
     public required List<EmbeddingResult>? Embeddings { get; set; } 
 }

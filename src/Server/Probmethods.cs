@@ -169,9 +169,4 @@ public static class Probmethods
         }
         return f / fm;
     }
-
-    public static float Similarity(float[] vector1, float[] vector2)
-    {
-        return TensorPrimitives.CosineSimilarity(vector1, vector2);
-    }
 }

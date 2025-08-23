@@ -7,13 +7,15 @@ public class Datapoint
 {
     public string name;
     public ProbMethod probMethod;
+    public SimilarityMethod similarityMethod;
     public List<(string, float[])> embeddings;
     public string hash;
 
-    public Datapoint(string name, ProbMethod probMethod, string hash, List<(string, float[])> embeddings)
+    public Datapoint(string name, ProbMethod probMethod, SimilarityMethod similarityMethod, string hash, List<(string, float[])> embeddings)
     {
         this.name = name;
         this.probMethod = probMethod;
+        this.similarityMethod = similarityMethod;
         this.hash = hash;
         this.embeddings = embeddings;
     }

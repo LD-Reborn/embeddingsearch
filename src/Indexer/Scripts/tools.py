@@ -7,6 +7,7 @@ class JSONDatapoint:
     Name:str
     Text:str
     Probmethod_embedding:str
+    SimilarityMethod:str
     Model:list[str]
 
 @dataclass

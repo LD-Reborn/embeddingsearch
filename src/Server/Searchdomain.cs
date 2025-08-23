@@ -73,7 +73,7 @@ public class Searchdomain
         }
         embeddingReader.Close();
 
-        DbDataReader datapointReader = helper.ExecuteSQLCommand("SELECT id, id_entity, name, probmethod_embedding, hash FROM datapoint", parametersIDSearchdomain);
+        DbDataReader datapointReader = helper.ExecuteSQLCommand("SELECT id, id_entity, name, probmethod_embedding, similaritymethod, hash FROM datapoint", parametersIDSearchdomain);
         Dictionary<int, List<Datapoint>> datapoint_unassigned = [];
         while (datapointReader.Read())
         {
@@ -81,8 +81,10 @@ public class Searchdomain
             int id_entity = datapointReader.GetInt32(1);
             string name = datapointReader.GetString(2);
             string probmethodString = datapointReader.GetString(3);
-            string hash = datapointReader.GetString(4);
+            string similarityMethodString = datapointReader.GetString(4);
+            string hash = datapointReader.GetString(5);
             ProbMethod probmethod = new(probmethodString, _logger);
+            SimilarityMethod similarityMethod = new(similarityMethodString, _logger);
             if (embedding_unassigned.TryGetValue(id, out Dictionary<string, float[]>? embeddings) && probmethod is not null)
             {
                 embedding_unassigned.Remove(id);
@@ -90,7 +92,7 @@ public class Searchdomain
                 {
                     datapoint_unassigned[id_entity] = [];
                 }
-                datapoint_unassigned[id_entity].Add(new Datapoint(name, probmethod, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]));
+                datapoint_unassigned[id_entity].Add(new Datapoint(name, probmethod, similarityMethod, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]));
             }
         }
         datapointReader.Close();
@@ -157,11 +159,12 @@ public class Searchdomain
             List<(string, float)> datapointProbs = [];
             foreach (Datapoint datapoint in entity.datapoints)
             {
+                SimilarityMethod similarityMethod = datapoint.similarityMethod;
                 List<(string, float)> list = [];
                 foreach ((string, float[]) embedding in datapoint.embeddings)
                 {
                     string key = embedding.Item1;
-                    float value = Probmethods.Similarity(queryEmbeddings[embedding.Item1], embedding.Item2);
+                    float value = similarityMethod.method(queryEmbeddings[embedding.Item1], embedding.Item2);
                     list.Add((key, value));
                 }
                 datapointProbs.Add((datapoint.name, datapoint.probMethod.method(list)));

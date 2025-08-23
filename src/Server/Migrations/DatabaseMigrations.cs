@@ -85,4 +85,10 @@ public static class DatabaseMigrations
         helper.ExecuteSQLNonQuery("UPDATE datapoint SET hash='';", []);
         return 3;
     }
+
+    public static int UpdateFrom3(SQLHelper helper)
+    {
+        helper.ExecuteSQLNonQuery("ALTER TABLE datapoint ADD COLUMN similaritymethod VARCHAR(512) NULL DEFAULT 'Cosine' AFTER probmethod_embedding", []);
+        return 4;
+    }
 }

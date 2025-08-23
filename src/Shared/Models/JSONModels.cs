@@ -14,5 +14,6 @@ public class JSONDatapoint
     public required string Name { get; set; }
     public required string Text { get; set; }
     public required string Probmethod_embedding { get; set; }
+    public required string SimilarityMethod { get; set; }
     public required string[] Model { get; set; }
 }
