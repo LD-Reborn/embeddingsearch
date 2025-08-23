@@ -5,7 +5,8 @@ from dataclasses import asdict
 import time
 
 example_content = "./Scripts/example_content"
-probmethod = "LVEWAvg"
+probmethod = "HVEWAvg"
+similarityMethod = "Cosine"
 example_searchdomain = "example_" + probmethod
 example_counter = 0
 models = ["ollama:bge-m3", "ollama:mxbai-embed-large"]
@@ -50,9 +51,9 @@ def index_files(toolset: Toolset):
             title = file.readline()
             text = file.read()
         datapoints:list = [
-            JSONDatapoint("filename", qualified_filepath, probmethod_datapoint, models),
-            JSONDatapoint("title", title, probmethod_datapoint, models),
-            JSONDatapoint("text", text, probmethod_datapoint, models)
+            JSONDatapoint("filename", qualified_filepath, probmethod_datapoint, similarityMethod, models),
+            JSONDatapoint("title", title, probmethod_datapoint, similarityMethod, models),
+            JSONDatapoint("text", text, probmethod_datapoint, similarityMethod, models)
         ]
         jsonEntity:dict = asdict(JSONEntity(qualified_filepath, probmethod_entity, example_searchdomain, {}, datapoints))
         jsonEntities.append(jsonEntity)
