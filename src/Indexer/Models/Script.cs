@@ -56,8 +56,8 @@ public class PythonScriptable : IScriptable
 
     public void ExecFunction(string name, ICallbackInfos? callbackInfos = null)
     {
-       int retryCounter = 0;
-        retry:
+        int retryCounter = 0;
+    retry:
         try
         {
             using (Py.GIL())
@@ -112,6 +112,8 @@ public class ScriptToolSet
         this.client = client;
     }
 }
+
+public class RunOnceCallbackInfos : ICallbackInfos {}
 
 public class IntervalCallbackInfos : ICallbackInfos
 {

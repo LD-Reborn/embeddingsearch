@@ -61,6 +61,10 @@ public class WorkerCollection
 
             switch (callConfig.Type)
             {
+                case "runonce":
+                    RunOnceCall runOnceCall = new(worker, _logger, callConfig);
+                    worker.Calls.Add(runOnceCall);
+                    break;
                 case "interval":
                     if (callConfig.Interval is null)
                     {
@@ -239,6 +243,69 @@ public interface ICall
     public CallConfig CallConfig { get; set; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
+}
+
+public class RunOnceCall : ICall
+{
+    public ILogger _logger;
+    public bool IsEnabled { get; set; }
+    public bool IsExecuting { get; set; }
+    public Worker Worker { get; }
+    public CallConfig CallConfig { get; set; }
+    public DateTime? LastExecution { get; set; }
+    public DateTime? LastSuccessfulExecution { get; set; }
+
+    public RunOnceCall(Worker worker, ILogger logger, CallConfig callConfig)
+    {
+        Worker = worker;
+        _logger = logger;
+        CallConfig = callConfig;
+        IsEnabled = true;
+        IsExecuting = false;
+        IndexAsync();
+    }
+
+    public void Start()
+    {
+        IndexAsync();
+        IsEnabled = true;
+    }
+
+    public void Stop()
+    {
+        IsEnabled = false;
+    }
+
+    private async void IndexAsync()
+    {
+        try
+        {
+            DateTime beforeExecution = DateTime.Now;
+            IsExecuting = true;
+            try
+            {
+                await Task.Run(() => Worker.Scriptable.Update(new RunOnceCallbackInfos()));
+            }
+            finally
+            {
+                IsExecuting = false;
+                LastExecution = beforeExecution;
+                Worker.LastExecution = beforeExecution;
+            }
+            DateTime afterExecution = DateTime.Now;
+            WorkerCollection.UpdateCallAndWorkerTimestamps(this, Worker, beforeExecution, afterExecution);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Exception occurred in a Call of Worker \"{name}\": \"{ex}\"", Worker.Name, ex.Message);
+        }
+    }
+
+    public HealthCheckResult HealthCheck()
+    {
+        return HealthCheckResult.Healthy(); // TODO implement proper healthcheck
+    }
+
 }
 
 public class IntervalCall : ICall
