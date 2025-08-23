@@ -54,6 +54,10 @@ If you just installed the server and want to configure it:
   }
 ```
 ## Call types
+- `runonce`
+  - What does it do: The script gets called once at startup. Use this if you need a main loop.
+  - (Remember the call runs in `update()` like the others!)
+  - Parameters: None
 - `interval`
     - What does it do: The script gets called periodically based on the specified `Interval` parameter.
     - Parameters:
@@ -68,6 +72,13 @@ If you just installed the server and want to configure it:
       - Path (e.g. "Scripts/example_content")
 # Scripting
 ## General
+Scripts need to define the following functions:
+- `init()`
+  - Is run at startup. Put all initialization code here.
+  - Do not put a main loop here! Might cause other workers not to initialize and other unintended behavior!
+- `update()`
+  - Is called by the calls as specified in [Call types](#call-types)
+  - A main loop might work best here using the `runonce` call
 ## probMethods
 Probmethods are used to join the multiple similarity values from multiple models and multiple datapoints into one single result.
 
