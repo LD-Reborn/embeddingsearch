@@ -60,10 +60,12 @@ If you just installed the server and want to configure it:
         - Interval (in milliseconds)
 - `schedule` (WIP)
     - What does it do: The script gets called based on the provided schedule
-    - Parameters: (WIP)
+    - Parameters:
+      - Schedule ([Quartz Cron expression](https://www.quartz-scheduler.net/documentation/quartz-3.x/tutorial/crontrigger.html), e.g. "0/5 * * * * ?")
 - `fileupdate` (WIP)
     - What does it do: The script gets called whenever a file is updated in the specified subdirectory
-    - Parameters: (WIP)
+    - Parameters:
+      - Path (e.g. "Scripts/example_content")
 # Scripting
 ## General
 ## probMethods

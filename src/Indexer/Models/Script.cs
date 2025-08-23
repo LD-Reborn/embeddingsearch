@@ -122,7 +122,13 @@ public class IntervalCallbackInfos : ICallbackInfos
 
 public class ScheduleCallbackInfos : ICallbackInfos {}
 
-public class ManualTriggerCallbackInfos : ICallbackInfos {}
+public class FileUpdateCallbackInfos : ICallbackInfos
+{
+    public required object? sender;
+    public required FileSystemEventArgs? e;
+}
+
+public class ManualTriggerCallbackInfos : ICallbackInfos { }
 
 public struct ScriptUpdateInfo
 {

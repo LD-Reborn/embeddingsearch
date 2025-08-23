@@ -106,15 +106,15 @@ public class WorkerCollection
                     ScheduleCall scheduleCall = new(worker, callConfig, _logger);
                     worker.Calls.Add(scheduleCall);
                     break;
-                    //throw new NotImplementedException("schedule not implemented yet");
                 case "fileupdate":
                     if (callConfig.Path is null)
                     {
                         _logger.LogError("Path not set for a Call in Worker \"{Name}\"", workerConfig.Name);
                         throw new IndexerConfigurationException($"Path not set for a Call in Worker \"{workerConfig.Name}\"");
                     }
-                    throw new NotImplementedException("fileupdate not implemented yet");
-                //break;
+                    FileUpdateCall fileUpdateCall = new(worker, callConfig, _logger);
+                    worker.Calls.Add(fileUpdateCall);
+                    break;
                 default:
                     throw new IndexerConfigurationException($"Unknown Type specified for a Call in Worker \"{workerConfig.Name}\"");
             }
@@ -280,7 +280,7 @@ public class IntervalCall : ICall
         if (!Scriptable.UpdateInfo.Successful)
         {
             _logger.LogWarning("HealthCheck revealed: The last execution of \"{name}\" was not successful", Scriptable.ToolSet.filePath);
-            return HealthCheckResult.Unhealthy();
+            return HealthCheckResult.Unhealthy($"HealthCheck revealed: The last execution of \"{Scriptable.ToolSet.filePath}\" was not successful");
         }
         double timerInterval = Timer.Interval; // In ms
         DateTime lastRunDateTime = Scriptable.UpdateInfo.DateTime;
@@ -289,7 +289,7 @@ public class IntervalCall : ICall
         if (millisecondsSinceLastExecution >= 2 * timerInterval)
         {
             _logger.LogWarning("HealthCheck revealed: Since the last execution of \"{name}\" more than twice the interval has passed", Scriptable.ToolSet.filePath);
-            return HealthCheckResult.Unhealthy();
+            return HealthCheckResult.Unhealthy($"HealthCheck revealed: Since the last execution of \"{Scriptable.ToolSet.filePath}\" more than twice the interval has passed");
         }
         return HealthCheckResult.Healthy();
     }
@@ -315,7 +315,7 @@ public class ScheduleCall : ICall
         Worker = worker;
         CallConfig = callConfig;
         _logger = logger;
-        IsEnabled = true;
+        IsEnabled = false;
         IsExecuting = false;
         JobKey = new(worker.Name);
         SchedulerFactory = new();
@@ -351,16 +351,17 @@ public class ScheduleCall : ICall
 
     public void Start()
     {
-        if (!IsExecuting)
+        if (!IsEnabled)
         {
             Scheduler.Start(CancellationToken.None).Wait();
-            IsExecuting = true;
+            IsEnabled = true;
         }
     }
 
     public void Stop()
     {
         Scheduler.PauseAll();
+        IsEnabled = false;
     }
 
 
@@ -387,8 +388,7 @@ public class ScheduleCall : ICall
         }
         catch (FormatException)
         {
-            _logger.LogCritical("Malformed Quartz Cron expression! Check your configuration and consult the documentation.");
-            throw;
+            throw new IndexerConfigurationException($"Quartz Cron expression invalid in Worker \"{Worker.Name}\" - Quartz syntax differs from classic cron");
         }
     }
 
@@ -402,23 +402,87 @@ public class FileUpdateCall : ICall
 {
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
+    public Worker Worker { get; }
     public CallConfig CallConfig { get; set; }
+    private ILogger _logger { get; }
+    private FileSystemWatcher _watcher { get; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
 
-    public FileUpdateCall(CallConfig callConfig)
+    public FileUpdateCall(Worker worker, CallConfig callConfig, ILogger logger)
     {
+        Worker = worker;
         CallConfig = callConfig;
+        _logger = logger;
         IsEnabled = true;
         IsExecuting = false;
+        if (CallConfig.Path is null)
+        {
+            throw new IndexerConfigurationException($"Path not set for a Call in Worker \"{Worker.Name}\"");
+        }
+        _watcher = new FileSystemWatcher(CallConfig.Path);
+        _watcher.Changed += OnFileChanged;
+        _watcher.Deleted += OnFileChanged;
+        _watcher.EnableRaisingEvents = true;
     }
 
     public void Start()
     {
+        if (!IsEnabled)
+        {
+            IsEnabled = true;
+            _watcher.EnableRaisingEvents = true;
+            Index();
+        }
     }
 
     public void Stop()
     {
+        if (IsEnabled)
+        {
+            IsEnabled = false;
+            _watcher.EnableRaisingEvents = false;
+        }
+    }
+
+
+    private void OnFileChanged(object sender, FileSystemEventArgs e)
+    {
+        if (!IsEnabled)
+        {
+            return;
+        }
+        Index(sender, e);
+    }
+
+    private void Index(object? sender, FileSystemEventArgs? e)
+    {
+        try
+        {
+            DateTime beforeExecution = DateTime.Now;
+            IsExecuting = true;
+            try
+            {
+                Worker.Scriptable.Update(new FileUpdateCallbackInfos() {sender = sender, e = e});
+            }
+            finally
+            {
+                IsExecuting = false;
+                LastExecution = beforeExecution;
+                Worker.LastExecution = beforeExecution;
+            }
+            DateTime afterExecution = DateTime.Now;
+            WorkerCollection.UpdateCallAndWorkerTimestamps(this, Worker, beforeExecution, afterExecution);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Exception occurred in a Call of Worker \"{name}\": \"{ex}\"", Worker.Name, ex.Message);
+        }
+    }
+
+    private void Index()
+    {
+        Index(null, null);
     }
 
     public HealthCheckResult HealthCheck()
