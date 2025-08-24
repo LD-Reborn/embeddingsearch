@@ -11,7 +11,7 @@ embeddingsearch offers:
   - the amount of datapoints per entity (i.e. the thing you're trying to find)
   - which models are used (multiple per datapoint possible to improve accuracy)
   - which models are sourced from where (multiple Ollama/OpenAI-compatible sources possible)
-  - similarity calculation methods (WIP)
+  - similarity calculation methods
   - aggregation of results (when multiple models are used per datapoint)
 
 This repository comes with a
