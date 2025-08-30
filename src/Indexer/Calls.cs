@@ -77,14 +77,49 @@ public class IntervalCall : ICall
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
 
-    public IntervalCall(System.Timers.Timer timer, IScriptable scriptable, ILogger logger, CallConfig callConfig)
+    public IntervalCall(Worker worker, ILogger logger, CallConfig callConfig)
     {
-        Timer = timer;
-        Scriptable = scriptable;
+        Scriptable = worker.Scriptable;
         _logger = logger;
         CallConfig = callConfig;
         IsEnabled = true;
         IsExecuting = false;
+        if (callConfig.Interval is null)
+        {
+            _logger.LogError("Interval not set for a Call in Worker \"{Name}\"", worker.Name);
+            throw new IndexerConfigurationException($"Interval not set for a Call in Worker \"{worker.Name}\"");
+        }
+
+        Timer = new System.Timers.Timer((double)callConfig.Interval)
+        {
+            AutoReset = true,
+            Enabled = true
+        };
+        DateTime now = DateTime.Now;
+        Timer.Elapsed += (sender, e) =>
+        {
+            try
+            {
+                DateTime beforeExecution = DateTime.Now;
+                IsExecuting = true;
+                try
+                {
+                    worker.Scriptable.Update(new IntervalCallbackInfos() { sender = sender, e = e });
+                }
+                finally
+                {
+                    IsExecuting = false;
+                    LastExecution = beforeExecution;
+                    worker.LastExecution = beforeExecution;
+                }
+                DateTime afterExecution = DateTime.Now;
+                WorkerManager.UpdateCallAndWorkerTimestamps(this, worker, beforeExecution, afterExecution);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Exception occurred in a Call of Worker \"{name}\": \"{ex}\"", worker.Name, ex.Message);
+            }
+        };
     }
 
     public void Start()
@@ -246,8 +281,10 @@ public class FileUpdateCall : ICall
             throw new IndexerConfigurationException($"Path not set for a Call in Worker \"{Worker.Name}\"");
         }
         _watcher = new FileSystemWatcher(CallConfig.Path);
+        _watcher.Created += OnFileChanged;
         _watcher.Changed += OnFileChanged;
         _watcher.Deleted += OnFileChanged;
+        _watcher.Renamed += OnFileChanged;
         _watcher.EnableRaisingEvents = true;
     }
 

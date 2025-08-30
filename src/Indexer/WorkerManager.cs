@@ -63,56 +63,14 @@ public class WorkerManager
                     worker.Calls.Add(runOnceCall);
                     break;
                 case "interval":
-                    if (callConfig.Interval is null)
-                    {
-                        _logger.LogError("Interval not set for a Call in Worker \"{Name}\"", workerConfig.Name);
-                        throw new IndexerConfigurationException($"Interval not set for a Call in Worker \"{workerConfig.Name}\"");
-                    }
-                    var timer = new System.Timers.Timer((double)callConfig.Interval);
-                    timer.AutoReset = true;
-                    timer.Enabled = true;
-                    DateTime now = DateTime.Now;
-                    IntervalCall intervallCall = new(timer, worker.Scriptable, _logger, callConfig)
-                    {
-                        LastExecution = now,
-                        LastSuccessfulExecution = now
-                    };
-                    timer.Elapsed += (sender, e) =>
-                    {
-                        try
-                        {
-                            DateTime beforeExecution = DateTime.Now;
-                            intervallCall.IsExecuting = true;
-                            try
-                            {
-                                worker.Scriptable.Update(new IntervalCallbackInfos() { sender = sender, e = e });
-                            }
-                            finally
-                            {
-                                intervallCall.IsExecuting = false;
-                                intervallCall.LastExecution = beforeExecution;
-                                worker.LastExecution = beforeExecution;
-                            }
-                            DateTime afterExecution = DateTime.Now;
-                            UpdateCallAndWorkerTimestamps(intervallCall, worker, beforeExecution, afterExecution);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError("Exception occurred in a Call of Worker \"{name}\": \"{ex}\"", worker.Name, ex.Message);
-                        }
-                    };
+                    IntervalCall intervallCall = new(worker, _logger, callConfig);
                     worker.Calls.Add(intervallCall);
                     break;
-                case "schedule": // TODO implement scheduled tasks using Quartz
+                case "schedule":
                     ScheduleCall scheduleCall = new(worker, callConfig, _logger);
                     worker.Calls.Add(scheduleCall);
                     break;
                 case "fileupdate":
-                    if (callConfig.Path is null)
-                    {
-                        _logger.LogError("Path not set for a Call in Worker \"{Name}\"", workerConfig.Name);
-                        throw new IndexerConfigurationException($"Path not set for a Call in Worker \"{workerConfig.Name}\"");
-                    }
                     FileUpdateCall fileUpdateCall = new(worker, callConfig, _logger);
                     worker.Calls.Add(fileUpdateCall);
                     break;
