@@ -1,7 +1,7 @@
 using Python.Runtime;
 using Indexer.Models;
 
-namespace Indexer.Scriptables;
+namespace Indexer.ScriptContainers;
 
 public class PythonScriptable : IScriptable
 {

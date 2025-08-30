@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Indexer.Models;
 
-namespace Indexer.Scriptables;
+namespace Indexer.ScriptContainers;
 
 public class CSharpScriptable : IScriptable
 {
