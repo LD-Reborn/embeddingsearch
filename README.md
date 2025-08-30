@@ -19,8 +19,9 @@ This repository comes with a
 - clientside library (C#)
 - scripting based indexer service that supports the use of
   - Python
-  - Golang (WIP)
-  - Javascript (WIP)
+  - CSharp (Roslyn)
+  - Golang (Planned)
+  - Javascript (Planned)
 
 # How to set up / use
 ## Server
