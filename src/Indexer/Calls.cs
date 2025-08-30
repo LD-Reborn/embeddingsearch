@@ -280,11 +280,22 @@ public class FileUpdateCall : ICall
         {
             throw new IndexerConfigurationException($"Path not set for a Call in Worker \"{Worker.Name}\"");
         }
+
+        List<string> events = callConfig.Events ?? [];
+        bool allEvents = events.Count == 0;
+        List<string> filters = callConfig.Filters ?? [];
+        bool includeSubdirectories = callConfig.IncludeSubdirectories ?? false;
+
         _watcher = new FileSystemWatcher(CallConfig.Path);
-        _watcher.Created += OnFileChanged;
-        _watcher.Changed += OnFileChanged;
-        _watcher.Deleted += OnFileChanged;
-        _watcher.Renamed += OnFileChanged;
+        if (allEvents || events.Contains("Created")) _watcher.Created += OnFileChanged;
+        if (allEvents || events.Contains("Changed")) _watcher.Changed += OnFileChanged;
+        if (allEvents || events.Contains("Deleted")) _watcher.Deleted += OnFileChanged;
+        if (allEvents || events.Contains("Renamed")) _watcher.Renamed += OnFileChanged;
+        foreach (string filter in filters)
+        {
+            _watcher.Filters.Add(filter);
+        }
+        _watcher.IncludeSubdirectories = includeSubdirectories;
         _watcher.EnableRaisingEvents = true;
     }
 
