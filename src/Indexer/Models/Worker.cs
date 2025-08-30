@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Indexer.Scriptables;
 using Indexer.Exceptions;
 using Quartz;
 using Quartz.Impl;
@@ -16,7 +17,7 @@ public class WorkerCollection
     public WorkerCollection(ILogger<WorkerCollection> logger, IConfiguration configuration, Client.Client client)
     {
         Workers = [];
-        types = [typeof(PythonScriptable)];
+        types = [typeof(PythonScriptable), typeof(CSharpScriptable)];
         _logger = logger;
         _configuration = configuration;
         this.client = client;
@@ -38,7 +39,7 @@ public class WorkerCollection
         {
             foreach (WorkerConfig workerConfig in sectionWorker.Worker)
             {
-                ScriptToolSet toolSet = new(workerConfig.Script, client);
+                ScriptToolSet toolSet = new(workerConfig.Script, client, _logger, _configuration, workerConfig.Name);
                 InitializeWorker(toolSet, workerConfig);
             }
         }
@@ -153,17 +154,23 @@ public class WorkerCollection
 
     public IScriptable GetScriptable(ScriptToolSet toolSet)
     {
-        string fileName = toolSet.filePath;
+        string fileName = toolSet.FilePath ?? throw new IndexerConfigurationException($"\"Script\" not set for Worker \"{toolSet.Name}\"");
         foreach (Type type in types)
-        {
-            IScriptable? instance = (IScriptable?)Activator.CreateInstance(type, [toolSet, _logger]);
-            if (instance is not null && instance.IsScript(fileName))
             {
-                return instance;
+                System.Reflection.MethodInfo? method = type.GetMethod("IsScript");
+                bool? isInstance = method is not null ? (bool?)method.Invoke(null, [fileName]) : null;
+                if (isInstance == true)
+                {
+                    IScriptable? instance = (IScriptable?)Activator.CreateInstance(type, [toolSet, _logger]);
+                    if (instance is null)
+                    {
+                        _logger.LogError("Unable to initialize script: \"{fileName}\"", fileName);
+                        throw new Exception($"Unable to initialize script: \"{fileName}\"");
+                    }
+                    return instance;
+                }
             }
-        }
         _logger.LogError("Unable to determine the script's language: \"{fileName}\"", fileName);
-
         throw new UnknownScriptLanguageException(fileName);
     }
 }
@@ -346,8 +353,8 @@ public class IntervalCall : ICall
     {
         if (!Scriptable.UpdateInfo.Successful)
         {
-            _logger.LogWarning("HealthCheck revealed: The last execution of \"{name}\" was not successful", Scriptable.ToolSet.filePath);
-            return HealthCheckResult.Unhealthy($"HealthCheck revealed: The last execution of \"{Scriptable.ToolSet.filePath}\" was not successful");
+            _logger.LogWarning("HealthCheck revealed: The last execution of \"{name}\" was not successful", Scriptable.ToolSet.FilePath);
+            return HealthCheckResult.Unhealthy($"HealthCheck revealed: The last execution of \"{Scriptable.ToolSet.FilePath}\" was not successful");
         }
         double timerInterval = Timer.Interval; // In ms
         DateTime lastRunDateTime = Scriptable.UpdateInfo.DateTime;
@@ -355,8 +362,8 @@ public class IntervalCall : ICall
         double millisecondsSinceLastExecution = now.Subtract(lastRunDateTime).TotalMilliseconds;
         if (millisecondsSinceLastExecution >= 2 * timerInterval)
         {
-            _logger.LogWarning("HealthCheck revealed: Since the last execution of \"{name}\" more than twice the interval has passed", Scriptable.ToolSet.filePath);
-            return HealthCheckResult.Unhealthy($"HealthCheck revealed: Since the last execution of \"{Scriptable.ToolSet.filePath}\" more than twice the interval has passed");
+            _logger.LogWarning("HealthCheck revealed: Since the last execution of \"{name}\" more than twice the interval has passed", Scriptable.ToolSet.FilePath);
+            return HealthCheckResult.Unhealthy($"HealthCheck revealed: Since the last execution of \"{Scriptable.ToolSet.FilePath}\" more than twice the interval has passed");
         }
         return HealthCheckResult.Healthy();
     }

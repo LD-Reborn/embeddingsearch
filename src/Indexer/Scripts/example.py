@@ -21,10 +21,10 @@ def init(toolset: Toolset):
     print("Py-DEBUG@init")
     print("This is the init function from the python example script")
     print(f"example_counter: {example_counter}")
-    searchdomainlist:SearchdomainListResults = toolset.client.SearchdomainListAsync().Result
+    searchdomainlist:SearchdomainListResults = toolset.Client.SearchdomainListAsync().Result
     if example_searchdomain not in searchdomainlist.Searchdomains:
-        toolset.client.SearchdomainCreateAsync(example_searchdomain).Result
-        searchdomainlist = toolset.client.SearchdomainListAsync().Result
+        toolset.Client.SearchdomainCreateAsync(example_searchdomain).Result
+        searchdomainlist = toolset.Client.SearchdomainListAsync().Result
     print("Currently these searchdomains exist:")
     for searchdomain in searchdomainlist.Searchdomains:
         print(f" - {searchdomain}")
@@ -34,7 +34,7 @@ def update(toolset: Toolset):
     global example_counter
     print("Py-DEBUG@update")
     print("This is the update function from the python example script")
-    callbackInfos:ICallbackInfos = toolset.callbackInfos
+    callbackInfos:ICallbackInfos = toolset.CallbackInfos
     if (str(callbackInfos) == "Indexer.Models.IntervalCallbackInfos"):
         print("It was called via an interval callback")
     else:
@@ -59,6 +59,6 @@ def index_files(toolset: Toolset):
         jsonEntities.append(jsonEntity)
     jsonstring = json.dumps(jsonEntities)
     timer_start = time.time()
-    result:EntityIndexResult = toolset.client.EntityIndexAsync(jsonstring).Result
+    result:EntityIndexResult = toolset.Client.EntityIndexAsync(jsonstring).Result
     timer_end = time.time()
     print(f"Update was successful: {result.Success} - and was done in {timer_end - timer_start} seconds.")

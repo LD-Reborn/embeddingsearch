@@ -177,8 +177,10 @@ probmethod_entity = "DictionaryWeightedAverage:{\"title\": 2, \"filename\": 0.1,
 To ease scripting, tools.py contains all definitions of the .NET objects passed to the script. This includes attributes and methods.
 
 These are not yet defined in a way that makes them 100% interactible with the Dotnet CLR, meaning some methods that require anything more than strings or other simple data types to be passed are not yet supported. (WIP)
-### Required elements
-Here is an overview of required elements by example:
+### Supported file extensions
+- .py
+### Code elements
+Here is an overview of code elements by example:
 ```python
 from tools import * # Import all tools that are provided for ease of scripting
 
@@ -197,6 +199,68 @@ Currently, `Toolset`, as provided by the IndexerService to the Python script, co
 1. (only for `update`, not `init`) `callbackInfos` - an object that provides all information regarding the callback. (e.g. what file was updated)
 2. `client` - a .NET object that has the functions as described in `src/Indexer/Scripts/tools.py`. It's the client that - according to the configuration - communicates with the search server and executes the API calls.
 3. `filePath` - the path to the script, as specified in the configuration
+## C# (Roslyn)
+### Supported file extensions
+- .csx
+### Code elements
+**important hint:** As shown in the last two lines of the example code, simply declaring the class is **not** enough. One must also return an object of said class!
+```csharp
+// #load directives are disregarded at compile time. Its use is currently for syntax highlighting only
+#load "../../Client/Client.cs"
+#load "../Models/Script.cs"
+#load "../Models/Interfaces.cs"
+#load "../Models/WorkerResults.cs"
+#load "../../Shared/Models/SearchdomainResults.cs"
+#load "../../Shared/Models/JSONModels.cs"
+#load "../../Shared/Models/EntityResults.cs"
+
+using Shared.Models;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Extensions.Logging;
+
+// Required: a class that extends Indexer.Models.IScript
+public class ExampleScript : Indexer.Models.IScript
+{
+    public Indexer.Models.ScriptToolSet ToolSet;
+    public Client.Client client;
+
+    // Optional: constructor
+    public ExampleScript()
+    {
+        //System.Console.WriteLine("DEBUG@example.cs - Constructor"); // logger not passed here yet
+    }
+
+    // Required: Init method as required to extend IScript
+    public int Init(Indexer.Models.ScriptToolSet toolSet)
+    {
+        ToolSet = toolSet;
+        ToolSet.Logger.LogInformation("DEBUG@example.csx - Init");
+        return 0; // Required: int error value return
+    }
+
+    // Required: Updaet method as required to extend IScript
+    public int Update(Indexer.Models.ICallbackInfos callbackInfos)
+    {
+        ToolSet.Logger.LogInformation("DEBUG@example.csx - Update");
+        EntityQueryResults test = ToolSet.Client.EntityQueryAsync(defaultSearchdomain, "DNA").Result;
+        var firstResult = test.Results.ToArray()[0];
+        ToolSet.Logger.LogInformation(firstResult.Name);
+        ToolSet.Logger.LogInformation(firstResult.Value.ToString());
+        return 0; // Required: int error value return
+    }
+
+    // Required: int error value return
+    public int Stop()
+    {
+        ToolSet.Logger.LogInformation("DEBUG@example.csx - Stop");
+        return 0; // Required: int error value return
+    }
+}
+
+// Required: return an instance of your IScript-extending class
+return new ExampleScript();
+```
 ## Golang
 TODO
 ## Javascript

@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="ElmahCore" Version="2.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.14" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
     <PackageReference Include="Quartz.Extensions.Hosting" Version="3.15.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
