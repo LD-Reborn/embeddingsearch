@@ -11,9 +11,9 @@ public class WorkerController : ControllerBase
     private readonly ILogger<WorkerController> _logger;
     private readonly IConfiguration _config;
     private readonly IConfigurationRoot _configurationRoot;
-    private readonly WorkerCollection _workerCollection;
+    private readonly WorkerManager _workerCollection;
 
-    public WorkerController(ILogger<WorkerController> logger, IConfiguration config, IConfigurationRoot configurationRoot, WorkerCollection workerCollection)
+    public WorkerController(ILogger<WorkerController> logger, IConfiguration config, IConfigurationRoot configurationRoot, WorkerManager workerCollection)
     {
         _logger = logger;
         _config = config;
@@ -86,7 +86,7 @@ public class WorkerController : ControllerBase
                 worker.LastExecution = beforeExecution;
             }
             DateTime afterExecution = DateTime.Now;
-            WorkerCollection.UpdateWorkerTimestamps(worker, beforeExecution, afterExecution);
+            WorkerManager.UpdateWorkerTimestamps(worker, beforeExecution, afterExecution);
         }
         _logger.LogInformation("triggered worker {name}.", [name]);
         return new WorkerTriggerUpdateResult { Success = true };

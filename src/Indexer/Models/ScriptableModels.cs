@@ -1,12 +1,5 @@
 namespace Indexer.Models;
 
-public interface IScript
-{
-    int Init(ScriptToolSet toolSet);
-    int Update(ICallbackInfos callbackInfos);
-    int Stop();
-}
-
 public interface IScriptable
 {
     ScriptToolSet ToolSet { get; set; }
@@ -18,6 +11,3 @@ public interface IScriptable
 
     abstract static bool IsScript(string filePath);
 }
-
-public interface ICallbackInfos { }
-

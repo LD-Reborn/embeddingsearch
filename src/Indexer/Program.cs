@@ -22,7 +22,7 @@ builder.Logging.AddSerilog();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IConfigurationRoot>(builder.Configuration);
 builder.Services.AddSingleton<Client.Client>();
-builder.Services.AddSingleton<WorkerCollection>();
+builder.Services.AddSingleton<WorkerManager>();
 builder.Services.AddHostedService<IndexerService>();
 builder.Services.AddHealthChecks()
     .AddCheck<WorkerHealthCheck>("WorkerHealthCheck");

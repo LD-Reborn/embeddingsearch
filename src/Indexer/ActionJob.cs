@@ -1,4 +1,3 @@
-using Indexer.Models;
 using Quartz;
 public class ActionJob : IJob
 {

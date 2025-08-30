@@ -2,6 +2,13 @@ using System.Timers;
 
 namespace Indexer.Models;
 
+public interface IScript
+{
+    int Init(ScriptToolSet toolSet);
+    int Update(ICallbackInfos callbackInfos);
+    int Stop();
+}
+
 public class ScriptToolSet
 {
     public string FilePath;
@@ -20,6 +27,8 @@ public class ScriptToolSet
         Logger = logger;
     }
 }
+
+public interface ICallbackInfos { }
 
 public class RunOnceCallbackInfos : ICallbackInfos {}
 

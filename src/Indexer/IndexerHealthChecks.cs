@@ -6,8 +6,8 @@ namespace Indexer;
 
 public class WorkerHealthCheck : IHealthCheck
 {
-    private readonly WorkerCollection _workerCollection;
-    public WorkerHealthCheck(WorkerCollection workerCollection)
+    private readonly WorkerManager _workerCollection;
+    public WorkerHealthCheck(WorkerManager workerCollection)
     {
         _workerCollection = workerCollection;
     }

@@ -4,10 +4,10 @@ namespace Indexer.Services;
 
 public class IndexerService : IHostedService
 {
-    public WorkerCollection workerCollection;
+    public WorkerManager workerCollection;
     public ILogger<IndexerService> _logger;
 
-    public IndexerService(WorkerCollection workerCollection, Client.Client client, ILogger<IndexerService> logger)
+    public IndexerService(WorkerManager workerCollection, Client.Client client, ILogger<IndexerService> logger)
     {
         this.workerCollection = workerCollection;
         _logger = logger;

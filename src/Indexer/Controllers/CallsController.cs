@@ -11,9 +11,9 @@ public class CallsController : ControllerBase
     private readonly ILogger<WorkerController> _logger;
     private readonly IConfiguration _config;
     private readonly IConfigurationRoot _configurationRoot;
-    private readonly WorkerCollection _workerCollection;
+    private readonly WorkerManager _workerCollection;
 
-    public CallsController(ILogger<WorkerController> logger, IConfiguration config, IConfigurationRoot configurationRoot, WorkerCollection workerCollection)
+    public CallsController(ILogger<WorkerController> logger, IConfiguration config, IConfigurationRoot configurationRoot, WorkerManager workerCollection)
     {
         _logger = logger;
         _config = config;
