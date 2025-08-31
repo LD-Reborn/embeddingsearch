@@ -19,6 +19,7 @@ public interface ICall
     public void Enable();
     public void Disable();
     public void Dispose();
+    public void Stop();
     public string Name { get; set; }
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }

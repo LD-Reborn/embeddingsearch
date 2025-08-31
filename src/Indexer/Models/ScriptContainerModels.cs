@@ -1,6 +1,6 @@
 namespace Indexer.Models;
 
-public interface IScriptable
+public interface IScriptContainer
 {
     ScriptToolSet ToolSet { get; set; }
     ScriptUpdateInfo UpdateInfo { get; set; }

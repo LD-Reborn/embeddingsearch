@@ -38,6 +38,11 @@ public class RunOnceCall : ICall
 
     public void Dispose() {}
 
+    public void Stop()
+    {
+        Worker.Scriptable.Stop();
+    }
+
     private async void IndexAsync()
     {
         try
@@ -73,7 +78,7 @@ public class RunOnceCall : ICall
 public class IntervalCall : ICall
 {
     public System.Timers.Timer Timer;
-    public IScriptable Scriptable;
+    public IScriptContainer Scriptable;
     public ILogger _logger;
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
@@ -143,6 +148,11 @@ public class IntervalCall : ICall
     public void Dispose()
     {
         Timer.Dispose();
+    }
+
+    public void Stop()
+    {
+        Scriptable.Stop();
     }
 
     public HealthCheckResult HealthCheck()
@@ -239,6 +249,11 @@ public class ScheduleCall : ICall
     public void Dispose()
     {
         Scheduler.DeleteJob(JobKey);
+    }
+
+    public void Stop()
+    {
+        Worker.Scriptable.Stop();
     }
 
     private async Task CreateJob()
@@ -339,6 +354,11 @@ public class FileUpdateCall : ICall
     public void Dispose()
     {
         _watcher.Dispose();
+    }
+
+    public void Stop()
+    {
+        Worker.Scriptable.Stop();
     }
 
     private void OnFileChanged(object sender, FileSystemEventArgs e)

@@ -106,7 +106,7 @@ public class WorkerManager
         return preexistingDateTime;
     }
 
-    public IScriptable GetScriptable(ScriptToolSet toolSet)
+    public IScriptContainer GetScriptable(ScriptToolSet toolSet)
     {
         string fileName = toolSet.FilePath ?? throw new IndexerConfigurationException($"\"Script\" not set for Worker \"{toolSet.Name}\"");
         foreach (Type type in types)
@@ -115,7 +115,7 @@ public class WorkerManager
             bool? isInstance = method is not null ? (bool?)method.Invoke(null, [fileName]) : null;
             if (isInstance == true)
             {
-                IScriptable? instance = (IScriptable?)Activator.CreateInstance(type, [toolSet, _logger]);
+                IScriptContainer? instance = (IScriptContainer?)Activator.CreateInstance(type, [toolSet, _logger]);
                 if (instance is null)
                 {
                     _logger.LogError("Unable to initialize script: \"{fileName}\"", fileName);

@@ -5,7 +5,7 @@ using Indexer.Models;
 
 namespace Indexer.ScriptContainers;
 
-public class CSharpScriptable : IScriptable
+public class CSharpScriptable : IScriptContainer
 {
     public ScriptToolSet ToolSet { get; set; }
     public ScriptUpdateInfo UpdateInfo { get; set; }

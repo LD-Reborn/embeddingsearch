@@ -5,13 +5,13 @@ public class Worker
 {
     public string Name { get; set; }
     public WorkerConfig Config { get; set; }
-    public IScriptable Scriptable { get; set; }
+    public IScriptContainer Scriptable { get; set; }
     public List<ICall> Calls { get; set; }
     public bool IsExecuting { get; set; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
 
-    public Worker(string name, WorkerConfig workerConfig, IScriptable scriptable)
+    public Worker(string name, WorkerConfig workerConfig, IScriptContainer scriptable)
     {
         Name = name;
         Config = workerConfig;

@@ -3,7 +3,7 @@ using Indexer.Models;
 
 namespace Indexer.ScriptContainers;
 
-public class PythonScriptable : IScriptable
+public class PythonScriptable : IScriptContainer
 {
     public ScriptToolSet ToolSet { get; set; }
     public PyObject? pyToolSet;
