@@ -8,6 +8,7 @@ public class RunOnceCall : ICall
     public ILogger _logger;
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
+    public string Name { get; set; }
     public Worker Worker { get; }
     public CallConfig CallConfig { get; set; }
     public DateTime? LastExecution { get; set; }
@@ -20,6 +21,7 @@ public class RunOnceCall : ICall
         CallConfig = callConfig;
         IsEnabled = true;
         IsExecuting = false;
+        Name = callConfig.Name;
         IndexAsync();
     }
 
@@ -33,6 +35,8 @@ public class RunOnceCall : ICall
     {
         IsEnabled = false;
     }
+
+    public void Dispose() {}
 
     private async void IndexAsync()
     {
@@ -73,6 +77,7 @@ public class IntervalCall : ICall
     public ILogger _logger;
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
+    public string Name { get; set; }
     public CallConfig CallConfig { get; set; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
@@ -84,6 +89,7 @@ public class IntervalCall : ICall
         CallConfig = callConfig;
         IsEnabled = true;
         IsExecuting = false;
+        Name = callConfig.Name;
         if (callConfig.Interval is null)
         {
             _logger.LogError("Interval not set for a Call in Worker \"{Name}\"", worker.Name);
@@ -134,6 +140,10 @@ public class IntervalCall : ICall
         Timer.Stop();
         IsEnabled = false;
     }
+    public void Dispose()
+    {
+        Timer.Dispose();
+    }
 
     public HealthCheckResult HealthCheck()
     {
@@ -160,6 +170,7 @@ public class ScheduleCall : ICall
 {
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
+    public string Name { get; set; }
     public Worker Worker { get; }
     public JobKey JobKey { get; }
     public JobDataMap JobDataMap { get; }
@@ -177,6 +188,7 @@ public class ScheduleCall : ICall
         _logger = logger;
         IsEnabled = false;
         IsExecuting = false;
+        Name = callConfig.Name;
         JobKey = new(worker.Name);
         SchedulerFactory = new();
         Scheduler = SchedulerFactory.GetScheduler(CancellationToken.None).Result;
@@ -224,6 +236,10 @@ public class ScheduleCall : ICall
         IsEnabled = false;
     }
 
+    public void Dispose()
+    {
+        Scheduler.DeleteJob(JobKey);
+    }
 
     private async Task CreateJob()
     {
@@ -262,6 +278,7 @@ public class FileUpdateCall : ICall
 {
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
+    public string Name { get; set; }
     public Worker Worker { get; }
     public CallConfig CallConfig { get; set; }
     private ILogger _logger { get; }
@@ -276,6 +293,7 @@ public class FileUpdateCall : ICall
         _logger = logger;
         IsEnabled = true;
         IsExecuting = false;
+        Name = callConfig.Name;
         if (CallConfig.Path is null)
         {
             throw new IndexerConfigurationException($"Path not set for a Call in Worker \"{Worker.Name}\"");
@@ -318,6 +336,10 @@ public class FileUpdateCall : ICall
         }
     }
 
+    public void Dispose()
+    {
+        _watcher.Dispose();
+    }
 
     private void OnFileChanged(object sender, FileSystemEventArgs e)
     {

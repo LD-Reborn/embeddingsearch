@@ -4,6 +4,7 @@ namespace Indexer.Models;
 
 public class CallConfig
 {
+    public required string Name { get; set; }
     public required string Type { get; set; }
     public long? Interval { get; set; } // For Type: Interval
     public string? Path { get; set; } // For Type: FileSystemWatcher
@@ -17,6 +18,8 @@ public interface ICall
     public HealthCheckResult HealthCheck();
     public void Start();
     public void Stop();
+    public void Dispose();
+    public string Name { get; set; }
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
     public CallConfig CallConfig { get; set; }

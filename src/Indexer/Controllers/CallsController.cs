@@ -22,17 +22,17 @@ public class CallsController : ControllerBase
     }
 
     [HttpGet("List")]
-    public ActionResult<CallListResults> List(string name)
+    public ActionResult<CallListResults> List(string workerName)
     {
         bool success = true;
         List<CallListResult> calls = [];
         var configWorkerSection = _config.GetSection("EmbeddingsearchIndexer:Worker");
-        _workerCollection.Workers.TryGetValue(name, out Worker? worker);
+        _workerCollection.Workers.TryGetValue(workerName, out Worker? worker);
         if (worker is null)
         {
             success = false;
-            _logger.LogError("No worker found under the name {name}.", [name]);
-            HttpContext.RaiseError(new Exception($"No worker found under the name {name}"));
+            _logger.LogError("No worker found under the name {name}.", [workerName]);
+            HttpContext.RaiseError(new Exception($"No worker found under the name {workerName}"));
         }
         else
         {
@@ -54,70 +54,67 @@ public class CallsController : ControllerBase
     }
 
     [HttpGet("Enable")]
-    public ActionResult<WorkerStartResult> Enable(string name)
+    public ActionResult<CallEnableResult> Enable(string workerName, string? callName)
     {
-        _workerCollection.Workers.TryGetValue(name, out Worker? worker);
+        _workerCollection.Workers.TryGetValue(workerName, out Worker? worker);
         if (worker is null)
         {
-            _logger.LogError("Unable to start calls in worker {name} - no running worker with this name.", [name]);
-            return new WorkerStartResult { Success = false };
+            _logger.LogError("Unable to start calls in worker {workerName} - no running worker with this name.", [workerName]);
+            return new CallEnableResult { Success = false };
         }
-        _logger.LogInformation("Starting calls in worker {name}.", [name]);
-        foreach (ICall call in worker.Calls)
+        if (callName is null)
         {
+            _logger.LogInformation("Starting calls in worker {workerName}.", [workerName]);
+            foreach (ICall call in worker.Calls)
+            {
+                call.Start();
+            }
+            _logger.LogInformation("Finished starting calls in worker {workerName}.", [workerName]);
+        }
+        else
+        {
+            _logger.LogCritical(worker.Calls.First().Name);
+            ICall? call = worker.Calls.Where(x => x.Name == callName).SingleOrDefault();
+            if (call is null)
+            {
+                _logger.LogError("Unable to start call {callName} in worker {workerName} - no call with this name.", [callName, workerName]);
+                return new CallEnableResult { Success = false };
+            }
+            _logger.LogInformation("Starting call {callName} in worker {workerName}.", [callName, workerName]);
             call.Start();
         }
-        _logger.LogInformation("Starting calls in worker {name}.", [name]);
-        return new WorkerStartResult { Success = true };
+        return new CallEnableResult { Success = true };
     }
 
     [HttpGet("Disable")]
-    public ActionResult<WorkerStopResult> Disable(string name)
+    public ActionResult<CallDisableResult> Disable(string workerName, string? callName)
     {
-        _workerCollection.Workers.TryGetValue(name, out Worker? worker);
+        _workerCollection.Workers.TryGetValue(workerName, out Worker? worker);
         if (worker is null)
         {
-            _logger.LogError("Unable to stop calls in worker {name} - no running worker with this name.", [name]);
-            return new WorkerStopResult { Success = false };
+            _logger.LogError("Unable to stop calls in worker {name} - no running worker with this name.", [workerName]);
+            return new CallDisableResult { Success = false };
         }
-        _logger.LogInformation("Stopping calls in worker {name}.", [name]);
-        foreach (ICall call in worker.Calls)
+        if (callName is null)
         {
-            call.Stop();
-        }
-        _logger.LogInformation("Stopped calls in worker {name}.", [name]);
-        return new WorkerStopResult { Success = true };
-    }
-
-    [HttpGet("Reload")]
-    public ActionResult<WorkerReloadConfigResult> Reload()
-    {
-        try
-        {
-            _logger.LogInformation("Reloading configuration");
-            _configurationRoot.Reload();
-            _logger.LogInformation("Reloaded configuration");
-            _logger.LogInformation("Destroying workers");
-            foreach (KeyValuePair<string, Worker> workerKVPair in _workerCollection.Workers)
+            _logger.LogInformation("Stopping calls in worker {name}.", [workerName]);
+            foreach (ICall call in worker.Calls)
             {
-                Worker worker = workerKVPair.Value;
-                foreach (ICall call in worker.Calls)
-                {
-                    call.Stop();
-                }
-                _workerCollection.Workers.Remove(workerKVPair.Key);
-                _logger.LogInformation("Destroyed worker {workerKVPair.Key}", [workerKVPair.Key]);
+                call.Stop();
             }
-            _logger.LogInformation("Destroyed workers");
-            _workerCollection.InitializeWorkers();
-            return new WorkerReloadConfigResult { Success = true };
-        }
-        catch (Exception ex)
+            _logger.LogInformation("Stopped calls in worker {name}.", [workerName]);
+        } else
         {
-            _logger.LogError("Exception {ex.Message} happened while trying to reload the worker configuration.", [ex.Message]);
-            HttpContext.RaiseError(ex);
-            return new WorkerReloadConfigResult { Success = false };
+            _logger.LogCritical(worker.Calls.First().Name);
+            ICall? call = worker.Calls.Where(x => x.Name == callName).SingleOrDefault();
+            if (call is null)
+            {
+                _logger.LogError("Unable to start call {callName} in worker {workerName} - no call with this name.", [callName, workerName]);
+                return new CallDisableResult { Success = false };
+            }
+            _logger.LogInformation("Starting call {callName} in worker {workerName}.", [callName, workerName]);
+            call.Stop();            
         }
+        return new CallDisableResult { Success = true };
     }
-
 }

@@ -2,20 +2,20 @@ using System.Text.Json.Serialization;
 
 namespace Indexer.Models;
 
-public class WorkerListResults
+public class CallListResults
 {
-    [JsonPropertyName("WorkerList")]
-    public required List<WorkerListResult> Workers { get; set; }
+    [JsonPropertyName("Calls")]
+    public required List<CallListResult> Calls { get; set; }
     [JsonPropertyName("Success")]
     public required bool Success { get; set; }
 }
 
-public class WorkerListResult
+public class CallListResult
 {
-    [JsonPropertyName("Name")]
-    public required string Name { get; set; }
-    [JsonPropertyName("Script")]
-    public required string Script { get; set; }
+    [JsonPropertyName("CallConfig")]
+    public required CallConfig CallConfig { get; set; }
+    [JsonPropertyName("IsActive")]
+    public required bool IsActive { get; set; }
     [JsonPropertyName("IsExecuting")]
     public required bool IsExecuting { get; set; }
     [JsonPropertyName("LastExecution")]
@@ -26,7 +26,13 @@ public class WorkerListResult
     public required string HealthStatus { get; set; }
 }
 
-public class WorkerTriggerUpdateResult
+public class CallDisableResult
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+}
+
+public class CallEnableResult
 {
     [JsonPropertyName("Success")]
     public required bool Success { get; set; }
