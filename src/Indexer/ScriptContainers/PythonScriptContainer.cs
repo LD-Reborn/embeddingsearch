@@ -83,11 +83,11 @@ public class PythonScriptable : IScriptContainer
             UpdateInfo = new() { DateTime = DateTime.Now, Successful = false, Exception = ex };
             if (retryCounter < 3)
             {
-                _logger.LogWarning("Execution of {name} function in script {Toolset.filePath} failed to an exception {ex.Message}", [name, ToolSet.FilePath, ex.Message]);
+                _logger.LogWarning("Execution of {name} function in script {Toolset.filePath} failed to an exception {ex}", [name, ToolSet.FilePath, ex]);
                 retryCounter++;
                 goto retry;
             }
-            _logger.LogError("Execution of {name} function in script {Toolset.filePath} failed to an exception {ex.Message}", [name, ToolSet.FilePath, ex.Message]);
+            _logger.LogError("Execution of {name} function in script {Toolset.filePath} failed to an exception {ex}", [name, ToolSet.FilePath, ex]);
             error = 1;
         }
         UpdateInfo = new() { DateTime = DateTime.Now, Successful = true };

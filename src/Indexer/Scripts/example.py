@@ -18,36 +18,42 @@ probmethod_entity = probmethod
 
 def init(toolset: Toolset):
     global example_counter
-    print("Py-DEBUG@init")
-    print("This is the init function from the python example script")
-    print(f"example_counter: {example_counter}")
+    toolset.Logger.LogInformation("{toolset.Name} - init", toolset.Name)
+    toolset.Logger.LogInformation("This is the init function from the python example script")
+    toolset.Logger.LogInformation(f"example_counter: {example_counter}")
     searchdomainlist:SearchdomainListResults = toolset.Client.SearchdomainListAsync().Result
     if example_searchdomain not in searchdomainlist.Searchdomains:
         toolset.Client.SearchdomainCreateAsync(example_searchdomain).Result
         searchdomainlist = toolset.Client.SearchdomainListAsync().Result
-    print("Currently these searchdomains exist:")
+    output = "Currently these searchdomains exist:\n"
     for searchdomain in searchdomainlist.Searchdomains:
-        print(f" - {searchdomain}")
-    index_files(toolset)
+        output += f" - {searchdomain}\n"
+    toolset.Logger.LogInformation(output)
 
 def update(toolset: Toolset):
     global example_counter
-    print("Py-DEBUG@update")
-    print("This is the update function from the python example script")
+    toolset.Logger.LogInformation("{toolset.Name} - update", toolset.Name)    
+    toolset.Logger.LogInformation("This is the update function from the python example script")
     callbackInfos:ICallbackInfos = toolset.CallbackInfos
-    if (str(callbackInfos) == "Indexer.Models.IntervalCallbackInfos"):
-        print("It was called via an interval callback")
+    if (str(callbackInfos) == "Indexer.Models.RunOnceCallbackInfos"):
+        toolset.Logger.LogInformation("It was triggered by a runonce call")
+    elif (str(callbackInfos) == "Indexer.Models.IntervalCallbackInfos"):
+        toolset.Logger.LogInformation("It was triggered by an interval call")
+    elif (str(callbackInfos) == "Indexer.Models.ScheduleCallbackInfos"):
+        toolset.Logger.LogInformation("It was triggered by a schedule call")
+    elif (str(callbackInfos) == "Indexer.Models.FileUpdateCallbackInfos"):
+        toolset.Logger.LogInformation("It was triggered by a fileupdate call")
     else:
-        print("It was called, but the origin of the call could not be determined")
+        toolset.Logger.LogInformation("It was triggered, but the origin of the call could not be determined")
     example_counter += 1
-    print(f"example_counter: {example_counter}")
+    toolset.Logger.LogInformation(f"example_counter: {example_counter}")
     index_files(toolset)
 
 def index_files(toolset: Toolset):
     jsonEntities:list = []
     for filename in os.listdir(example_content):
         qualified_filepath = example_content + "/" + filename
-        with open(qualified_filepath, "r", encoding='utf-8') as file:
+        with open(qualified_filepath, "r", encoding='utf-8', errors="replace") as file:
             title = file.readline()
             text = file.read()
         datapoints:list = [
@@ -61,4 +67,4 @@ def index_files(toolset: Toolset):
     timer_start = time.time()
     result:EntityIndexResult = toolset.Client.EntityIndexAsync(jsonstring).Result
     timer_end = time.time()
-    print(f"Update was successful: {result.Success} - and was done in {timer_end - timer_start} seconds.")
+    toolset.Logger.LogInformation(f"Update was successful: {result.Success} - and was done in {timer_end - timer_start} seconds.")

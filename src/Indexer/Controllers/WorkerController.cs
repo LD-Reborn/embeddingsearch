@@ -68,17 +68,17 @@ public class WorkerController : ControllerBase
         }
         _logger.LogInformation("triggering worker {name}.", [name]);
         ManualTriggerCallbackInfos callbackInfos = new();
-        lock (worker.Scriptable)
+        lock (worker.ScriptContainer)
         {
             worker.IsExecuting = true;
-            worker.Scriptable.Update(callbackInfos);
+            worker.ScriptContainer.Update(callbackInfos);
             worker.IsExecuting = false;
 
             DateTime beforeExecution = DateTime.Now;
             worker.IsExecuting = true;
             try
             {
-                worker.Scriptable.Update(callbackInfos);
+                worker.ScriptContainer.Update(callbackInfos);
             }
             finally
             {

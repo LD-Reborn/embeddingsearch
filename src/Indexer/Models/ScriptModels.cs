@@ -13,19 +13,34 @@ public class ScriptToolSet
 {
     public string FilePath;
     public Client.Client Client;
-    public ILogger Logger;
+    public LoggerWrapper Logger;
     public ICallbackInfos? CallbackInfos;
     public IConfiguration Configuration;
+    public CancellationToken CancellationToken;
     public string Name;
 
-    public ScriptToolSet(string filePath, Client.Client client, ILogger logger, IConfiguration configuration, string name)
+    public ScriptToolSet(string filePath, Client.Client client, ILogger<WorkerManager> logger, IConfiguration configuration, CancellationToken cancellationToken, string name)
     {
         Configuration = configuration;
         Name = name;
         FilePath = filePath;
         Client = client;
-        Logger = logger;
+        Logger = new LoggerWrapper(logger);
+        CancellationToken = cancellationToken;
     }
+}
+
+public class LoggerWrapper
+{
+    private readonly ILogger _logger;
+    public LoggerWrapper(ILogger logger) => _logger = logger;
+
+    public void LogTrace(string message, params object[]? args) => _logger.LogTrace(message, args);
+    public void LogDebug(string message, params object[]? args) => _logger.LogDebug(message, args);
+    public void LogInformation(string message, params object[]? args) => _logger.LogInformation(message, args);
+    public void LogWarning(string message, params object[]? args) => _logger.LogWarning(message, args);
+    public void LogError(string message, params object[]? args) => _logger.LogError(message, args);
+    public void LogCritical(string message, params object[]? args) => _logger.LogCritical(message, args);
 }
 
 public interface ICallbackInfos { }

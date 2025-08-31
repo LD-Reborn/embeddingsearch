@@ -6,7 +6,7 @@ public class WorkerManager
 {
     public Dictionary<string, Worker> Workers;
     public List<Type> types;
-    private readonly ILogger _logger;
+    private readonly ILogger<WorkerManager> _logger;
     private readonly IConfiguration _configuration;
     private readonly Client.Client client;
 
@@ -35,8 +35,9 @@ public class WorkerManager
         {
             foreach (WorkerConfig workerConfig in sectionWorker.Worker)
             {
-                ScriptToolSet toolSet = new(workerConfig.Script, client, _logger, _configuration, workerConfig.Name);
-                InitializeWorker(toolSet, workerConfig);
+                CancellationTokenSource cancellationTokenSource = new();
+                ScriptToolSet toolSet = new(workerConfig.Script, client, _logger, _configuration, cancellationTokenSource.Token, workerConfig.Name);
+                InitializeWorker(toolSet, workerConfig, cancellationTokenSource);
             }
         }
         else
@@ -47,10 +48,10 @@ public class WorkerManager
         _logger.LogInformation("Initialized workers");
     }
 
-    public void InitializeWorker(ScriptToolSet toolSet, WorkerConfig workerConfig)
+    public void InitializeWorker(ScriptToolSet toolSet, WorkerConfig workerConfig, CancellationTokenSource cancellationTokenSource)
     {
         _logger.LogInformation("Initializing worker: {Name}", workerConfig.Name);
-        Worker worker = new(workerConfig.Name, workerConfig, GetScriptable(toolSet));
+        Worker worker = new(workerConfig.Name, workerConfig, GetScriptable(toolSet), cancellationTokenSource);
         Workers[workerConfig.Name] = worker;
         foreach (CallConfig callConfig in workerConfig.Calls)
         {

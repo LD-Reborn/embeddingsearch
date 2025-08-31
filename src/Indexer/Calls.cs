@@ -40,7 +40,14 @@ public class RunOnceCall : ICall
 
     public void Stop()
     {
-        Worker.Scriptable.Stop();
+        if (IsEnabled)
+        {
+            Disable();
+        }
+        if (IsExecuting)
+        {
+            Worker.CancellationTokenSource.Cancel();
+        }
     }
 
     private async void IndexAsync()
@@ -51,7 +58,7 @@ public class RunOnceCall : ICall
             IsExecuting = true;
             try
             {
-                await Task.Run(() => Worker.Scriptable.Update(new RunOnceCallbackInfos()));
+                await Task.Run(() => Worker.ScriptContainer.Update(new RunOnceCallbackInfos()));
             }
             finally
             {
@@ -78,7 +85,7 @@ public class RunOnceCall : ICall
 public class IntervalCall : ICall
 {
     public System.Timers.Timer Timer;
-    public IScriptContainer Scriptable;
+    public Worker Worker;
     public ILogger _logger;
     public bool IsEnabled { get; set; }
     public bool IsExecuting { get; set; }
@@ -89,7 +96,7 @@ public class IntervalCall : ICall
 
     public IntervalCall(Worker worker, ILogger logger, CallConfig callConfig)
     {
-        Scriptable = worker.Scriptable;
+        Worker = worker;
         _logger = logger;
         CallConfig = callConfig;
         IsEnabled = true;
@@ -115,7 +122,7 @@ public class IntervalCall : ICall
                 IsExecuting = true;
                 try
                 {
-                    worker.Scriptable.Update(new IntervalCallbackInfos() { sender = sender, e = e });
+                    worker.ScriptContainer.Update(new IntervalCallbackInfos() { sender = sender, e = e });
                 }
                 finally
                 {
@@ -141,7 +148,7 @@ public class IntervalCall : ICall
 
     public void Disable()
     {
-        Scriptable.Stop();
+        Worker.ScriptContainer.Stop();
         Timer.Stop();
         IsEnabled = false;
     }
@@ -152,24 +159,31 @@ public class IntervalCall : ICall
 
     public void Stop()
     {
-        Scriptable.Stop();
+        if (IsEnabled)
+        {
+            Disable();
+        }
+        if (IsExecuting)
+        {
+            Worker.CancellationTokenSource.Cancel();
+        }
     }
 
     public HealthCheckResult HealthCheck()
     {
-        if (!Scriptable.UpdateInfo.Successful)
+        if (!Worker.ScriptContainer.UpdateInfo.Successful)
         {
-            _logger.LogWarning("HealthCheck revealed: The last execution of \"{name}\" was not successful", Scriptable.ToolSet.FilePath);
-            return HealthCheckResult.Unhealthy($"HealthCheck revealed: The last execution of \"{Scriptable.ToolSet.FilePath}\" was not successful");
+            _logger.LogWarning("HealthCheck revealed: The last execution of \"{name}\" was not successful", Worker.ScriptContainer.ToolSet.FilePath);
+            return HealthCheckResult.Unhealthy($"HealthCheck revealed: The last execution of \"{Worker.ScriptContainer.ToolSet.FilePath}\" was not successful");
         }
         double timerInterval = Timer.Interval; // In ms
-        DateTime lastRunDateTime = Scriptable.UpdateInfo.DateTime;
+        DateTime lastRunDateTime = Worker.ScriptContainer.UpdateInfo.DateTime;
         DateTime now = DateTime.Now;
         double millisecondsSinceLastExecution = now.Subtract(lastRunDateTime).TotalMilliseconds;
         if (millisecondsSinceLastExecution >= 2 * timerInterval)
         {
-            _logger.LogWarning("HealthCheck revealed: Since the last execution of \"{name}\" more than twice the interval has passed", Scriptable.ToolSet.FilePath);
-            return HealthCheckResult.Unhealthy($"HealthCheck revealed: Since the last execution of \"{Scriptable.ToolSet.FilePath}\" more than twice the interval has passed");
+            _logger.LogWarning("HealthCheck revealed: Since the last execution of \"{name}\" more than twice the interval has passed", Worker.ScriptContainer.ToolSet.FilePath);
+            return HealthCheckResult.Unhealthy($"HealthCheck revealed: Since the last execution of \"{Worker.ScriptContainer.ToolSet.FilePath}\" more than twice the interval has passed");
         }
         return HealthCheckResult.Healthy();
     }
@@ -211,7 +225,7 @@ public class ScheduleCall : ICall
                 IsExecuting = true;
                 try
                 {
-                    worker.Scriptable.Update(new ScheduleCallbackInfos());
+                    worker.ScriptContainer.Update(new ScheduleCallbackInfos());
                 }
                 finally
                 {
@@ -253,7 +267,14 @@ public class ScheduleCall : ICall
 
     public void Stop()
     {
-        Worker.Scriptable.Stop();
+        if (IsEnabled)
+        {
+            Disable();
+        }
+        if (IsExecuting)
+        {
+            Worker.CancellationTokenSource.Cancel();
+        }
     }
 
     private async Task CreateJob()
@@ -358,7 +379,14 @@ public class FileUpdateCall : ICall
 
     public void Stop()
     {
-        Worker.Scriptable.Stop();
+        if (IsEnabled)
+        {
+            Disable();
+        }
+        if (IsExecuting)
+        {
+            Worker.CancellationTokenSource.Cancel();
+        }
     }
 
     private void OnFileChanged(object sender, FileSystemEventArgs e)
@@ -378,7 +406,7 @@ public class FileUpdateCall : ICall
             IsExecuting = true;
             try
             {
-                Worker.Scriptable.Update(new FileUpdateCallbackInfos() {sender = sender, e = e});
+                Worker.ScriptContainer.Update(new FileUpdateCallbackInfos() {sender = sender, e = e});
             }
             finally
             {

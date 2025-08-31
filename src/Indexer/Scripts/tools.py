@@ -1,6 +1,8 @@
+from __future__ import annotations
 from dataclasses import dataclass
 import array
 from typing import Optional
+from enum import Enum
 
 @dataclass
 class JSONDatapoint:
@@ -124,9 +126,62 @@ class IntervalCallbackInfos(ICallbackInfos):
     e: object
 
 @dataclass
-class Toolset:
-    filePath:str
-    client:Client
-    callbackInfos: Optional[ICallbackInfos] = None
+class LoggerWrapper:
+    def LogTrace(message:str, args:list[object]) -> None:
+        pass
+    def LogDebug(message:str, args:list[object]) -> None:
+        pass
+    def LogInformation(message:str) -> None:
+        pass
+    def LogInformation(message:str, args:list[object]) -> None:
+        pass
+    def LogWarning(message:str, args:list[object]) -> None:
+        pass
+    def LogError(message:str, args:list[object]) -> None:
+        pass
+    def LogCritical(message:str, args:list[object]) -> None:
+        pass
+
+@dataclass
+class CancellationTokenRegistration:
+    Token: CancellationToken
+    def Dispose() -> None:
+        pass
+    def Unregister() -> None:
+        pass
+
+@dataclass
+class WaitHandle:
+    SafeWaitHandle: object
+    def Close() -> None:
+        pass
+    def Dispose() -> None:
+        pass
+    def WaitOne() -> bool:
+        pass
+    def WaitOne(timeout:int) -> bool:
+        pass
+
+
+@dataclass
+class CancellationToken:
+    CanBeCanceled: bool
+    IsCancellationRequested: bool
+    def ThrowIfCancellationRequested() -> None:
+        pass
+    def Register(callback: callable[[], any]) -> CancellationTokenRegistration:
+        pass
+    WaitHandle: WaitHandle
     
+
+@dataclass
+class Toolset:
+    Name:str
+    FilePath:str
+    Client:Client
+    Logger:LoggerWrapper
+    Configuration: object
+    CancellationToken: CancellationToken
+    Name:str
+    CallbackInfos: Optional[ICallbackInfos] = None
 

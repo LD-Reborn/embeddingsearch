@@ -5,17 +5,19 @@ public class Worker
 {
     public string Name { get; set; }
     public WorkerConfig Config { get; set; }
-    public IScriptContainer Scriptable { get; set; }
+    public IScriptContainer ScriptContainer { get; set; }
+    public CancellationTokenSource CancellationTokenSource { get; }
     public List<ICall> Calls { get; set; }
     public bool IsExecuting { get; set; }
     public DateTime? LastExecution { get; set; }
     public DateTime? LastSuccessfulExecution { get; set; }
 
-    public Worker(string name, WorkerConfig workerConfig, IScriptContainer scriptable)
+    public Worker(string name, WorkerConfig workerConfig, IScriptContainer scriptable, CancellationTokenSource cancellationTokenSource)
     {
         Name = name;
         Config = workerConfig;
-        Scriptable = scriptable;
+        ScriptContainer = scriptable;
+        CancellationTokenSource = cancellationTokenSource;
         IsExecuting = false;
         Calls = [];
     }

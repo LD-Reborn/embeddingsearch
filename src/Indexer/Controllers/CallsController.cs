@@ -87,7 +87,7 @@ public class CallsController : ControllerBase
     }
 
     [HttpGet("Disable")]
-    public ActionResult<CallDisableResult> Disable(string workerName, string? callName)
+    public ActionResult<CallDisableResult> Disable(string workerName, string? callName, bool? requestStop = false)
     {
         _workerCollection.Workers.TryGetValue(workerName, out Worker? worker);
         if (worker is null)
@@ -101,6 +101,10 @@ public class CallsController : ControllerBase
             foreach (ICall call in worker.Calls)
             {
                 call.Disable();
+                if (requestStop == true)
+                {
+                    call.Stop();
+                }
             }
             _logger.LogInformation("Stopped calls in worker {name}.", [workerName]);
         } else
@@ -114,6 +118,10 @@ public class CallsController : ControllerBase
             }
             _logger.LogInformation("Starting call {callName} in worker {workerName}.", [callName, workerName]);
             call.Disable();            
+            if (requestStop == true)
+            {
+                call.Stop();
+            }
         }
         return new CallDisableResult { Success = true };
     }
