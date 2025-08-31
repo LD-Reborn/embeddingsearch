@@ -40,7 +40,7 @@ public class ExampleScript : Indexer.Models.IScript
     public int Init(Indexer.Models.ScriptToolSet toolSet)
     {
         ToolSet = toolSet;
-        ToolSet.Logger.LogInformation("DEBUG@example.csx - Init");
+        ToolSet.Logger.LogInformation("{ToolSet.Name} - Init", ToolSet.Name);
         SearchdomainListResults searchdomains = ToolSet.Client.SearchdomainListAsync().Result;
         defaultSearchdomain = searchdomains.Searchdomains.First();
         var searchdomainList = string.Join("\n", searchdomains.Searchdomains);
@@ -50,7 +50,7 @@ public class ExampleScript : Indexer.Models.IScript
 
     public int Update(Indexer.Models.ICallbackInfos callbackInfos)
     {
-        ToolSet.Logger.LogInformation("DEBUG@example.csx - Update");
+        ToolSet.Logger.LogInformation("{ToolSet.Name} - Update", ToolSet.Name);
         EntityQueryResults test = ToolSet.Client.EntityQueryAsync(defaultSearchdomain, "DNA").Result;
         var firstResult = test.Results.ToArray()[0];
         ToolSet.Logger.LogInformation(firstResult.Name);
