@@ -64,6 +64,12 @@ public class CallsController : ControllerBase
         }
         if (callName is null)
         {
+            if (worker.ScriptContainer.ToolSet.CancellationToken.IsCancellationRequested)
+            {
+                worker.CancellationTokenSource.Dispose();
+                worker.CancellationTokenSource = new CancellationTokenSource();
+                worker.ScriptContainer.ToolSet.CancellationToken = worker.CancellationTokenSource.Token;
+            }
             _logger.LogInformation("Starting calls in worker {workerName}.", [workerName]);
             foreach (ICall call in worker.Calls)
             {
@@ -81,6 +87,12 @@ public class CallsController : ControllerBase
                 return new CallEnableResult { Success = false };
             }
             _logger.LogInformation("Starting call {callName} in worker {workerName}.", [callName, workerName]);
+            if (worker.ScriptContainer.ToolSet.CancellationToken.IsCancellationRequested)
+            {
+                worker.CancellationTokenSource.Dispose();
+                worker.CancellationTokenSource = new CancellationTokenSource();
+                worker.ScriptContainer.ToolSet.CancellationToken = worker.CancellationTokenSource.Token;
+            }
             call.Enable();
         }
         return new CallEnableResult { Success = true };

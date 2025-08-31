@@ -6,7 +6,7 @@ public class Worker
     public string Name { get; set; }
     public WorkerConfig Config { get; set; }
     public IScriptContainer ScriptContainer { get; set; }
-    public CancellationTokenSource CancellationTokenSource { get; }
+    public CancellationTokenSource CancellationTokenSource { get; set; }
     public List<ICall> Calls { get; set; }
     public bool IsExecuting { get; set; }
     public DateTime? LastExecution { get; set; }
