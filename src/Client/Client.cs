@@ -134,8 +134,6 @@ public class Client
             using var client = new HttpClient();
             var response = await client.PostAsync(url, content);
             string responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine("DEBUG@GetUrlAndProcessJson");
-            Console.WriteLine(responseContent);
             var result = JsonSerializer.Deserialize<T>(responseContent)
                 ?? throw new Exception($"Failed to deserialize JSON to type {typeof(T).Name}");
             return result;
