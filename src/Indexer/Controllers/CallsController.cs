@@ -67,7 +67,7 @@ public class CallsController : ControllerBase
             _logger.LogInformation("Starting calls in worker {workerName}.", [workerName]);
             foreach (ICall call in worker.Calls)
             {
-                call.Start();
+                call.Enable();
             }
             _logger.LogInformation("Finished starting calls in worker {workerName}.", [workerName]);
         }
@@ -81,7 +81,7 @@ public class CallsController : ControllerBase
                 return new CallEnableResult { Success = false };
             }
             _logger.LogInformation("Starting call {callName} in worker {workerName}.", [callName, workerName]);
-            call.Start();
+            call.Enable();
         }
         return new CallEnableResult { Success = true };
     }
@@ -100,7 +100,7 @@ public class CallsController : ControllerBase
             _logger.LogInformation("Stopping calls in worker {name}.", [workerName]);
             foreach (ICall call in worker.Calls)
             {
-                call.Stop();
+                call.Disable();
             }
             _logger.LogInformation("Stopped calls in worker {name}.", [workerName]);
         } else
@@ -113,7 +113,7 @@ public class CallsController : ControllerBase
                 return new CallDisableResult { Success = false };
             }
             _logger.LogInformation("Starting call {callName} in worker {workerName}.", [callName, workerName]);
-            call.Stop();            
+            call.Disable();            
         }
         return new CallDisableResult { Success = true };
     }

@@ -16,8 +16,8 @@ public class CallConfig
 public interface ICall
 {
     public HealthCheckResult HealthCheck();
-    public void Start();
-    public void Stop();
+    public void Enable();
+    public void Disable();
     public void Dispose();
     public string Name { get; set; }
     public bool IsEnabled { get; set; }

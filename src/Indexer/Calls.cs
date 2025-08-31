@@ -25,13 +25,13 @@ public class RunOnceCall : ICall
         IndexAsync();
     }
 
-    public void Start()
+    public void Enable()
     {
         IndexAsync();
         IsEnabled = true;
     }
 
-    public void Stop()
+    public void Disable()
     {
         IsEnabled = false;
     }
@@ -128,13 +128,13 @@ public class IntervalCall : ICall
         };
     }
 
-    public void Start()
+    public void Enable()
     {
         Timer.Start();
         IsEnabled = true;
     }
 
-    public void Stop()
+    public void Disable()
     {
         Scriptable.Stop();
         Timer.Stop();
@@ -218,10 +218,10 @@ public class ScheduleCall : ICall
             }
         };
         CreateJob().Wait();
-        Start();
+        Enable();
     }
 
-    public void Start()
+    public void Enable()
     {
         if (!IsEnabled)
         {
@@ -230,7 +230,7 @@ public class ScheduleCall : ICall
         }
     }
 
-    public void Stop()
+    public void Disable()
     {
         Scheduler.PauseAll();
         IsEnabled = false;
@@ -317,7 +317,7 @@ public class FileUpdateCall : ICall
         _watcher.EnableRaisingEvents = true;
     }
 
-    public void Start()
+    public void Enable()
     {
         if (!IsEnabled)
         {
@@ -327,7 +327,7 @@ public class FileUpdateCall : ICall
         }
     }
 
-    public void Stop()
+    public void Disable()
     {
         if (IsEnabled)
         {

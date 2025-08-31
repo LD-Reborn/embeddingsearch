@@ -36,7 +36,7 @@ public class ConfigController : ControllerBase
                 Worker worker = workerKVPair.Value;
                 foreach (ICall call in worker.Calls)
                 {
-                    call.Stop();
+                    call.Disable();
                     call.Dispose();
                 }
                 worker.Calls.Clear();
