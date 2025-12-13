@@ -157,7 +157,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             datapoints.Add(datapoint);
         }
 
-        var probMethod = Probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new Exception($"Unknown probmethod name {jsonEntity.Probmethod}");
+        var probMethod = Probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new ProbMethodNotFoundException(jsonEntity.Probmethod);
         Entity entity = new(jsonEntity.Attributes, probMethod, datapoints, jsonEntity.Name)
         {
             id = id_entity
