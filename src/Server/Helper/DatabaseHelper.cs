@@ -3,8 +3,10 @@ using System.Text;
 
 namespace Server.Helper;
 
-public static class DatabaseHelper
+public class DatabaseHelper(ILogger<DatabaseHelper> logger)
 {
+    private readonly ILogger<DatabaseHelper> _logger = logger;
+
     public static void DatabaseInsertEmbeddingBulk(SQLHelper helper, int id_datapoint, List<(string model, byte[] embedding)> data)
     {
         Dictionary<string, object> parameters = [];
@@ -80,7 +82,7 @@ public static class DatabaseHelper
         return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO embedding (id_datapoint, model, embedding) VALUES (@id_datapoint, @model, @embedding)", parameters);
     }
 
-    public static int GetSearchdomainID(SQLHelper helper, string searchdomain)
+    public int GetSearchdomainID(SQLHelper helper, string searchdomain)
     {
         Dictionary<string, dynamic> parameters = new()
         {
@@ -98,12 +100,13 @@ public static class DatabaseHelper
             }
             else
             {
-                throw new Exception($"Unable to retrieve searchdomain ID for {searchdomain}"); // TODO implement logging here; add logger via method injection
+                _logger.LogError("Unable to retrieve searchdomain ID for {searchdomain}", [searchdomain]);
+                throw new Exception($"Unable to retrieve searchdomain ID for {searchdomain}");
             }
         }
     }
 
-    public static void RemoveEntity(List<Entity> entityCache, SQLHelper helper, string name, string searchdomain)
+    public void RemoveEntity(List<Entity> entityCache, SQLHelper helper, string name, string searchdomain)
     {
         Dictionary<string, dynamic> parameters = new()
         {
@@ -118,7 +121,7 @@ public static class DatabaseHelper
         entityCache.RemoveAll(entity => entity.name == name);
     }
 
-    public static int RemoveAllEntities(SQLHelper helper, string searchdomain)
+    public int RemoveAllEntities(SQLHelper helper, string searchdomain)
     {
         Dictionary<string, dynamic> parameters = new()
         {
@@ -131,7 +134,7 @@ public static class DatabaseHelper
         return helper.ExecuteSQLNonQuery("DELETE FROM entity WHERE entity.id_searchdomain = @searchdomain", parameters);
     }
 
-    public static bool HasEntity(SQLHelper helper, string name, string searchdomain)
+    public bool HasEntity(SQLHelper helper, string name, string searchdomain)
     {
         Dictionary<string, dynamic> parameters = new()
         {
@@ -155,7 +158,7 @@ public static class DatabaseHelper
         }
     }
 
-    public static int? GetEntityID(SQLHelper helper, string name, string searchdomain)
+    public int? GetEntityID(SQLHelper helper, string name, string searchdomain)
     {
         Dictionary<string, dynamic> parameters = new()
         {

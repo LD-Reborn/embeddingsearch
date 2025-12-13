@@ -12,12 +12,16 @@ public class EntityController : ControllerBase
     private readonly ILogger<EntityController> _logger;
     private readonly IConfiguration _config;
     private SearchdomainManager _domainManager;
+    private readonly SearchdomainHelper _searchdomainHelper;
+    private readonly DatabaseHelper _databaseHelper;
 
-    public EntityController(ILogger<EntityController> logger, IConfiguration config, SearchdomainManager domainManager)
+    public EntityController(ILogger<EntityController> logger, IConfiguration config, SearchdomainManager domainManager, SearchdomainHelper searchdomainHelper, DatabaseHelper databaseHelper)
     {
         _logger = logger;
         _config = config;
         _domainManager = domainManager;
+        _searchdomainHelper = searchdomainHelper;
+        _databaseHelper = databaseHelper;
     }
 
     [HttpGet("Query")]
@@ -46,7 +50,7 @@ public class EntityController : ControllerBase
     {
         try
         {
-            List<Entity>? entities = SearchdomainHelper.EntitiesFromJSON(
+            List<Entity>? entities = _searchdomainHelper.EntitiesFromJSON(
                 [],
                 _domainManager.embeddingCache,
                 _domainManager.aIProvider,
@@ -140,7 +144,7 @@ public class EntityController : ControllerBase
             _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
             return Ok(new EntityDeleteResults() {Success = false});
         }
-        DatabaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
+        _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
         return Ok(new EntityDeleteResults() {Success = true});
     }
 }

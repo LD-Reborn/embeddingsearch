@@ -3,6 +3,7 @@ using ElmahCore.Mvc;
 using Serilog;
 using Server;
 using Server.HealthChecks;
+using Server.Helper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,8 @@ Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 builder.Logging.AddSerilog();
+builder.Services.AddSingleton<DatabaseHelper>();
+builder.Services.AddSingleton<SearchdomainHelper>();
 builder.Services.AddSingleton<SearchdomainManager>();
 builder.Services.AddSingleton<AIProvider>();
 builder.Services.AddHealthChecks()

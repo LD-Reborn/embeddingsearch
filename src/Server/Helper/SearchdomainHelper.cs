@@ -7,8 +7,11 @@ using Shared.Models;
 
 namespace Server.Helper;
 
-public static class SearchdomainHelper
+public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelper databaseHelper)
 {
+    private readonly ILogger<SearchdomainHelper> _logger = logger;
+    private readonly DatabaseHelper _databaseHelper = databaseHelper;
+
     public static byte[] BytesFromFloatArray(float[] floats)
     {
         var byteArray = new byte[floats.Length * 4];
@@ -41,7 +44,7 @@ public static class SearchdomainHelper
         return null;
     }
 
-    public static List<Entity>? EntitiesFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, AIProvider aIProvider, SQLHelper helper, ILogger logger, string json)
+    public List<Entity>? EntitiesFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, AIProvider aIProvider, SQLHelper helper, ILogger logger, string json)
     {
         List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>>(json);
         if (jsonEntities is null)
@@ -79,10 +82,10 @@ public static class SearchdomainHelper
         return [.. retVal];
     }
 
-    public static Entity? EntityFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, AIProvider aIProvider, SQLHelper helper, ILogger logger, JSONEntity jsonEntity) //string json)
+    public Entity? EntityFromJSON(List<Entity> entityCache, Dictionary<string, Dictionary<string, float[]>> embeddingCache, AIProvider aIProvider, SQLHelper helper, ILogger logger, JSONEntity jsonEntity) //string json)
     {
         Dictionary<string, Dictionary<string, float[]>> embeddingsLUT = []; // embeddingsLUT: hash -> model -> [embeddingValues * n]
-        int? preexistingEntityID = DatabaseHelper.GetEntityID(helper, jsonEntity.Name, jsonEntity.Searchdomain);
+        int? preexistingEntityID = _databaseHelper.GetEntityID(helper, jsonEntity.Name, jsonEntity.Searchdomain);
         if (preexistingEntityID is not null)
         {
             lock (helper.connection) // TODO change this to helper and do A/B tests (i.e. before/after)
@@ -108,9 +111,9 @@ public static class SearchdomainHelper
                 }
                 reader.Close();
             }
-            DatabaseHelper.RemoveEntity(entityCache, helper, jsonEntity.Name, jsonEntity.Searchdomain); // TODO only remove entity if there is actually a change somewhere. Perhaps create 3 datapoint lists to operate with: 1. delete, 2. update, 3. create
+            _databaseHelper.RemoveEntity(entityCache, helper, jsonEntity.Name, jsonEntity.Searchdomain); // TODO only remove entity if there is actually a change somewhere. Perhaps create 3 datapoint lists to operate with: 1. delete, 2. update, 3. create
         }
-        int id_entity = DatabaseHelper.DatabaseInsertEntity(helper, jsonEntity.Name, jsonEntity.Probmethod, DatabaseHelper.GetSearchdomainID(helper, jsonEntity.Searchdomain));
+        int id_entity = DatabaseHelper.DatabaseInsertEntity(helper, jsonEntity.Name, jsonEntity.Probmethod, _databaseHelper.GetSearchdomainID(helper, jsonEntity.Searchdomain));
         foreach (KeyValuePair<string, string> attribute in jsonEntity.Attributes)
         {
             DatabaseHelper.DatabaseInsertAttribute(helper, attribute.Key, attribute.Value, id_entity); // TODO implement bulk insert to reduce number of queries

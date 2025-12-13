@@ -11,16 +11,18 @@ public class SearchdomainManager
     private readonly ILogger<SearchdomainManager> _logger;
     private readonly IConfiguration _config;
     public readonly AIProvider aIProvider;
+    private readonly DatabaseHelper _databaseHelper;
     private readonly string connectionString;
     private MySqlConnection connection;
     public SQLHelper helper;
     public Dictionary<string, Dictionary<string, float[]>> embeddingCache;
 
-    public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config, AIProvider aIProvider)
+    public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config, AIProvider aIProvider, DatabaseHelper databaseHelper)
     {
         _logger = logger;
         _config = config;
         this.aIProvider = aIProvider;
+        _databaseHelper = databaseHelper;
         embeddingCache = [];
         connectionString = _config.GetSection("Embeddingsearch").GetConnectionString("SQL") ?? "";
         connection = new MySqlConnection(connectionString);
@@ -96,8 +98,7 @@ public class SearchdomainManager
 
     public int DeleteSearchdomain(string searchdomain)
     {
-        Searchdomain searchdomain_ = GetSearchdomain(searchdomain);
-        int counter = DatabaseHelper.RemoveAllEntities(helper, searchdomain);
+        int counter = _databaseHelper.RemoveAllEntities(helper, searchdomain);
         _logger.LogDebug($"Number of entities deleted as part of deleting the searchdomain \"{searchdomain}\": {counter}");
         helper.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
         searchdomains.Remove(searchdomain);
