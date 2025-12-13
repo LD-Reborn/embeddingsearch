@@ -21,6 +21,8 @@ public class EntityIndexResult
 {
     [JsonPropertyName("Success")]
     public required bool Success { get; set; }
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
 }
 
 public class EntityListResults
