@@ -7,6 +7,10 @@ public class EntityQueryResults
 {
     [JsonPropertyName("Results")]
     public required List<EntityQueryResult> Results { get; set; }
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
 }
 
 public class EntityQueryResult
@@ -75,5 +79,7 @@ public class EntityDeleteResults
 {
     [JsonPropertyName("Success")]
     public required bool Success { get; set; }
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
 }
 

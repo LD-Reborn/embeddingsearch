@@ -31,10 +31,14 @@ public class EntityController : ControllerBase
         try
         {
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (Exception)
+        } catch (SearchdomainNotFoundException)
         {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]); // TODO DRY violation; perhaps move this logging to the SearchdomainManager?
-            return Ok(new EntityQueryResults() {Results = []});
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Searchdomain not found" });
+        } catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
         }
         var results = searchdomain_.Search(query);
         List<EntityQueryResult> queryResults = [.. results.Select(r => new EntityQueryResult
@@ -42,7 +46,7 @@ public class EntityController : ControllerBase
             Name = r.Item2,
             Value = r.Item1
         })];
-        return Ok(new EntityQueryResults(){Results = queryResults});
+        return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
     }
 
     [HttpPost("Index")]
@@ -94,10 +98,14 @@ public class EntityController : ControllerBase
         try
         {
             searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (Exception)
+        } catch (SearchdomainNotFoundException)
         {
             _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new EntityListResults() { Results = [], Success = false });
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Searchdomain not found" });
+        } catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
         }
         EntityListResults entityListResults = new() {Results = [], Success = true};
         foreach (Entity entity in searchdomain_.entityCache)
@@ -142,7 +150,7 @@ public class EntityController : ControllerBase
         if (entity_ is null)
         {
             _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
-            return Ok(new EntityDeleteResults() {Success = false});
+            return Ok(new EntityDeleteResults() {Success = false, Message = "Entity not found"});
         }
         _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
         return Ok(new EntityDeleteResults() {Success = true});
