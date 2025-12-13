@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Shared.Models;
 using Server.Helper;
+using Server.Exceptions;
 namespace Server.Controllers;
 
 [ApiController]
@@ -43,35 +44,43 @@ public class EntityController : ControllerBase
     [HttpPost("Index")]
     public ActionResult<EntityIndexResult> Index([FromBody] List<JSONEntity>? jsonEntities)
     {
-        List<Entity>? entities = SearchdomainHelper.EntitiesFromJSON(
-            [],
-            _domainManager.embeddingCache,
-            _domainManager.aIProvider,
-            _domainManager.helper,
-            _logger,
-            JsonSerializer.Serialize(jsonEntities));
-        if (entities is not null && jsonEntities is not null)
+        try
         {
-            List<string> invalidatedSearchdomains = [];
-            foreach (var jsonEntity in jsonEntities)
+            List<Entity>? entities = SearchdomainHelper.EntitiesFromJSON(
+                [],
+                _domainManager.embeddingCache,
+                _domainManager.aIProvider,
+                _domainManager.helper,
+                _logger,
+                JsonSerializer.Serialize(jsonEntities));
+            if (entities is not null && jsonEntities is not null)
             {
-                string jsonEntityName = jsonEntity.Name;
-                string jsonEntitySearchdomainName = jsonEntity.Searchdomain;
-                if (entities.Select(x => x.name == jsonEntityName).Any()
-                    && !invalidatedSearchdomains.Contains(jsonEntitySearchdomainName))
+                List<string> invalidatedSearchdomains = [];
+                foreach (var jsonEntity in jsonEntities)
                 {
-                    invalidatedSearchdomains.Add(jsonEntitySearchdomainName);
-                    _domainManager.InvalidateSearchdomainCache(jsonEntitySearchdomainName);
+                    string jsonEntityName = jsonEntity.Name;
+                    string jsonEntitySearchdomainName = jsonEntity.Searchdomain;
+                    if (entities.Select(x => x.name == jsonEntityName).Any()
+                        && !invalidatedSearchdomains.Contains(jsonEntitySearchdomainName))
+                    {
+                        invalidatedSearchdomains.Add(jsonEntitySearchdomainName);
+                        _domainManager.InvalidateSearchdomainCache(jsonEntitySearchdomainName);
+                    }
                 }
+                return Ok(new EntityIndexResult() { Success = true });
             }
-            return Ok(new EntityIndexResult() { Success = true });
-        }
-        else
+            else
+            {
+                _logger.LogError("Unable to deserialize an entity");
+                return Ok(new EntityIndexResult() { Success = false, Message = "Unable to deserialize an entity"});
+            }
+        } catch (Exception ex)
         {
-            _logger.LogError("Unable to deserialize an entity");
+            if (ex.InnerException is not null) ex = ex.InnerException;
+            _logger.LogError("Unable to index the provided entities. {ex.Message}", [ex.Message]);
+            return Ok(new EntityIndexResult() { Success = false, Message = ex.Message });
         }
 
-        return Ok(new EntityIndexResult() { Success = false });
     }
 
     [HttpGet("List")]

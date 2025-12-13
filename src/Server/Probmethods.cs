@@ -1,5 +1,5 @@
-using System.Numerics.Tensors;
 using System.Text.Json;
+using Server.Exceptions;
 
 namespace Server;
 
@@ -15,7 +15,7 @@ public class ProbMethod
         if (probMethod is null)
         {
             logger.LogError("Unable to retrieve probMethod {name}", [name]);
-            throw new Exception("Unable to retrieve probMethod");
+            throw new ProbMethodNotFoundException(name);
         }
         method = probMethod;
     }
