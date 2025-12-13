@@ -2,6 +2,7 @@ using MySql.Data.MySqlClient;
 using System.Data.Common;
 using Server.Migrations;
 using Server.Helper;
+using Server.Exceptions;
 
 namespace Server;
 
@@ -86,7 +87,7 @@ public class SearchdomainManager
         if (searchdomains.TryGetValue(searchdomain, out Searchdomain? value))
         {
             _logger.LogError("Searchdomain {searchdomain} could not be created, as it already exists", [searchdomain]);
-            throw new Exception("Searchdomain already exists"); // TODO create proper SearchdomainAlreadyExists exception
+            throw new SearchdomainAlreadyExistsException(searchdomain);
         }
         Dictionary<string, dynamic> parameters = new()
         {
