@@ -1,5 +1,6 @@
 using ElmahCore;
 using Microsoft.AspNetCore.Mvc;
+using Server.Exceptions;
 using Shared.Models;
 
 namespace Server.Controllers;
@@ -46,7 +47,7 @@ public class SearchdomainController : ControllerBase
         } catch (Exception)
         {
             _logger.LogError("Unable to create Searchdomain {searchdomain}", [searchdomain]);
-            return Ok(new SearchdomainCreateResults() { Id = null, Success = false });
+            return Ok(new SearchdomainCreateResults() { Id = null, Success = false, Message = $"Unable to create Searchdomain {searchdomain}" });
         }
     }
 
@@ -55,19 +56,29 @@ public class SearchdomainController : ControllerBase
     {
         bool success;
         int deletedEntries;
+        string? message = null;
         try
         {
             success = true;
             deletedEntries = _domainManager.DeleteSearchdomain(searchdomain);
+        }
+        catch (SearchdomainNotFoundException ex)
+        {
+            _logger.LogError("Unable to delete searchdomain {searchdomain} - not found", [searchdomain]);
+            success = false;
+            deletedEntries = 0;
+            message = $"Unable to delete searchdomain {searchdomain} - not found";
+            ElmahExtensions.RaiseError(ex);
         }
         catch (Exception ex)
         {
             _logger.LogError("Unable to delete searchdomain {searchdomain}", [searchdomain]);
             success = false;
             deletedEntries = 0;
+            message = ex.Message;
             ElmahExtensions.RaiseError(ex);
         }
-        return Ok(new SearchdomainDeleteResults(){Success = success, DeletedEntities = deletedEntries});
+        return Ok(new SearchdomainDeleteResults(){Success = success, DeletedEntities = deletedEntries, Message = message});
     }
 
     [HttpGet("Update")]
@@ -83,10 +94,14 @@ public class SearchdomainController : ControllerBase
                 {"id", searchdomain_.id}
             };
             searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);
+        } catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to update searchdomain {searchdomain} - not found", [searchdomain]);
+            return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update searchdomain {searchdomain} - not found" });
         } catch (Exception)
         {
             _logger.LogError("Unable to update searchdomain {searchdomain}", [searchdomain]);
-            return Ok(new SearchdomainUpdateResults() { Success = false });
+            return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update searchdomain {searchdomain}" });
         }
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
