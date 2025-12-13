@@ -21,27 +21,36 @@ public class ProbMethod
     }
 }
 
+public enum ProbMethodEnum
+{
+    Mean,
+    HarmonicMean,
+    QuadraticMean,
+    GeometricMean,
+    EVEWAvg,
+    HVEWAvg,
+    LVEWavg,
+    DictionaryWeightedAverage
+}
+
 public static class Probmethods
 {
     public delegate float probMethodProtoDelegate(List<(string, float)> list, string parameters);
     public delegate float probMethodDelegate(List<(string, float)> list);
-    public static readonly Dictionary<string, probMethodProtoDelegate> probMethods;
+    public static readonly Dictionary<ProbMethodEnum, probMethodProtoDelegate> probMethods;
 
     static Probmethods()
     {
-        probMethods = new Dictionary<string, probMethodProtoDelegate>
+        probMethods = new Dictionary<ProbMethodEnum, probMethodProtoDelegate>
         {
-            ["Mean"] = Mean,
-            ["HarmonicMean"] = HarmonicMean,
-            ["QuadraticMean"] = QuadraticMean,
-            ["GeometricMean"] = GeometricMean,
-            ["ExtremeValuesEmphasisWeightedAverage"] = ExtremeValuesEmphasisWeightedAverage,
-            ["EVEWAvg"] = ExtremeValuesEmphasisWeightedAverage,
-            ["HighValueEmphasisWeightedAverage"] = HighValueEmphasisWeightedAverage,
-            ["HVEWAvg"] = HighValueEmphasisWeightedAverage,
-            ["LowValueEmphasisWeightedAverage"] = LowValueEmphasisWeightedAverage,
-            ["LVEWAvg"] = LowValueEmphasisWeightedAverage,
-            ["DictionaryWeightedAverage"] = DictionaryWeightedAverage
+            [ProbMethodEnum.Mean] = Mean,
+            [ProbMethodEnum.HarmonicMean] = HarmonicMean,
+            [ProbMethodEnum.QuadraticMean] = QuadraticMean,
+            [ProbMethodEnum.GeometricMean] = GeometricMean,
+            [ProbMethodEnum.EVEWAvg] = ExtremeValuesEmphasisWeightedAverage,
+            [ProbMethodEnum.HVEWAvg] = HighValueEmphasisWeightedAverage,
+            [ProbMethodEnum.LVEWavg] = LowValueEmphasisWeightedAverage,
+            [ProbMethodEnum.DictionaryWeightedAverage] = DictionaryWeightedAverage
         };
     }
 
@@ -58,7 +67,12 @@ public static class Probmethods
             jsonArg = name[(colonIndex + 1)..];
         }
 
-        if (!probMethods.TryGetValue(methodName, out probMethodProtoDelegate? method))
+        ProbMethodEnum probMethodEnum = (ProbMethodEnum)Enum.Parse(
+            typeof(ProbMethodEnum),
+            methodName
+        );
+
+        if (!probMethods.TryGetValue(probMethodEnum, out probMethodProtoDelegate? method))
         {
             return null;
         }
