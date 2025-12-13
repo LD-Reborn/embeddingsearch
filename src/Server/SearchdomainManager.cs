@@ -53,7 +53,7 @@ public class SearchdomainManager
         catch (MySqlException)
         {
             _logger.LogError("Unable to find the searchdomain {searchdomain}", searchdomain);
-            throw new Exception($"Unable to find the searchdomain {searchdomain}");
+            throw new SearchdomainNotFoundException(searchdomain);
         }
         catch (Exception ex)
         {
