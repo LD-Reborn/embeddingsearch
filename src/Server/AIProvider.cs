@@ -106,7 +106,7 @@ public class AIProvider
             if (responseContentTokens is null)
             {
                 _logger.LogError("Unable to select tokens using JSONPath {embeddingsJsonPath} for string: {responseContent}.", [embeddingsJsonPath, responseContent]);
-                throw new Exception($"Unable to select tokens using JSONPath {embeddingsJsonPath} for string: {responseContent}."); // TODO add proper exception
+                throw new JSONPathSelectionException(embeddingsJsonPath, responseContent);
             }
             return [.. responseContentTokens.Values<float>()];
         }
