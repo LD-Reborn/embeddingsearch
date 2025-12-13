@@ -105,14 +105,15 @@ public class AIProvider
             JToken? responseContentTokens = responseContentJson.SelectToken(embeddingsJsonPath);
             if (responseContentTokens is null)
             {
-                throw new Exception($"Unable to select tokens using JSONPath {embeddingsJsonPath}."); // TODO add proper exception
+                _logger.LogError("Unable to select tokens using JSONPath {embeddingsJsonPath} for string: {responseContent}.", [embeddingsJsonPath, responseContent]);
+                throw new Exception($"Unable to select tokens using JSONPath {embeddingsJsonPath} for string: {responseContent}."); // TODO add proper exception
             }
             return [.. responseContentTokens.Values<float>()];
         }
         catch (Exception ex)
         {
             _logger.LogError("Unable to parse the response to valid embeddings. {ex.Message}", [ex.Message]);
-            throw new Exception($"Unable to parse the response to valid embeddings. {ex.Message}"); // TODO add proper exception
+            throw;
         }
     }
 }
