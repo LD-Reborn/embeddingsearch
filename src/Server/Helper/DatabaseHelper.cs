@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Text;
+using Server.Exceptions;
 
 namespace Server.Helper;
 
@@ -101,7 +102,7 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
             else
             {
                 _logger.LogError("Unable to retrieve searchdomain ID for {searchdomain}", [searchdomain]);
-                throw new Exception($"Unable to retrieve searchdomain ID for {searchdomain}");
+                throw new SearchdomainNotFoundException(searchdomain);
             }
         }
     }
