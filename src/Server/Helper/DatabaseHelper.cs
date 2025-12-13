@@ -153,7 +153,8 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
             }
             else
             {
-                throw new Exception($"Unable to determine whether an entity named {name} exists for {searchdomain}"); // TODO implement logging here; add logger via method injection
+                _logger.LogError("Unable to determine whether an entity named {name} exists for {searchdomain}", [name, searchdomain]);
+                throw new Exception($"Unable to determine whether an entity named {name} exists for {searchdomain}");
             }
         }
     }
