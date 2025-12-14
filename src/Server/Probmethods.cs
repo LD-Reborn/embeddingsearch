@@ -29,7 +29,7 @@ public enum ProbMethodEnum
     GeometricMean,
     EVEWAvg,
     HVEWAvg,
-    LVEWavg,
+    LVEWAvg,
     DictionaryWeightedAverage
 }
 
@@ -49,7 +49,7 @@ public static class Probmethods
             [ProbMethodEnum.GeometricMean] = GeometricMean,
             [ProbMethodEnum.EVEWAvg] = ExtremeValuesEmphasisWeightedAverage,
             [ProbMethodEnum.HVEWAvg] = HighValueEmphasisWeightedAverage,
-            [ProbMethodEnum.LVEWavg] = LowValueEmphasisWeightedAverage,
+            [ProbMethodEnum.LVEWAvg] = LowValueEmphasisWeightedAverage,
             [ProbMethodEnum.DictionaryWeightedAverage] = DictionaryWeightedAverage
         };
     }
@@ -66,7 +66,6 @@ public static class Probmethods
             methodName = name[..colonIndex];
             jsonArg = name[(colonIndex + 1)..];
         }
-
         ProbMethodEnum probMethodEnum = (ProbMethodEnum)Enum.Parse(
             typeof(ProbMethodEnum),
             methodName

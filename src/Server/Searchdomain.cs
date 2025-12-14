@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using ElmahCore.Mvc.Logger;
 using MySql.Data.MySqlClient;
 using Server.Helper;
 
@@ -54,21 +55,29 @@ public class Searchdomain
         Dictionary<int, Dictionary<string, float[]>> embedding_unassigned = [];
         while (embeddingReader.Read())
         {
-            int id_datapoint = embeddingReader.GetInt32(1);
-            string model = embeddingReader.GetString(2);
-            long length = embeddingReader.GetBytes(3, 0, null, 0, 0);
-            byte[] embedding = new byte[length];
-            embeddingReader.GetBytes(3, 0, embedding, 0, (int) length);
-            if (embedding_unassigned.TryGetValue(id_datapoint, out Dictionary<string, float[]>? embedding_unassigned_id_datapoint))
+            int id_datapoint;
+            try
             {
-                embedding_unassigned[id_datapoint][model] = SearchdomainHelper.FloatArrayFromBytes(embedding);
-            }
-            else
-            {
-                embedding_unassigned[id_datapoint] = new()
+                id_datapoint = embeddingReader.GetInt32(1);
+                string model = embeddingReader.GetString(2);
+                long length = embeddingReader.GetBytes(3, 0, null, 0, 0);
+                byte[] embedding = new byte[length];
+                embeddingReader.GetBytes(3, 0, embedding, 0, (int) length);
+                if (embedding_unassigned.TryGetValue(id_datapoint, out Dictionary<string, float[]>? embedding_unassigned_id_datapoint))
                 {
-                    [model] = SearchdomainHelper.FloatArrayFromBytes(embedding)
-                };
+                    embedding_unassigned[id_datapoint][model] = SearchdomainHelper.FloatArrayFromBytes(embedding);
+                }
+                else
+                {
+                    embedding_unassigned[id_datapoint] = new()
+                    {
+                        [model] = SearchdomainHelper.FloatArrayFromBytes(embedding)
+                    };
+                }
+            } catch (Exception e)
+            {
+                _logger.LogError("Error reading embedding (id: {id_datapoint}) from database: {e.Message} - {e.StackTrace}", [id_datapoint, e.Message, e.StackTrace]);
+                ElmahCore.ElmahExtensions.RaiseError(e);
             }
         }
         embeddingReader.Close();
