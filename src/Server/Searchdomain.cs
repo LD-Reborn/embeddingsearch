@@ -3,6 +3,7 @@ using System.Data.Common;
 using ElmahCore.Mvc.Logger;
 using MySql.Data.MySqlClient;
 using Server.Helper;
+using Server.Models;
 
 namespace Server;
 
@@ -13,7 +14,7 @@ public class Searchdomain
     public AIProvider aIProvider;
     public string searchdomain;
     public int id;
-    public Dictionary<string, List<(DateTime, List<(float, string)>)>> searchCache; // Yeah look at this abomination. searchCache[x][0] = last accessed time, searchCache[x][1] = results for x
+    public Dictionary<string, DateTimedSearchResult> searchCache; // Key: query, Value: Search results for that query (with timestamp)
     public List<Entity> entityCache;
     public List<string> modelsInUse;
     public Dictionary<string, Dictionary<string, float[]>> embeddingCache;
@@ -21,8 +22,6 @@ public class Searchdomain
     private readonly MySqlConnection connection;
     public SQLHelper helper;
     private readonly ILogger _logger;
-
-    // TODO Add settings and update cli/program.cs, as well as DatabaseInsertSearchdomain()
 
     public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
@@ -47,6 +46,7 @@ public class Searchdomain
 
     public void UpdateEntityCache()
     {
+        InvalidateSearchCache();
         Dictionary<string, dynamic> parametersIDSearchdomain = new()
         {
             ["id"] = this.id
@@ -151,8 +151,14 @@ public class Searchdomain
         embeddingCache = []; // TODO remove this and implement proper remediation to improve performance
     }
 
-    public List<(float, string)> Search(string query, bool sort=true)
+    public List<(float, string)> Search(string query)
     {
+        if (searchCache.TryGetValue(query, out DateTimedSearchResult cachedResult))
+        {
+            cachedResult.accessTimes.Add(DateTime.Now);
+            return [.. cachedResult.Results.Results.Select(r => (r.Score, r.Name))];
+        }
+
         if (!embeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings))
         {
             queryEmbeddings = Datapoint.GenerateEmbeddings(query, modelsInUse, aIProvider);
@@ -181,8 +187,17 @@ public class Searchdomain
             }
             result.Add((entity.probMethod(datapointProbs), entity.name));
         }
-
-        return [.. result.OrderByDescending(s => s.Item1)]; // [.. element] = element.ToList()
+        List<(float, string)> results = [.. result.OrderByDescending(s => s.Item1)];
+        SearchResult searchResult = new(
+            [.. results.Select(r =>
+                new ResultItem(r.Item1, r.Item2 ))]
+        );
+        searchCache[query] = new DateTimedSearchResult
+        {
+            accessTimes = [DateTime.Now],
+            Results = searchResult
+        };
+        return results;
     }
 
     public static List<string> GetModels(List<Entity> entities)
@@ -216,5 +231,10 @@ public class Searchdomain
         this.id = reader.GetInt32(0);
         reader.Close();
         return this.id;
+    }
+
+    public void InvalidateSearchCache()
+    {
+        searchCache = [];
     }
 }
