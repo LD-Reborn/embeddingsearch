@@ -1,5 +1,7 @@
 ﻿@using Server.Models
 @using System.Web
+@using Server.Services
+@inject LocalizationService T
 @model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
@@ -81,15 +83,17 @@
                   placeholder="filter"
                 />
               </div>
-
-              @* <div class="list-row">
-                <span>Some test query</span>
-                <button class="btn btn-primary btn-sm">Details</button>
-              </div>
-              <div class="list-row">
-                <span>Some other test query</span>
-                <button class="btn btn-primary btn-sm">Details</button>
-              </div> *@
+              <div class="spinner d-none"></div>
+              <table id="queriesTable" class="table table-striped" style="max-height: 60vh; overflow-y: auto; display: block;">
+                <thead>
+                  <tr>
+                    <th class="visually-hidden">Name</th>
+                    <th class="visually-hidden">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -116,15 +120,6 @@
                 <tbody>
                 </tbody>
               </table>
-
-              @* <div class="list-row">
-                <span>Someentity</span>
-                <button class="btn btn-primary btn-sm">Details</button>
-              </div>
-              <div class="list-row">
-                <span>Some other test query</span>
-                <button class="btn btn-primary btn-sm">Details</button>
-              </div> *@
             </div>
           </div>
 
@@ -182,10 +177,52 @@
   </div>
 </div>
 
+<!-- Query Details Modal -->
+<div class="modal fade" id="queryDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="queryDetailsTitle">Query Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Access times -->
+        <h6>Access times</h6>
+        <ul id="queryAccessTimes" class="list-group mb-4"></ul>
+
+        <!-- Results -->
+        <h6>Results</h6>
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>Score</th>
+              <th>Name</th>
+            </tr>
+          </thead>
+          <tbody id="queryResultsBody"></tbody>
+        </table>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
 <script>
     var domains = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(domains))');
     var entities = null;
+    var queries = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         const filterInput = document.getElementById('entitiesFilter');
@@ -195,42 +232,77 @@
         });
     });
 
+    document.addEventListener('DOMContentLoaded', () => {
+        const entitiesFilter = document.getElementById('entitiesFilter');
+        entitiesFilter.addEventListener('input', () => {
+            populateEntitiesTable(entitiesFilter.value);
+        });
+
+        const queriesFilter = document.querySelector(
+            '#queriesTable'
+        ).closest('.card-body').querySelector('input');
+
+        queriesFilter.addEventListener('input', () => {
+            populateQueriesTable(queriesFilter.value);
+        });
+    });
+
     function selectDomain(domainKey) {
-        // Deselect all domain items
         document.querySelectorAll('.domain-item').forEach(item => {
             item.classList.remove('active');
         });
 
-        // Select the clicked domain item
         var selectedItem = document.getElementById('sidebar_domain_' + domainKey);
         selectedItem.classList.add('active');
 
-        // Update main content header
         var domainName = domains[domainKey];
         document.querySelector('.section-card h4').innerText = domainName;
 
-        // Request the entities from that searchdomain
-        let url = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false`;
-        let table = document.querySelector("#entitiesTable").parentElement;
+        /* ---------- ENTITIES ---------- */
+        let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false`;
+        let entitiesCard = document.querySelector("#entitiesTable").parentElement;
         clearEntitiesTable();
-        showEntitiesLoading(table);
-        fetch(url)
-            .then(response => response.json())
+        showEntitiesLoading(entitiesCard);
+
+        fetch(entitiesUrl)
+            .then(r => r.json())
             .then(data => {
                 entities = data.Results;
                 populateEntitiesTable();
-                hideEntitiesLoading(table);
+                hideEntitiesLoading(entitiesCard);
             })
-            .catch(error => {
-                console.error('Error fetching entities:', error);
+            .catch(err => {
+                console.error(err);
                 flagSearchdomainAsErroneous(domainKey);
-                hideEntitiesLoading(table);
+                hideEntitiesLoading(entitiesCard);
+            });
+
+        /* ---------- QUERIES ---------- */
+        let queriesUrl = `/Searchdomain/GetSearches?searchdomain=${encodeURIComponent(domainName)}`;
+        let queriesCard = document.querySelector("#queriesTable").parentElement;
+        clearQueriesTable();
+        showQueriesLoading(queriesCard);
+
+        fetch(queriesUrl)
+            .then(r => r.json())
+            .then(data => {
+                queries = Object.entries(data.Searches).map(key => ({"Name": key[0], "AccessDateTimes": key[1].AccessDateTimes, "Results": key[1].Results}));
+                populateQueriesTable();
+                hideQueriesLoading(queriesCard);
+            })
+            .catch(err => {
+                console.error('Error fetching queries:', err);
+                hideQueriesLoading(queriesCard);
             });
     }
 
     function clearEntitiesTable() {
         var tableBody = document.querySelector('#entitiesTable tbody');
         tableBody.innerHTML = '';
+    }
+
+    function clearQueriesTable() {
+        document.querySelector('#queriesTable tbody').innerHTML = '';
     }
 
     function populateEntitiesTable(filterText = '') {
@@ -266,6 +338,39 @@
         });
     }
 
+    function populateQueriesTable(filterText = '') {
+        if (!queries) return;
+
+        const tbody = document.querySelector('#queriesTable tbody');
+        tbody.innerHTML = '';
+
+        const normalizedFilter = filterText.toLowerCase();
+
+        queries
+            .filter(q => q.Name?.toLowerCase().includes(normalizedFilter))
+            .forEach(query => {
+                const row = document.createElement('tr');
+
+                const nameCell = document.createElement('td');
+                nameCell.textContent = query.Name;
+                nameCell.classList.add('col-md-12');
+                row.appendChild(nameCell);
+
+                const actionCell = document.createElement('td');
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-sm btn-primary';
+                btn.textContent = '@T["Details"]';
+                btn.addEventListener('click', () => {
+                    showQueryDetails(query);
+                });
+
+                actionCell.appendChild(btn);
+                row.appendChild(actionCell);
+
+                tbody.appendChild(row);
+            });
+    }
+
     function flagSearchdomainAsErroneous(domainKey) {
       var domainItem = document.getElementById('sidebar_domain_' + domainKey);
       domainItem.classList.add('list-group-item-danger');
@@ -279,6 +384,16 @@
     function hideEntitiesLoading(element = null) {
       if (element == null) element = document;
       element.querySelector('.spinner').classList.add('d-none');
+    }
+
+    function showQueriesLoading(element = null) {
+        if (!element) element = document;
+        element.querySelector('.spinner').classList.remove('d-none');
+    }
+
+    function hideQueriesLoading(element = null) {
+        if (!element) element = document;
+        element.querySelector('.spinner').classList.add('d-none');
     }
 
     function showEntityDetails(entity) {
@@ -329,4 +444,57 @@
       );
       modal.show();
     }
+
+    function showQueryDetails(query) {
+        // Title
+        document.getElementById('queryDetailsTitle').innerText =
+            `Query: ${query.Name}`;
+
+        /* ---------- Access times ---------- */
+        const accessList = document.getElementById('queryAccessTimes');
+        accessList.innerHTML = '';
+
+        if (!query.AccessDateTimes || query.AccessDateTimes.length === 0) {
+            accessList.innerHTML = `
+                <li class="list-group-item text-muted text-center">
+                    No access times
+                </li>`;
+        } else {
+            query.AccessDateTimes.forEach(dt => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = new Date(dt).toLocaleString();
+                accessList.appendChild(li);
+            });
+        }
+
+        /* ---------- Results ---------- */
+        const resultsBody = document.getElementById('queryResultsBody');
+        resultsBody.innerHTML = '';
+
+        if (!query.Results || query.Results.length === 0) {
+            resultsBody.innerHTML = `
+                <tr>
+                  <td colspan="2" class="text-muted text-center">
+                    No results
+                  </td>
+                </tr>`;
+        } else {
+            query.Results.forEach(r => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${r.Score.toFixed(4)}</td>
+                    <td class="text-break">${r.Name}</td>
+                `;
+                resultsBody.appendChild(row);
+            });
+        }
+
+        // Show modal
+        const modal = new bootstrap.Modal(
+            document.getElementById('queryDetailsModal')
+        );
+        modal.show();
+    }
+
 </script>

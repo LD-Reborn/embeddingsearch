@@ -43,3 +43,14 @@ public class SearchdomainDeleteResults
     [JsonPropertyName("DeletedEntities")]
     public required int DeletedEntities { get; set; }
 }
+
+public class SearchdomainSearchesResults
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+    [JsonPropertyName("Searches")]
+    public required Dictionary<string, DateTimedSearchResult> Searches { get; set; }
+}

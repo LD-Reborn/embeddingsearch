@@ -64,7 +64,9 @@ public class SearchdomainManager
 
     public void InvalidateSearchdomainCache(string searchdomainName)
     {
-        GetSearchdomain(searchdomainName).UpdateEntityCache();
+        var searchdomain = GetSearchdomain(searchdomainName);
+        searchdomain.UpdateEntityCache();
+        searchdomain.InvalidateSearchCache(); // TODO implement cache remediation (Suggestion: searchdomain-wide setting for cache remediation / invalidation - )
     }
 
     public List<string> ListSearchdomains()
