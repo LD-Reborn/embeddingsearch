@@ -55,10 +55,11 @@ public class Searchdomain
         Dictionary<int, Dictionary<string, float[]>> embedding_unassigned = [];
         while (embeddingReader.Read())
         {
-            int id_datapoint;
+            int? id_datapoint_debug = null;
             try
             {
-                id_datapoint = embeddingReader.GetInt32(1);
+                int id_datapoint = embeddingReader.GetInt32(1);
+                id_datapoint_debug = id_datapoint;
                 string model = embeddingReader.GetString(2);
                 long length = embeddingReader.GetBytes(3, 0, null, 0, 0);
                 byte[] embedding = new byte[length];
@@ -76,7 +77,7 @@ public class Searchdomain
                 }
             } catch (Exception e)
             {
-                _logger.LogError("Error reading embedding (id: {id_datapoint}) from database: {e.Message} - {e.StackTrace}", [id_datapoint, e.Message, e.StackTrace]);
+                _logger.LogError("Error reading embedding (id: {id_datapoint}) from database: {e.Message} - {e.StackTrace}", [id_datapoint_debug, e.Message, e.StackTrace]);
                 ElmahCore.ElmahExtensions.RaiseError(e);
             }
         }
