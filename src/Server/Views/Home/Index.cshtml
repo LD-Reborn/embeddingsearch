@@ -99,6 +99,7 @@
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <strong>Entities</strong>
                 <input
+                  id="entitiesFilter"
                   type="text"
                   class="form-control form-control-sm w-25"
                   placeholder="filter"
@@ -134,9 +135,65 @@
   </div>
 </div>
 
+<!-- Entity Details Modal -->
+<div class="modal fade" id="entityDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="entityDetailsTitle">Entity Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Attributes -->
+        <h6>Attributes</h6>
+        <table class="table table-sm table-bordered mb-4">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody id="entityAttributesBody">
+          </tbody>
+        </table>
+
+        <!-- Datapoints -->
+        <h6>Datapoints</h6>
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>ProbMethod</th>
+              <th>SimilarityMethod</th>
+            </tr>
+          </thead>
+          <tbody id="entityDatapointsBody">
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script>
     var domains = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(domains))');
     var entities = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const filterInput = document.getElementById('entitiesFilter');
+
+        filterInput.addEventListener('input', () => {
+            populateEntitiesTable(filterInput.value);
+        });
+    });
 
     function selectDomain(domainKey) {
         // Deselect all domain items
@@ -176,13 +233,17 @@
         tableBody.innerHTML = '';
     }
 
-    function populateEntitiesTable() {
+    function populateEntitiesTable(filterText = '') {
         if (!entities) return;
 
         var tableBody = document.querySelector('#entitiesTable tbody');
-        clearEntitiesTable();
+        tableBody.innerHTML = '';
 
-        entities.forEach(entity => {
+        const normalizedFilter = filterText.toLowerCase();
+
+        entities
+        .filter(e => e.Name.toLowerCase().includes(normalizedFilter))
+        .forEach(entity => {
             var row = document.createElement('tr');
 
             var nameCell = document.createElement('td');
@@ -193,6 +254,11 @@
             var detailsButton = document.createElement('button');
             detailsButton.className = 'btn btn-primary btn-sm';
             detailsButton.textContent = 'Details';
+            detailsButton.setAttribute("data-index", entities.findIndex(en => en == entity));
+            detailsButton.addEventListener('click', () => {
+              showEntityDetails(entity);
+            });
+
             actionCell.appendChild(detailsButton);
             row.appendChild(actionCell);
 
@@ -213,5 +279,54 @@
     function hideEntitiesLoading(element = null) {
       if (element == null) element = document;
       element.querySelector('.spinner').classList.add('d-none');
+    }
+
+    function showEntityDetails(entity) {
+      // Title
+      document.getElementById('entityDetailsTitle').innerText = entity.Name;
+
+      // Attributes
+      const attrBody = document.getElementById('entityAttributesBody');
+      attrBody.innerHTML = '';
+
+      const attributes = entity.Attributes || {};
+      const attrKeys = Object.keys(attributes);
+
+      if (attrKeys.length === 0) {
+          attrBody.innerHTML = `
+              <tr>
+                <td colspan="2" class="text-muted text-center">No attributes</td>
+              </tr>`;
+      } else {
+          attrKeys.forEach(key => {
+              const row = document.createElement('tr');
+              attributeKV = attributes[key];
+              row.innerHTML = `
+                <td>${attributeKV["Name"]}</td>
+                <td>${attributeKV["Value"]}</td>
+              `;
+              attrBody.appendChild(row);
+          });
+      }
+
+      // Datapoints
+      const dpBody = document.getElementById('entityDatapointsBody');
+      dpBody.innerHTML = '';
+
+      (entity.Datapoints || []).forEach(dp => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${dp.Name}</td>
+            <td>${dp.ProbMethod}</td>
+            <td>${dp.SimilarityMethod}</td>
+          `;
+          dpBody.appendChild(row);
+      });
+
+      // Show modal
+      const modal = new bootstrap.Modal(
+          document.getElementById('entityDetailsModal')
+      );
+      modal.show();
     }
 </script>
