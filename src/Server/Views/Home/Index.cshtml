@@ -177,6 +177,47 @@
   </div>
 </div>
 
+<!-- Query Details Modal -->
+<div class="modal fade" id="queryDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="queryDetailsTitle">Query Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Access times -->
+        <h6>Access times</h6>
+        <ul id="queryAccessTimes" class="list-group mb-4"></ul>
+
+        <!-- Results -->
+        <h6>Results</h6>
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>Score</th>
+              <th>Name</th>
+            </tr>
+          </thead>
+          <tbody id="queryResultsBody"></tbody>
+        </table>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
 <script>
     var domains = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(domains))');
@@ -320,7 +361,7 @@
                 btn.className = 'btn btn-sm btn-primary';
                 btn.textContent = '@T["Details"]';
                 btn.addEventListener('click', () => {
-                    runQuery(query);
+                    showQueryDetails(query);
                 });
 
                 actionCell.appendChild(btn);
@@ -403,4 +444,57 @@
       );
       modal.show();
     }
+
+    function showQueryDetails(query) {
+        // Title
+        document.getElementById('queryDetailsTitle').innerText =
+            `Query: ${query.Name}`;
+
+        /* ---------- Access times ---------- */
+        const accessList = document.getElementById('queryAccessTimes');
+        accessList.innerHTML = '';
+
+        if (!query.AccessDateTimes || query.AccessDateTimes.length === 0) {
+            accessList.innerHTML = `
+                <li class="list-group-item text-muted text-center">
+                    No access times
+                </li>`;
+        } else {
+            query.AccessDateTimes.forEach(dt => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = new Date(dt).toLocaleString();
+                accessList.appendChild(li);
+            });
+        }
+
+        /* ---------- Results ---------- */
+        const resultsBody = document.getElementById('queryResultsBody');
+        resultsBody.innerHTML = '';
+
+        if (!query.Results || query.Results.length === 0) {
+            resultsBody.innerHTML = `
+                <tr>
+                  <td colspan="2" class="text-muted text-center">
+                    No results
+                  </td>
+                </tr>`;
+        } else {
+            query.Results.forEach(r => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${r.Score.toFixed(4)}</td>
+                    <td class="text-break">${r.Name}</td>
+                `;
+                resultsBody.appendChild(row);
+            });
+        }
+
+        // Show modal
+        const modal = new bootstrap.Modal(
+            document.getElementById('queryDetailsModal')
+        );
+        modal.show();
+    }
+
 </script>
