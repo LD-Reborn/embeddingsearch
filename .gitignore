@@ -17,3 +17,4 @@ src/Indexer/logs
 src/Server/logs
 src/Shared/bin
 src/Shared/obj
+src/Server/wwwroot/logs/*
