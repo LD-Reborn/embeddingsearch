@@ -1,15 +1,33 @@
 using ElmahCore;
 using ElmahCore.Mvc;
 using Serilog;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using Server;
 using Server.HealthChecks;
 using Server.Helper;
+using Server.Models;
+using Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllersWithViews();
+
+// Add Localization
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("de") };
+    options.DefaultRequestCulture = new RequestCulture("en");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
+
+// Add LocalizationService
+builder.Services.AddScoped<LocalizationService>();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -29,6 +47,24 @@ builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
     Options.LogPath = builder.Configuration.GetValue<string>("Embeddingsearch:Elmah:LogFolder") ?? "~/logs";
 });
+
+builder.Services
+    .AddAuthentication("AppCookie")
+    .AddCookie("AppCookie", options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/Denied";
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly",
+        policy => policy.RequireRole("Admin"));
+});
+
+IConfigurationSection simpleAuthSection = builder.Configuration.GetSection("Embeddingsearch:SimpleAuth");
+if (simpleAuthSection.Exists()) builder.Services.Configure<SimpleAuthOptions>(simpleAuthSection);
 
 var app = builder.Build();
 
@@ -77,6 +113,15 @@ if (UseMiddleware == true && !IsDevelopment)
     app.UseMiddleware<Shared.ApiKeyMiddleware>();
 }
 
+// Add localization
+var supportedCultures = new[] { "de", "de-DE", "en-US" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("de")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+app.UseRequestLocalization(localizationOptions);
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
