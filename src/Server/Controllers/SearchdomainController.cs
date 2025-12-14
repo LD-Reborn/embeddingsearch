@@ -105,4 +105,27 @@ public class SearchdomainController : ControllerBase
         }
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
+
+    [HttpGet("GetSearches")]
+    public ActionResult<SearchdomainSearchesResults> GetSearches(string searchdomain)
+    {
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        }
+        catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
+            return Ok(new SearchdomainSearchesResults() { Searches = [], Success = false, Message = "Searchdomain not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new SearchdomainSearchesResults() { Searches = [], Success = false, Message = ex.Message });
+        }
+        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
+        
+        return Ok(new SearchdomainSearchesResults() { Searches = searchCache, Success = true });
+    }
 }

@@ -3,7 +3,7 @@ using System.Data.Common;
 using ElmahCore.Mvc.Logger;
 using MySql.Data.MySqlClient;
 using Server.Helper;
-using Server.Models;
+using Shared.Models;
 
 namespace Server;
 
@@ -155,8 +155,8 @@ public class Searchdomain
     {
         if (searchCache.TryGetValue(query, out DateTimedSearchResult cachedResult))
         {
-            cachedResult.accessTimes.Add(DateTime.Now);
-            return [.. cachedResult.Results.Results.Select(r => (r.Score, r.Name))];
+            cachedResult.AccessDateTimes.Add(DateTime.Now);
+            return [.. cachedResult.Results.Select(r => (r.Score, r.Name))];
         }
 
         if (!embeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings))
@@ -188,15 +188,11 @@ public class Searchdomain
             result.Add((entity.probMethod(datapointProbs), entity.name));
         }
         List<(float, string)> results = [.. result.OrderByDescending(s => s.Item1)];
-        SearchResult searchResult = new(
+        List<ResultItem> searchResult = new(
             [.. results.Select(r =>
                 new ResultItem(r.Item1, r.Item2 ))]
         );
-        searchCache[query] = new DateTimedSearchResult
-        {
-            accessTimes = [DateTime.Now],
-            Results = searchResult
-        };
+        searchCache[query] = new DateTimedSearchResult(DateTime.Now, searchResult);
         return results;
     }
 
