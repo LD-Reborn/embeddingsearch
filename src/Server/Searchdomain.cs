@@ -51,7 +51,7 @@ public class Searchdomain
         {
             ["id"] = this.id
         };
-        DbDataReader embeddingReader = helper.ExecuteSQLCommand("SELECT embedding.id, id_datapoint, model, embedding FROM embedding", parametersIDSearchdomain); // TODO fix: parametersIDSearchdomain defined, but not used
+        DbDataReader embeddingReader = helper.ExecuteSQLCommand("SELECT e.id, e.id_datapoint, e.model, e.embedding FROM embedding e JOIN datapoint d ON e.id_datapoint = d.id JOIN entity ent ON d.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
         Dictionary<int, Dictionary<string, float[]>> embedding_unassigned = [];
         while (embeddingReader.Read())
         {
@@ -83,7 +83,7 @@ public class Searchdomain
         }
         embeddingReader.Close();
 
-        DbDataReader datapointReader = helper.ExecuteSQLCommand("SELECT id, id_entity, name, probmethod_embedding, similaritymethod, hash FROM datapoint", parametersIDSearchdomain);
+        DbDataReader datapointReader = helper.ExecuteSQLCommand("SELECT d.id, d.id_entity, d.name, d.probmethod_embedding, d.similaritymethod, d.hash FROM datapoint d JOIN entity ent ON d.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
         Dictionary<int, List<Datapoint>> datapoint_unassigned = [];
         while (datapointReader.Read())
         {
@@ -107,7 +107,7 @@ public class Searchdomain
         }
         datapointReader.Close();
 
-        DbDataReader attributeReader = helper.ExecuteSQLCommand("SELECT id, id_entity, attribute, value FROM attribute", parametersIDSearchdomain);
+        DbDataReader attributeReader = helper.ExecuteSQLCommand("SELECT a.id, a.id_entity, a.attribute, a.value FROM attribute a JOIN entity ent ON a.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
         Dictionary<int, Dictionary<string, string>> attributes_unassigned = [];
         while (attributeReader.Read())
         {
