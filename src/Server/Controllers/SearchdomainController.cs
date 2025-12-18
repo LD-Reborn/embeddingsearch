@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ElmahCore;
 using Microsoft.AspNetCore.Mvc;
 using Server.Exceptions;
@@ -98,10 +99,35 @@ public class SearchdomainController : ControllerBase
         {
             _logger.LogError("Unable to update searchdomain {searchdomain} - not found", [searchdomain]);
             return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update searchdomain {searchdomain} - not found" });
-        } catch (Exception)
+        } catch (Exception ex)
         {
-            _logger.LogError("Unable to update searchdomain {searchdomain}", [searchdomain]);
+            _logger.LogError("Unable to update searchdomain {searchdomain} - Exception: {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
             return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update searchdomain {searchdomain}" });
+        }
+        return Ok(new SearchdomainUpdateResults(){Success = true});
+    }
+
+    [HttpPost("UpdateSettings")]
+    public ActionResult<SearchdomainUpdateResults> UpdateSettings(string searchdomain, [FromBody] SearchdomainSettings request)
+    {
+        try
+        {
+            Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+            Dictionary<string, dynamic> parameters = new()
+            {
+                {"settings", JsonSerializer.Serialize(request)},
+                {"id", searchdomain_.id}
+            };
+            searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
+            searchdomain_.settings = request;
+        } catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to update settings for searchdomain {searchdomain} - not found", [searchdomain]);
+            return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update settings for searchdomain {searchdomain} - not found" });
+        } catch (Exception ex)
+        {
+            _logger.LogError("Unable to update settings for searchdomain {searchdomain} - Exception: {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update settings for searchdomain {searchdomain}" });
         }
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }

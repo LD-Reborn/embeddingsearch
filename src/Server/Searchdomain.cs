@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Text.Json;
 using ElmahCore.Mvc.Logger;
 using MySql.Data.MySqlClient;
 using Server.Helper;
@@ -24,7 +25,7 @@ public class Searchdomain
     public SQLHelper helper;
     private readonly ILogger _logger;
 
-    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false, SearchdomainSettings searchdomainSettings = new())
+    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
@@ -34,10 +35,10 @@ public class Searchdomain
         this._logger = logger;
         searchCache = [];
         entityCache = [];
-        settings = searchdomainSettings;
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection, connectionString);
+        settings = GetSettings();
         modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
         if (!runEmpty)
         {
@@ -229,6 +230,19 @@ public class Searchdomain
         this.id = reader.GetInt32(0);
         reader.Close();
         return this.id;
+    }
+
+    public SearchdomainSettings GetSettings()
+    {
+        Dictionary<string, dynamic> parameters = new()
+        {
+            ["name"] = searchdomain
+        };
+        DbDataReader reader = helper.ExecuteSQLCommand("SELECT settings from searchdomain WHERE name = @name", parameters);
+        reader.Read();
+        string settingsString = reader.GetString(0);
+        reader.Close();
+        return JsonSerializer.Deserialize<SearchdomainSettings>(settingsString);
     }
 
     public void InvalidateSearchCache()

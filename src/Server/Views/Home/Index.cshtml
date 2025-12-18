@@ -55,16 +55,11 @@
           <div class="row align-items-center mb-3">
             <label class="form-label">Settings</label>
             <div class="col-md-6">
-              <input
-                id="searchdomainConfig"
-                type="text"
-                class="form-control"
-                placeholder="JSON-string"
-                disabled
-              />
+              <input type="checkbox" class="form-check-input" id="searchdomainConfigCacheReconciliation" />
+              <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconsiliation"]</label>
             </div>
             <div class="col-md-2 mt-3 mt-md-0">
-              <button class="btn btn-warning w-100">Update</button>
+              <button class="btn btn-warning w-100" id="searchdomainConfigUpdate">@T["Update"]</button>
             </div>
           </div>
 
@@ -149,8 +144,8 @@
         <table class="table table-sm table-bordered mb-4">
           <thead>
             <tr>
-              <th>Key</th>
-              <th>Value</th>
+              <th>@T["Key"]</th>
+              <th>@T["Value"]</th>
             </tr>
           </thead>
           <tbody id="entityAttributesBody">
@@ -162,9 +157,9 @@
         <table class="table table-sm table-striped">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>ProbMethod</th>
-              <th>SimilarityMethod</th>
+              <th>@T["Name"]</th>
+              <th>@T["ProbMethod"]</th>
+              <th>@T["SimilarityMethod"]</th>
             </tr>
           </thead>
           <tbody id="entityDatapointsBody">
@@ -174,7 +169,7 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Close
+          @T["Close"]
         </button>
       </div>
     </div>
@@ -194,7 +189,7 @@
       <div class="modal-body">
 
         <!-- Access times -->
-        <h6>Access times</h6>
+        <h3>Access times</h3>
         <ul id="queryAccessTimes" class="list-group mb-4"></ul>
 
         <!-- Results -->
@@ -335,6 +330,13 @@
                 deleteSearchdomain(domainKey);
                 selectDomain(0);
             });
+        document
+            .getElementById('searchdomainConfigUpdate')
+            .addEventListener('click', () => {
+                const domainKey = getSelectedDomainKey();
+                const cacheReconciliation = document.getElementById('searchdomainConfigCacheReconciliation').checked;
+                updateSearchdomainConfig(domainKey, { CacheReconciliation: cacheReconciliation});
+            });
     });
 
     function deleteSearchdomain(domainKey) {
@@ -367,7 +369,7 @@
                 // Update sidebar and header name
                 var domainItem = document.getElementById('sidebar_domain_' + domainKey);
                 domainItem.innerText = newName;
-                document.querySelector('.section-card h4').innerText = newName;
+                document.querySelector('.section-card h3').innerText = newName;
                 domains[domainKey] = newName;
 
                 console.log('Searchdomain renamed successfully');
@@ -377,6 +379,27 @@
             }
         }).catch(error => {
             console.error('Error renaming searchdomain:', error);
+        });
+    }
+
+    function updateSearchdomainConfig(domainKey, newSettings) {
+        // Implement update logic here
+        fetch(`/Searchdomain/UpdateSettings?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newSettings)
+        }).then(response => {
+            if (response.ok) {
+                // TODO add toast
+                console.log('Searchdomain settings updated successfully');
+            } else {
+                // TODO add toast
+                console.error('Failed to update searchdomain settings');
+            }
+        }).catch(error => {
+            console.error('Error updating searchdomain settings:', error);
         });
     }
 
@@ -398,7 +421,10 @@
         selectedItem.classList.add('active');
 
         var domainName = domains[domainKey];
-        document.querySelector('.section-card h4').innerText = domainName;
+        document.querySelector('.section-card h3').innerText = domainName;
+
+        let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
+        let configElementCacheReconsiliation = document.getElementById('searchdomainConfigCacheReconciliation');
 
         /* ---------- ENTITIES ---------- */
         let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false`;
@@ -436,6 +462,20 @@
                 console.error('Error fetching queries:', err);
                 hideQueriesLoading(queriesCard);
             });
+
+        searchdomainConfigPromise.then(searchdomainConfig => {
+            if (searchdomainConfig != null && searchdomainConfig.Settings != null)
+            {
+                console.log(searchdomainConfig);
+                configElementCacheReconsiliation.checked = searchdomainConfig.Settings.CacheReconciliation;
+                configElementCacheReconsiliation.disabled = false;
+            } else {
+                //configElement.value = 'Error fetching searchdomain config';
+                configElementCacheReconsiliation.disabled = true;
+                // TODO add toast
+                console.error('Failed to fetch searchdomain config');
+            }
+        });
     }
 
     function clearEntitiesTable() {
@@ -488,8 +528,6 @@
     function populateQueriesTable(filterText = '') {
         if (!queries) return;
 
-        let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
-        let configElement = document.getElementById('searchdomainConfig');
 
         const tbody = document.querySelector('#queriesTable tbody');
         tbody.innerHTML = '';
@@ -520,17 +558,6 @@
                 tbody.appendChild(row);
             });
 
-        searchdomainConfigPromise.then(searchdomainConfig => {
-            if (searchdomainConfig != null && searchdomainConfig.Settings != null)
-            {
-              configElement.value = JSON.stringify(searchdomainConfig.Settings, null, 2);
-            } else {
-              configElement.value = 'Error fetching searchdomain config';
-              console.log(searchdomainConfig);
-              // TODO add toast
-              console.error('Failed to fetch searchdomain config');
-            }
-        });
 
 
     }
