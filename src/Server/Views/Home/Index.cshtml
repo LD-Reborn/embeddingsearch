@@ -30,7 +30,7 @@
                 </li>
             }
           </ul>
-          <button class="btn btn-primary w-100">Add</button>
+          <button class="btn btn-primary w-100">@T["Create"]</button>
         </div>
       </div>
     </div>
@@ -42,18 +42,19 @@
         <div class="card-body">
           <h2 class="visually-hidden">@T["Searchdomain information and settings"]</h2>
 
+          <h3 class="visually-hidden">@T["Actions"]</h3>
           <!-- Header -->
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="mb-0 text-nowrap overflow-auto">Searchdomain</h3>
+            <p id="searchdomainName" class="mb-0 text-nowrap overflow-auto fs-3">Searchdomain</p>
             <div class="col-md-3 text-end w-auto">
-              <button id="searchdomainRename" class="btn btn-warning btn-sm me-2">Rename</button>
-              <button id="searchdomainDelete" class="btn btn-danger btn-sm">Delete</button>
+              <button id="searchdomainRename" class="btn btn-warning btn-sm me-2">@T["Rename"]</button>
+              <button id="searchdomainDelete" class="btn btn-danger btn-sm">@T["Delete"]</button>
             </div>
           </div>
 
           <!-- Settings -->
           <div class="row align-items-center mb-3">
-            <label class="form-label">Settings</label>
+            <h3>@T["Settings"]</h3>
             <div class="col-md-6">
               <input type="checkbox" class="form-check-input" id="searchdomainConfigCacheReconciliation" />
               <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconsiliation"]</label>
@@ -63,6 +64,7 @@
             </div>
           </div>
 
+          <h3 class="visually-hidden">@T["Cache"]</h3>
           <!-- Cache -->
           <div class="d-flex align-items-center mb-4">
             <div class="me-3">
@@ -75,7 +77,7 @@
           <div class="card section-card mb-4">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <strong>Recent queries</strong>
+                <h3>Recent queries</h3>
                 <input
                   type="text"
                   class="form-control form-control-sm w-25"
@@ -100,7 +102,7 @@
           <div class="card section-card">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <strong>Entities</strong>
+                <h3>Entities</h3>
                 <input
                   id="entitiesFilter"
                   type="text"
@@ -421,7 +423,7 @@
         selectedItem.classList.add('active');
 
         var domainName = domains[domainKey];
-        document.querySelector('.section-card h3').innerText = domainName;
+        document.querySelector('#searchdomainName').innerText = domainName;
 
         let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
         let configElementCacheReconsiliation = document.getElementById('searchdomainConfigCacheReconciliation');
