@@ -43,8 +43,8 @@
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0 text-nowrap overflow-auto">Searchdomain1</h4>
             <div class="col-md-3 text-end w-auto">
-              <button class="btn btn-warning btn-sm me-2">Rename</button>
-              <button class="btn btn-danger btn-sm">Delete</button>
+              <button id="searchdomainRename" class="btn btn-warning btn-sm me-2">Rename</button>
+              <button id="searchdomainDelete" class="btn btn-danger btn-sm">Delete</button>
             </div>
           </div>
 
@@ -217,6 +217,40 @@
   </div>
 </div>
 
+<!-- Rename searchdomain Modal -->
+
+<div class="modal fade" id="renameSearchdomainModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="renameSearchdomainTitle">Query Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- New name -->
+        <div class="mb-3">
+          <form>
+            <label for="renameSearchdomainNewName" class="form-label">New name</label>
+            <input type="text" class="form-control" id="renameSearchdomainNewName" />
+            <button type="button" class="btn btn-primary mt-3" onclick="renameSearchdomain(getSelectedDomainKey(), document.getElementById('renameSearchdomainNewName').value)" data-bs-dismiss="modal">
+              Rename
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 
 <script>
@@ -246,7 +280,49 @@
             populateQueriesTable(queriesFilter.value);
         });
         selectDomain(0);
+
+        document
+            .getElementById('searchdomainRename')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('renameSearchdomainModal')
+                );
+                // Fill in searchdomain current name
+                const domainKey = getSelectedDomainKey();
+                document.getElementById(
+                    'renameSearchdomainNewName'
+                ).value = domains[domainKey];
+                modal.show();
+            });
     });
+
+    function renameSearchdomain(domainKey, newName) {
+        // Implement rename logic here
+        fetch(`/Searchdomain/Update?searchdomain=${encodeURI(domains[domainKey])}&newName=${newName}`, {
+            method: 'GET'
+        }).then(response => {
+            if (response.ok) {
+                // Update the UI or notify the user
+                // TODO add toast
+                // Update sidebar and header name
+                var domainItem = document.getElementById('sidebar_domain_' + domainKey);
+                domainItem.innerText = newName;
+                document.querySelector('.section-card h4').innerText = newName;
+                domains[domainKey] = newName;
+
+                console.log('Searchdomain renamed successfully');
+            } else {
+                // TODO add toast
+                console.error('Failed to rename searchdomain');
+            }
+        }).catch(error => {
+            console.error('Error renaming searchdomain:', error);
+        });
+    }
+
+    function getSelectedDomainKey() {
+        return document.querySelector('.domain-item.active').id.split("_")[2] - 0;
+    }
 
     function selectDomain(domainKey) {
         document.querySelectorAll('.domain-item').forEach(item => {
