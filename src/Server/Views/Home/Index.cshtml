@@ -14,12 +14,14 @@
 }
 
 <div class="container-fluid mt-4">
+  <h1 class="visually-hidden">embeddingsearch</h1>
   <div class="row">
 
     <!-- Sidebar -->
-    <div class="col-md-4 sidebar">
+    <div class="col-md-4 sidebar" role="complementary">
       <div class="card">
         <div class="card-body p-2">
+          <h2 class="visually-hidden">@T["Searchdomain selection"]</h2>
           <ul class="list-group list-group-flush mb-2" style="max-height: 60vh; overflow-y: auto;">
             @foreach (var domain in domains)
             {
@@ -34,14 +36,15 @@
     </div>
 
     <!-- Main Content -->
-    <div class="col col-md-8">
+    <div class="col col-md-8" role="main">
 
       <div class="card section-card">
         <div class="card-body">
+          <h2 class="visually-hidden">@T["Searchdomain information and settings"]</h2>
 
           <!-- Header -->
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0 text-nowrap overflow-auto">Searchdomain1</h4>
+            <h3 class="mb-0 text-nowrap overflow-auto">Searchdomain</h3>
             <div class="col-md-3 text-end w-auto">
               <button id="searchdomainRename" class="btn btn-warning btn-sm me-2">Rename</button>
               <button id="searchdomainDelete" class="btn btn-danger btn-sm">Delete</button>
@@ -136,13 +139,13 @@
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="entityDetailsTitle">Entity Details</h5>
+        <h2 class="modal-title" id="entityDetailsTitle">…@T["Entity Details"]</h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
         <!-- Attributes -->
-        <h6>Attributes</h6>
+        <h3 class="fs-4">@T["Attributes"]</h3>
         <table class="table table-sm table-bordered mb-4">
           <thead>
             <tr>
@@ -155,7 +158,7 @@
         </table>
 
         <!-- Datapoints -->
-        <h6>Datapoints</h6>
+        <h3 class="fs-4">@T["Datapoints"]</h3>
         <table class="table table-sm table-striped">
           <thead>
             <tr>
@@ -184,7 +187,7 @@
     <div class="modal-content">
 
       <div class="modal-header">
-        <h5 class="modal-title" id="queryDetailsTitle">Query Details</h5>
+        <h2 class="modal-title" id="queryDetailsTitle">Query Details</h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
@@ -195,7 +198,7 @@
         <ul id="queryAccessTimes" class="list-group mb-4"></ul>
 
         <!-- Results -->
-        <h6>Results</h6>
+        <h3>Results</h3>
         <table class="table table-sm table-striped">
           <thead>
             <tr>
@@ -220,11 +223,11 @@
 
 <!-- Rename searchdomain Modal -->
 <div class="modal fade" id="renameSearchdomainModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
     <div class="modal-content">
 
       <div class="modal-header bg-warning">
-        <h5 class="modal-title" id="renameSearchdomainTitle">@T["Rename searchdomain"]</h5>
+        <h2 class="modal-title" id="renameSearchdomainTitle">@T["Rename searchdomain"]</h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
@@ -250,11 +253,11 @@
 
 <!-- Delete searchdomain Modal -->
 <div class="modal fade" id="deleteSearchdomainModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
     <div class="modal-content">
 
       <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title" id="deleteSearchdomainTitle">@T["Delete searchdomain"]</h5>
+        <h2 class="modal-title" id="deleteSearchdomainTitle">@T["Delete searchdomain"]</h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
