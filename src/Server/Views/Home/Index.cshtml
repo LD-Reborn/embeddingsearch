@@ -218,31 +218,53 @@
 </div>
 
 <!-- Rename searchdomain Modal -->
-
 <div class="modal fade" id="renameSearchdomainModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
 
-      <div class="modal-header">
-        <h5 class="modal-title" id="renameSearchdomainTitle">Query Details</h5>
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="renameSearchdomainTitle">@T["Rename searchdomain"]</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
         <!-- New name -->
         <div class="mb-3">
-          <form>
-            <label for="renameSearchdomainNewName" class="form-label">New name</label>
-            <input type="text" class="form-control" id="renameSearchdomainNewName" />
-            <button type="button" class="btn btn-primary mt-3" onclick="renameSearchdomain(getSelectedDomainKey(), document.getElementById('renameSearchdomainNewName').value)" data-bs-dismiss="modal">
-              Rename
-            </button>
-          </form>
+          <label for="renameSearchdomainNewName" class="form-label">New name</label>
+          <input type="text" class="form-control" id="renameSearchdomainNewName" />
         </div>
-
       </div>
 
       <div class="modal-footer">
+        <button type="button" class="btn btn-warning" onclick="renameSearchdomain(getSelectedDomainKey(), document.getElementById('renameSearchdomainNewName').value)" data-bs-dismiss="modal">
+          Rename
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete searchdomain Modal -->
+<div class="modal fade" id="deleteSearchdomainModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteSearchdomainTitle">@T["Delete searchdomain"]</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p>@T["Are you sure you want to delete this searchdomain? This action cannot be undone."]</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="searchdomainConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
+          Delete
+        </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           Close
         </button>
@@ -294,7 +316,42 @@
                 ).value = domains[domainKey];
                 modal.show();
             });
+        document
+            .getElementById('searchdomainDelete')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('deleteSearchdomainModal')
+                );
+                modal.show();
+            });
+        document
+            .getElementById('searchdomainConfirmDelete')
+            .addEventListener('click', () => {
+                const domainKey = getSelectedDomainKey();
+                deleteSearchdomain(domainKey);
+                selectDomain(0);
+            });
     });
+
+    function deleteSearchdomain(domainKey) {
+        // Implement delete logic here
+        fetch(`/Searchdomain/Delete?searchdomain=${encodeURI(domains[domainKey])}`, {
+            method: 'GET'
+        }).then(response => {
+            if (response.ok) {
+                // TODO add toast
+                // Remove from sidebar
+                var domainItem = document.getElementById('sidebar_domain_' + domainKey);
+                domainItem.remove();
+                console.log('Searchdomain deleted successfully');
+            } else {
+                // TODO add toast
+                console.error('Failed to delete searchdomain');
+            }
+        }).catch(error => {
+            console.error('Error deleting searchdomain:', error);
+        });
+    }
 
     function renameSearchdomain(domainKey, newName) {
         // Implement rename logic here
@@ -302,7 +359,6 @@
             method: 'GET'
         }).then(response => {
             if (response.ok) {
-                // Update the UI or notify the user
                 // TODO add toast
                 // Update sidebar and header name
                 var domainItem = document.getElementById('sidebar_domain_' + domainKey);
