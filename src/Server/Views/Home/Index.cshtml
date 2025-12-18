@@ -133,8 +133,8 @@
 <div class="modal fade" id="entityDetailsModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title" id="entityDetailsTitle">…@T["Entity Details"]</h2>
+      <div class="modal-header bg-info">
+        <h2 class="modal-title" id="entityDetailsTitle">@T["Entity Details"]</h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
@@ -511,7 +511,7 @@
 
             var actionCell = document.createElement('td');
             var detailsButton = document.createElement('button');
-            detailsButton.className = 'btn btn-primary btn-sm';
+            detailsButton.className = 'btn btn-info btn-sm';
             detailsButton.textContent = 'Details';
             detailsButton.setAttribute("data-index", entities.findIndex(en => en == entity));
             detailsButton.addEventListener('click', () => {
