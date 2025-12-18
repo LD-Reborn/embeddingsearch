@@ -30,7 +30,7 @@
                 </li>
             }
           </ul>
-          <button class="btn btn-primary w-100">@T["Create"]</button>
+          <button id="searchdomainCreate" class="btn btn-primary w-100">@T["Create"]</button>
         </div>
       </div>
     </div>
@@ -275,6 +275,36 @@
   </div>
 </div>
 
+<!-- Create searchdomain Modal -->
+<div class="modal fade" id="createSearchdomainModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h2 class="modal-title" id="createSearchdomainTitle">@T["Create searchdomain"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <label for="createSearchdomainName" class="form-label">@T["Searchdomain name"]</label>
+        <input type="text" class="form-control mb-3" id="createSearchdomainName" placeholder="@T["Searchdomain name"]" />
+        <input type="checkbox" class="form-check-input" id="createSearchdomainWithCacheReconciliation" />
+        <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconsiliation"]</label>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="searchdomainConfirmCreate" class="btn btn-primary" data-bs-dismiss="modal">
+          @T["Create"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 
 <script>
     var domains = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(domains))');
@@ -338,6 +368,42 @@
                 const domainKey = getSelectedDomainKey();
                 const cacheReconciliation = document.getElementById('searchdomainConfigCacheReconciliation').checked;
                 updateSearchdomainConfig(domainKey, { CacheReconciliation: cacheReconciliation});
+            });
+
+        document
+            .getElementById('searchdomainCreate')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('createSearchdomainModal')
+                );
+                modal.show();
+            });
+
+        document
+            .getElementById('searchdomainConfirmCreate')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('createSearchdomainModal')
+                );
+                const name = document.getElementById('createSearchdomainName').value;
+                const cacheReconciliation = document.getElementById('createSearchdomainWithCacheReconciliation').checked;
+                const settings = { CacheReconciliation: cacheReconciliation };
+                // Implement create logic here
+                fetch(`/Searchdomain/Create?searchdomain=${encodeURIComponent(name)}&settings=${JSON.stringify(settings)}`, {
+                    method: 'GET'
+                }).then(response => {
+                    if (response.ok) {
+                        // TODO add toast
+                        console.log('Searchdomain created successfully');
+                        // Reload the page to show the new searchdomain
+                        location.reload();
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to create searchdomain');
+                    }
+                }).catch(error => {
+                    console.error('Error creating searchdomain:', error);
+                });
             });
     });
 
