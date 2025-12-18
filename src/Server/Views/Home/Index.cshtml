@@ -446,6 +446,7 @@
 
         const normalizedFilter = filterText.toLowerCase();
 
+        let isFirstEntity = true;
         entities
         .filter(e => e.Name.toLowerCase().includes(normalizedFilter))
         .forEach(entity => {
@@ -453,6 +454,10 @@
 
             var nameCell = document.createElement('td');
             nameCell.textContent = entity.Name;
+            if (isFirstEntity) {
+              nameCell.classList.add('w-100'); // Otherwise the table doesn't use the full width
+              isFirstEntity = false;
+            }
             row.appendChild(nameCell);
 
             var actionCell = document.createElement('td');
