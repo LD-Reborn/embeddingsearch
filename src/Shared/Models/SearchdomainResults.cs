@@ -54,3 +54,15 @@ public class SearchdomainSearchesResults
     [JsonPropertyName("Searches")]
     public required Dictionary<string, DateTimedSearchResult> Searches { get; set; }
 }
+
+public class SearchdomainSettingsResults
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("Settings")]
+    public required SearchdomainSettings? Settings { get; set; }
+}

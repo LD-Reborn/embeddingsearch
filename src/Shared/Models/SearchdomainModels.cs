@@ -17,3 +17,9 @@ public struct DateTimedSearchResult(DateTime dateTime, List<ResultItem> results)
     [JsonPropertyName("Results")]
     public List<ResultItem> Results { get; set; } = results;
 }
+
+public struct SearchdomainSettings(bool cacheReconciliation = false)
+{
+    [JsonPropertyName("CacheReconciliation")]
+    public bool CacheReconciliation { get; set; } = cacheReconciliation;
+}

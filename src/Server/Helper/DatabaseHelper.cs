@@ -1,6 +1,7 @@
 using System.Data.Common;
 using System.Text;
 using Server.Exceptions;
+using Shared.Models;
 
 namespace Server.Helper;
 
@@ -27,12 +28,12 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         helper.ExecuteSQLNonQuery(query.ToString(), parameters);
     }
 
-    public static int DatabaseInsertSearchdomain(SQLHelper helper, string name)
+    public static int DatabaseInsertSearchdomain(SQLHelper helper, string name, SearchdomainSettings settings = new())
     {
         Dictionary<string, dynamic> parameters = new()
         {
             { "name", name },
-            { "settings", "{}"} // TODO add settings. It's not used yet, but maybe it's needed someday...
+            { "settings", settings}
         };
         return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
     }

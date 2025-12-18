@@ -53,6 +53,7 @@
             <label class="form-label">Settings</label>
             <div class="col-md-6">
               <input
+                id="searchdomainConfig"
                 type="text"
                 class="form-control"
                 placeholder="JSON-string"
@@ -380,6 +381,11 @@
         return document.querySelector('.domain-item.active').id.split("_")[2] - 0;
     }
 
+    function getSearchdomainConfig(domainKey) {
+        return fetch(`/Searchdomain/GetSettings?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+            .then(r => r.json());
+    }
+
     function selectDomain(domainKey) {
         document.querySelectorAll('.domain-item').forEach(item => {
             item.classList.remove('active');
@@ -479,6 +485,9 @@
     function populateQueriesTable(filterText = '') {
         if (!queries) return;
 
+        let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
+        let configElement = document.getElementById('searchdomainConfig');
+
         const tbody = document.querySelector('#queriesTable tbody');
         tbody.innerHTML = '';
 
@@ -507,6 +516,20 @@
 
                 tbody.appendChild(row);
             });
+
+        searchdomainConfigPromise.then(searchdomainConfig => {
+            if (searchdomainConfig != null && searchdomainConfig.Settings != null)
+            {
+              configElement.value = JSON.stringify(searchdomainConfig.Settings, null, 2);
+            } else {
+              configElement.value = 'Error fetching searchdomain config';
+              console.log(searchdomainConfig);
+              // TODO add toast
+              console.error('Failed to fetch searchdomain config');
+            }
+        });
+
+
     }
 
     function flagSearchdomainAsErroneous(domainKey) {

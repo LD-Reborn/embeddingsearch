@@ -14,6 +14,7 @@ public class Searchdomain
     public AIProvider aIProvider;
     public string searchdomain;
     public int id;
+    public SearchdomainSettings settings;
     public Dictionary<string, DateTimedSearchResult> searchCache; // Key: query, Value: Search results for that query (with timestamp)
     public List<Entity> entityCache;
     public List<string> modelsInUse;
@@ -23,7 +24,7 @@ public class Searchdomain
     public SQLHelper helper;
     private readonly ILogger _logger;
 
-    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
+    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false, SearchdomainSettings searchdomainSettings = new())
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
@@ -33,6 +34,7 @@ public class Searchdomain
         this._logger = logger;
         searchCache = [];
         entityCache = [];
+        settings = searchdomainSettings;
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection, connectionString);
