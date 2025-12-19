@@ -66,3 +66,24 @@ public class SearchdomainSettingsResults
     [JsonPropertyName("Settings")]
     public required SearchdomainSettings? Settings { get; set; }
 }
+
+public class SearchdomainSearchCacheSizeResults
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("SearchCacheSizeBytes")]
+    public required long? SearchCacheSizeBytes { get; set; }
+}
+
+public class SearchdomainInvalidateCacheResults
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+}

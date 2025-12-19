@@ -68,9 +68,9 @@
           <!-- Cache -->
           <div class="d-flex align-items-center mb-4">
             <div class="me-3">
-              <strong>Cache utilization:</strong> 2.47MiB
+              <strong>Cache utilization:</strong> <span id="cacheUtilization">0.00MiB</span>
             </div>
-            <button class="btn btn-primary btn-sm">Reset</button>
+            <button id="cacheClear" class="btn btn-warning btn-sm">@T["Clear"]</button>
           </div>
 
           <!-- Recent Queries -->
@@ -405,6 +405,27 @@
                     console.error('Error creating searchdomain:', error);
                 });
             });
+
+        document
+            .getElementById('cacheClear')
+            .addEventListener('click', () => {
+                const domainKey = getSelectedDomainKey();
+                fetch(`/Searchdomain/ClearSearchCache?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
+                    method: 'GET'
+                }).then(response => {
+                    if (response.ok) {
+                        // TODO add toast
+                        console.log('Searchdomain cache cleared successfully');
+                        // Update cache utilization display
+                        document.querySelector('#cacheUtilization').innerText = '0.00MiB';
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to clear searchdomain cache');
+                    }
+                }).catch(error => {
+                    console.error('Error clearing searchdomain cache:', error);
+                });
+            });
     });
 
     function deleteSearchdomain(domainKey) {
@@ -480,6 +501,11 @@
             .then(r => r.json());
     }
 
+    function getSearchdomainCacheUtilization(domainKey) {
+        return fetch(`/Searchdomain/GetSearchCacheSize?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+            .then(r => r.json());
+    }
+
     function selectDomain(domainKey) {
         document.querySelectorAll('.domain-item').forEach(item => {
             item.classList.remove('active');
@@ -493,6 +519,8 @@
 
         let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
         let configElementCacheReconsiliation = document.getElementById('searchdomainConfigCacheReconciliation');
+
+        let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
 
         /* ---------- ENTITIES ---------- */
         let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false`;
@@ -544,6 +572,17 @@
                 console.error('Failed to fetch searchdomain config');
             }
         });
+        cacheUtilizationPromise.then(cacheUtilization => {
+            if (cacheUtilization != null && cacheUtilization.SearchCacheSizeBytes != null)
+            {
+                console.log(cacheUtilization);
+                document.querySelector('#cacheUtilization').innerText =
+                    `${(cacheUtilization.SearchCacheSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
+            } else {
+                // TODO add toast
+                console.error('Failed to fetch searchdomain cache utilization');
+            }
+        }); 
     }
 
     function clearEntitiesTable() {

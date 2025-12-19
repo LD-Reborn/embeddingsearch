@@ -176,4 +176,52 @@ public class SearchdomainController : ControllerBase
         SearchdomainSettings settings = searchdomain_.settings;
         return Ok(new SearchdomainSettingsResults() { Settings = settings, Success = true });
     }
+
+    [HttpGet("GetSearchCacheSize")]
+    public ActionResult<SearchdomainSearchCacheSizeResults> GetSearchCacheSize(string searchdomain)
+    {
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        }
+        catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
+            return Ok(new SearchdomainSearchCacheSizeResults() { SearchCacheSizeBytes = null, Success = false, Message = "Searchdomain not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new SearchdomainSearchCacheSizeResults() { SearchCacheSizeBytes = null, Success = false, Message = ex.Message });
+        }
+        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
+        long sizeInBytes = 0;
+        foreach (var entry in searchCache)
+        {
+            sizeInBytes += sizeof(int); // string length prefix
+            sizeInBytes += entry.Key.Length * sizeof(char); // string characters
+            sizeInBytes += entry.Value.EstimateSize();
+        }
+        return Ok(new SearchdomainSearchCacheSizeResults() { SearchCacheSizeBytes = sizeInBytes, Success = true });
+    }
+
+    [HttpGet("ClearSearchCache")]
+    public ActionResult<SearchdomainInvalidateCacheResults> InvalidateSearchCache(string searchdomain)
+    {
+        try
+        {
+            Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+            searchdomain_.InvalidateSearchCache();
+        } catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to invalidate search cache for searchdomain {searchdomain} - not found", [searchdomain]);
+            return Ok(new SearchdomainInvalidateCacheResults() { Success = false, Message = $"Unable to invalidate search cache for searchdomain {searchdomain} - not found" });
+        } catch (Exception ex)
+        {
+            _logger.LogError("Unable to invalidate search cache for searchdomain {searchdomain} - Exception: {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new SearchdomainInvalidateCacheResults() { Success = false, Message = $"Unable to invalidate search cache for searchdomain {searchdomain}" });
+        }
+        return Ok(new SearchdomainInvalidateCacheResults(){Success = true});
+    }
 }
