@@ -183,8 +183,8 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
 
-      <div class="modal-header">
-        <h2 class="modal-title" id="queryDetailsTitle">Query Details</h2>
+      <div class="modal-header bg-info">
+        <h2 class="modal-title" id="queryDetailsTitle">@T["Query Details"] - <span id="queryDetailsQueryName"></span></h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
@@ -653,7 +653,7 @@
 
                 const actionCell = document.createElement('td');
                 const btn = document.createElement('button');
-                btn.className = 'btn btn-sm btn-primary';
+                btn.className = 'btn btn-sm btn-info';
                 btn.textContent = '@T["Details"]';
                 btn.addEventListener('click', () => {
                     showQueryDetails(query);
@@ -745,8 +745,7 @@
 
     function showQueryDetails(query) {
         // Title
-        document.getElementById('queryDetailsTitle').innerText =
-            `Query: ${query.Name}`;
+        document.getElementById('queryDetailsQueryName').innerText = query.Name;
 
         /* ---------- Access times ---------- */
         const accessList = document.getElementById('queryAccessTimes');
