@@ -2,6 +2,7 @@ using System.Text.Json;
 using ElmahCore;
 using Microsoft.AspNetCore.Mvc;
 using Server.Exceptions;
+using Server.Helper;
 using Shared.Models;
 
 namespace Server.Controllers;
@@ -224,4 +225,26 @@ public class SearchdomainController : ControllerBase
         }
         return Ok(new SearchdomainInvalidateCacheResults(){Success = true});
     }
+
+    [HttpGet("GetDatabaseSize")]
+    public ActionResult<SearchdomainGetDatabaseSizeResult> GetDatabaseSize(string searchdomain)
+    {
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        }
+        catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
+            return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = null, Success = false, Message = "Searchdomain not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = null, Success = false, Message = ex.Message });
+        }
+        long sizeInBytes = DatabaseHelper.GetSearchdomainDatabaseSize(searchdomain_.helper, searchdomain);
+        return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = sizeInBytes, Success = true });        
+    } 
 }

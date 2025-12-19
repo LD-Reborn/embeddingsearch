@@ -87,3 +87,16 @@ public class SearchdomainInvalidateCacheResults
     [JsonPropertyName("Message")]
     public string? Message { get; set; }
 }
+
+public class SearchdomainGetDatabaseSizeResult
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("SearchdomainDatabaseSizeBytes")]
+    public required long? SearchdomainDatabaseSizeBytes { get; set; }    
+}
+

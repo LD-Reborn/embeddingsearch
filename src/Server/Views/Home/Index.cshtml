@@ -64,11 +64,20 @@
             </div>
           </div>
 
-          <h3 class="visually-hidden">@T["Cache"]</h3>
+          <h3 class="visually-hidden">@T["Search cache"]</h3>
           <!-- Cache -->
           <div class="d-flex align-items-center mb-4">
             <div class="me-3">
-              <strong>Cache utilization:</strong> <span id="cacheUtilization">0.00MiB</span>
+              <strong>@T["Search cache utilization"]:</strong> <span id="cacheUtilization">0.00MiB</span>
+            </div>
+            <button id="cacheClear" class="btn btn-warning btn-sm">@T["Clear"]</button>
+          </div>
+
+          <h3 class="visually-hidden">@T["Database size"]</h3>
+          <!-- Database size -->
+          <div class="d-flex align-items-center mb-4">
+            <div class="me-3">
+              <strong>@T["Database size"]:</strong> <span id="databaseUtilization">0.00MiB</span>
             </div>
             <button id="cacheClear" class="btn btn-warning btn-sm">@T["Clear"]</button>
           </div>
@@ -506,6 +515,11 @@
             .then(r => r.json());
     }
 
+    function getSearchdomainDatabaseUtilization(domainKey) {
+        return fetch(`/Searchdomain/GetDatabaseSize?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+            .then(r => r.json());
+    }
+
     function selectDomain(domainKey) {
         document.querySelectorAll('.domain-item').forEach(item => {
             item.classList.remove('active');
@@ -521,6 +535,7 @@
         let configElementCacheReconsiliation = document.getElementById('searchdomainConfigCacheReconciliation');
 
         let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
+        let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
 
         /* ---------- ENTITIES ---------- */
         let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false`;
@@ -575,14 +590,24 @@
         cacheUtilizationPromise.then(cacheUtilization => {
             if (cacheUtilization != null && cacheUtilization.SearchCacheSizeBytes != null)
             {
-                console.log(cacheUtilization);
                 document.querySelector('#cacheUtilization').innerText =
                     `${(cacheUtilization.SearchCacheSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
             } else {
                 // TODO add toast
                 console.error('Failed to fetch searchdomain cache utilization');
             }
-        }); 
+        });
+
+        databaseUtilizationPromise.then(databaseUtilization => {
+            if (databaseUtilization != null && databaseUtilization.SearchdomainDatabaseSizeBytes != null)
+            {
+                document.querySelector('#databaseUtilization').innerText =
+                    `${(databaseUtilization.SearchdomainDatabaseSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
+            } else {
+                // TODO add toast
+                console.error('Failed to fetch searchdomain database utilization');
+            }
+        });
     }
 
     function clearEntitiesTable() {
