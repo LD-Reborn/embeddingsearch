@@ -54,3 +54,49 @@ public class SearchdomainSearchesResults
     [JsonPropertyName("Searches")]
     public required Dictionary<string, DateTimedSearchResult> Searches { get; set; }
 }
+
+public class SearchdomainSettingsResults
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("Settings")]
+    public required SearchdomainSettings? Settings { get; set; }
+}
+
+public class SearchdomainSearchCacheSizeResults
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("SearchCacheSizeBytes")]
+    public required long? SearchCacheSizeBytes { get; set; }
+}
+
+public class SearchdomainInvalidateCacheResults
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+}
+
+public class SearchdomainGetDatabaseSizeResult
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("SearchdomainDatabaseSizeBytes")]
+    public required long? SearchdomainDatabaseSizeBytes { get; set; }    
+}
+

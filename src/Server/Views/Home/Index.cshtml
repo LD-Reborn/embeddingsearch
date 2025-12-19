@@ -14,12 +14,14 @@
 }
 
 <div class="container-fluid mt-4">
+  <h1 class="visually-hidden">embeddingsearch</h1>
   <div class="row">
 
     <!-- Sidebar -->
-    <div class="col-md-4 sidebar">
+    <div class="col-md-4 sidebar" role="complementary">
       <div class="card">
         <div class="card-body p-2">
+          <h2 class="visually-hidden">@T["Searchdomain selection"]</h2>
           <ul class="list-group list-group-flush mb-2" style="max-height: 60vh; overflow-y: auto;">
             @foreach (var domain in domains)
             {
@@ -28,55 +30,63 @@
                 </li>
             }
           </ul>
-          <button class="btn btn-primary w-100">Add</button>
+          <button id="searchdomainCreate" class="btn btn-primary w-100">@T["Create"]</button>
         </div>
       </div>
     </div>
 
     <!-- Main Content -->
-    <div class="col col-md-8">
+    <div class="col col-md-8" role="main">
 
       <div class="card section-card">
         <div class="card-body">
+          <h2 class="visually-hidden">@T["Searchdomain information and settings"]</h2>
 
+          <h3 class="visually-hidden">@T["Actions"]</h3>
           <!-- Header -->
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0 text-nowrap overflow-auto">Searchdomain1</h4>
+            <p id="searchdomainName" class="mb-0 text-nowrap overflow-auto fs-3">Searchdomain</p>
             <div class="col-md-3 text-end w-auto">
-              <button class="btn btn-warning btn-sm me-2">Rename</button>
-              <button class="btn btn-danger btn-sm">Delete</button>
+              <button id="searchdomainRename" class="btn btn-warning btn-sm me-2">@T["Rename"]</button>
+              <button id="searchdomainDelete" class="btn btn-danger btn-sm">@T["Delete"]</button>
             </div>
           </div>
 
           <!-- Settings -->
           <div class="row align-items-center mb-3">
+            <h3>@T["Settings"]</h3>
             <div class="col-md-6">
-              <label class="form-label">Settings</label>
-              <input
-                type="text"
-                class="form-control"
-                placeholder="JSON-string"
-                disabled
-              />
+              <input type="checkbox" class="form-check-input" id="searchdomainConfigCacheReconciliation" />
+              <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconsiliation"]</label>
             </div>
             <div class="col-md-2 mt-3 mt-md-0">
-              <button class="btn btn-warning w-100">Update</button>
+              <button class="btn btn-warning w-100" id="searchdomainConfigUpdate">@T["Update"]</button>
             </div>
           </div>
 
+          <h3 class="visually-hidden">@T["Search cache"]</h3>
           <!-- Cache -->
           <div class="d-flex align-items-center mb-4">
             <div class="me-3">
-              <strong>Cache utilization:</strong> 2.47MiB
+              <strong>@T["Search cache utilization"]:</strong> <span id="cacheUtilization">0.00MiB</span>
             </div>
-            <button class="btn btn-primary btn-sm">Reset</button>
+            <button id="cacheClear" class="btn btn-warning btn-sm">@T["Clear"]</button>
+          </div>
+
+          <h3 class="visually-hidden">@T["Database size"]</h3>
+          <!-- Database size -->
+          <div class="d-flex align-items-center mb-4">
+            <div class="me-3">
+              <strong>@T["Database size"]:</strong> <span id="databaseUtilization">0.00MiB</span>
+            </div>
+            <button id="cacheClear" class="btn btn-warning btn-sm">@T["Clear"]</button>
           </div>
 
           <!-- Recent Queries -->
           <div class="card section-card mb-4">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <strong>Recent queries</strong>
+                <h3>Recent queries</h3>
                 <input
                   type="text"
                   class="form-control form-control-sm w-25"
@@ -101,7 +111,7 @@
           <div class="card section-card">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <strong>Entities</strong>
+                <h3>Entities</h3>
                 <input
                   id="entitiesFilter"
                   type="text"
@@ -134,19 +144,19 @@
 <div class="modal fade" id="entityDetailsModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="entityDetailsTitle">Entity Details</h5>
+      <div class="modal-header bg-info">
+        <h2 class="modal-title" id="entityDetailsTitle">@T["Entity Details"]</h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
         <!-- Attributes -->
-        <h6>Attributes</h6>
+        <h3 class="fs-4">@T["Attributes"]</h3>
         <table class="table table-sm table-bordered mb-4">
           <thead>
             <tr>
-              <th>Key</th>
-              <th>Value</th>
+              <th>@T["Key"]</th>
+              <th>@T["Value"]</th>
             </tr>
           </thead>
           <tbody id="entityAttributesBody">
@@ -154,13 +164,13 @@
         </table>
 
         <!-- Datapoints -->
-        <h6>Datapoints</h6>
+        <h3 class="fs-4">@T["Datapoints"]</h3>
         <table class="table table-sm table-striped">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>ProbMethod</th>
-              <th>SimilarityMethod</th>
+              <th>@T["Name"]</th>
+              <th>@T["ProbMethod"]</th>
+              <th>@T["SimilarityMethod"]</th>
             </tr>
           </thead>
           <tbody id="entityDatapointsBody">
@@ -170,7 +180,7 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Close
+          @T["Close"]
         </button>
       </div>
     </div>
@@ -182,19 +192,19 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
 
-      <div class="modal-header">
-        <h5 class="modal-title" id="queryDetailsTitle">Query Details</h5>
+      <div class="modal-header bg-info">
+        <h2 class="modal-title" id="queryDetailsTitle">@T["Query Details"] - <span id="queryDetailsQueryName"></span></h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
 
         <!-- Access times -->
-        <h6>Access times</h6>
+        <h3>Access times</h3>
         <ul id="queryAccessTimes" class="list-group mb-4"></ul>
 
         <!-- Results -->
-        <h6>Results</h6>
+        <h3>Results</h3>
         <table class="table table-sm table-striped">
           <thead>
             <tr>
@@ -217,6 +227,92 @@
   </div>
 </div>
 
+<!-- Rename searchdomain Modal -->
+<div class="modal fade" id="renameSearchdomainModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-warning">
+        <h2 class="modal-title" id="renameSearchdomainTitle">@T["Rename searchdomain"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- New name -->
+        <div class="mb-3">
+          <label for="renameSearchdomainNewName" class="form-label">New name</label>
+          <input type="text" class="form-control" id="renameSearchdomainNewName" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-warning" onclick="renameSearchdomain(getSelectedDomainKey(), document.getElementById('renameSearchdomainNewName').value)" data-bs-dismiss="modal">
+          Rename
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete searchdomain Modal -->
+<div class="modal fade" id="deleteSearchdomainModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-danger text-white">
+        <h2 class="modal-title" id="deleteSearchdomainTitle">@T["Delete searchdomain"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p>@T["Are you sure you want to delete this searchdomain? This action cannot be undone."]</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="searchdomainConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
+          Delete
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Create searchdomain Modal -->
+<div class="modal fade" id="createSearchdomainModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h2 class="modal-title" id="createSearchdomainTitle">@T["Create searchdomain"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <label for="createSearchdomainName" class="form-label">@T["Searchdomain name"]</label>
+        <input type="text" class="form-control mb-3" id="createSearchdomainName" placeholder="@T["Searchdomain name"]" />
+        <input type="checkbox" class="form-check-input" id="createSearchdomainWithCacheReconciliation" />
+        <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconsiliation"]</label>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="searchdomainConfirmCreate" class="btn btn-primary" data-bs-dismiss="modal">
+          @T["Create"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 
 <script>
@@ -245,7 +341,184 @@
         queriesFilter.addEventListener('input', () => {
             populateQueriesTable(queriesFilter.value);
         });
+        selectDomain(0);
+
+        document
+            .getElementById('searchdomainRename')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('renameSearchdomainModal')
+                );
+                // Fill in searchdomain current name
+                const domainKey = getSelectedDomainKey();
+                document.getElementById(
+                    'renameSearchdomainNewName'
+                ).value = domains[domainKey];
+                modal.show();
+            });
+        document
+            .getElementById('searchdomainDelete')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('deleteSearchdomainModal')
+                );
+                modal.show();
+            });
+        document
+            .getElementById('searchdomainConfirmDelete')
+            .addEventListener('click', () => {
+                const domainKey = getSelectedDomainKey();
+                deleteSearchdomain(domainKey);
+                selectDomain(0);
+            });
+        document
+            .getElementById('searchdomainConfigUpdate')
+            .addEventListener('click', () => {
+                const domainKey = getSelectedDomainKey();
+                const cacheReconciliation = document.getElementById('searchdomainConfigCacheReconciliation').checked;
+                updateSearchdomainConfig(domainKey, { CacheReconciliation: cacheReconciliation});
+            });
+
+        document
+            .getElementById('searchdomainCreate')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('createSearchdomainModal')
+                );
+                modal.show();
+            });
+
+        document
+            .getElementById('searchdomainConfirmCreate')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('createSearchdomainModal')
+                );
+                const name = document.getElementById('createSearchdomainName').value;
+                const cacheReconciliation = document.getElementById('createSearchdomainWithCacheReconciliation').checked;
+                const settings = { CacheReconciliation: cacheReconciliation };
+                // Implement create logic here
+                fetch(`/Searchdomain/Create?searchdomain=${encodeURIComponent(name)}&settings=${JSON.stringify(settings)}`, {
+                    method: 'GET'
+                }).then(response => {
+                    if (response.ok) {
+                        // TODO add toast
+                        console.log('Searchdomain created successfully');
+                        // Reload the page to show the new searchdomain
+                        location.reload();
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to create searchdomain');
+                    }
+                }).catch(error => {
+                    console.error('Error creating searchdomain:', error);
+                });
+            });
+
+        document
+            .getElementById('cacheClear')
+            .addEventListener('click', () => {
+                const domainKey = getSelectedDomainKey();
+                fetch(`/Searchdomain/ClearSearchCache?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
+                    method: 'GET'
+                }).then(response => {
+                    if (response.ok) {
+                        // TODO add toast
+                        console.log('Searchdomain cache cleared successfully');
+                        // Update cache utilization display
+                        document.querySelector('#cacheUtilization').innerText = '0.00MiB';
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to clear searchdomain cache');
+                    }
+                }).catch(error => {
+                    console.error('Error clearing searchdomain cache:', error);
+                });
+            });
     });
+
+    function deleteSearchdomain(domainKey) {
+        // Implement delete logic here
+        fetch(`/Searchdomain/Delete?searchdomain=${encodeURI(domains[domainKey])}`, {
+            method: 'GET'
+        }).then(response => {
+            if (response.ok) {
+                // TODO add toast
+                // Remove from sidebar
+                var domainItem = document.getElementById('sidebar_domain_' + domainKey);
+                domainItem.remove();
+                console.log('Searchdomain deleted successfully');
+            } else {
+                // TODO add toast
+                console.error('Failed to delete searchdomain');
+            }
+        }).catch(error => {
+            console.error('Error deleting searchdomain:', error);
+        });
+    }
+
+    function renameSearchdomain(domainKey, newName) {
+        // Implement rename logic here
+        fetch(`/Searchdomain/Update?searchdomain=${encodeURI(domains[domainKey])}&newName=${newName}`, {
+            method: 'GET'
+        }).then(response => {
+            if (response.ok) {
+                // TODO add toast
+                // Update sidebar and header name
+                var domainItem = document.getElementById('sidebar_domain_' + domainKey);
+                domainItem.innerText = newName;
+                document.querySelector('.section-card h3').innerText = newName;
+                domains[domainKey] = newName;
+
+                console.log('Searchdomain renamed successfully');
+            } else {
+                // TODO add toast
+                console.error('Failed to rename searchdomain');
+            }
+        }).catch(error => {
+            console.error('Error renaming searchdomain:', error);
+        });
+    }
+
+    function updateSearchdomainConfig(domainKey, newSettings) {
+        // Implement update logic here
+        fetch(`/Searchdomain/UpdateSettings?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newSettings)
+        }).then(response => {
+            if (response.ok) {
+                // TODO add toast
+                console.log('Searchdomain settings updated successfully');
+            } else {
+                // TODO add toast
+                console.error('Failed to update searchdomain settings');
+            }
+        }).catch(error => {
+            console.error('Error updating searchdomain settings:', error);
+        });
+    }
+
+    function getSelectedDomainKey() {
+        return document.querySelector('.domain-item.active').id.split("_")[2] - 0;
+    }
+
+    function getSearchdomainConfig(domainKey) {
+        return fetch(`/Searchdomain/GetSettings?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+            .then(r => r.json());
+    }
+
+    function getSearchdomainCacheUtilization(domainKey) {
+        return fetch(`/Searchdomain/GetSearchCacheSize?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+            .then(r => r.json());
+    }
+
+    function getSearchdomainDatabaseUtilization(domainKey) {
+        return fetch(`/Searchdomain/GetDatabaseSize?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+            .then(r => r.json());
+    }
 
     function selectDomain(domainKey) {
         document.querySelectorAll('.domain-item').forEach(item => {
@@ -256,7 +529,13 @@
         selectedItem.classList.add('active');
 
         var domainName = domains[domainKey];
-        document.querySelector('.section-card h4').innerText = domainName;
+        document.querySelector('#searchdomainName').innerText = domainName;
+
+        let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
+        let configElementCacheReconsiliation = document.getElementById('searchdomainConfigCacheReconciliation');
+
+        let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
+        let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
 
         /* ---------- ENTITIES ---------- */
         let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false`;
@@ -294,6 +573,41 @@
                 console.error('Error fetching queries:', err);
                 hideQueriesLoading(queriesCard);
             });
+
+        searchdomainConfigPromise.then(searchdomainConfig => {
+            if (searchdomainConfig != null && searchdomainConfig.Settings != null)
+            {
+                console.log(searchdomainConfig);
+                configElementCacheReconsiliation.checked = searchdomainConfig.Settings.CacheReconciliation;
+                configElementCacheReconsiliation.disabled = false;
+            } else {
+                //configElement.value = 'Error fetching searchdomain config';
+                configElementCacheReconsiliation.disabled = true;
+                // TODO add toast
+                console.error('Failed to fetch searchdomain config');
+            }
+        });
+        cacheUtilizationPromise.then(cacheUtilization => {
+            if (cacheUtilization != null && cacheUtilization.SearchCacheSizeBytes != null)
+            {
+                document.querySelector('#cacheUtilization').innerText =
+                    `${(cacheUtilization.SearchCacheSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
+            } else {
+                // TODO add toast
+                console.error('Failed to fetch searchdomain cache utilization');
+            }
+        });
+
+        databaseUtilizationPromise.then(databaseUtilization => {
+            if (databaseUtilization != null && databaseUtilization.SearchdomainDatabaseSizeBytes != null)
+            {
+                document.querySelector('#databaseUtilization').innerText =
+                    `${(databaseUtilization.SearchdomainDatabaseSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
+            } else {
+                // TODO add toast
+                console.error('Failed to fetch searchdomain database utilization');
+            }
+        });
     }
 
     function clearEntitiesTable() {
@@ -313,6 +627,7 @@
 
         const normalizedFilter = filterText.toLowerCase();
 
+        let isFirstEntity = true;
         entities
         .filter(e => e.Name.toLowerCase().includes(normalizedFilter))
         .forEach(entity => {
@@ -320,11 +635,15 @@
 
             var nameCell = document.createElement('td');
             nameCell.textContent = entity.Name;
+            if (isFirstEntity) {
+              nameCell.classList.add('w-100'); // Otherwise the table doesn't use the full width
+              isFirstEntity = false;
+            }
             row.appendChild(nameCell);
 
             var actionCell = document.createElement('td');
             var detailsButton = document.createElement('button');
-            detailsButton.className = 'btn btn-primary btn-sm';
+            detailsButton.className = 'btn btn-info btn-sm';
             detailsButton.textContent = 'Details';
             detailsButton.setAttribute("data-index", entities.findIndex(en => en == entity));
             detailsButton.addEventListener('click', () => {
@@ -340,6 +659,7 @@
 
     function populateQueriesTable(filterText = '') {
         if (!queries) return;
+
 
         const tbody = document.querySelector('#queriesTable tbody');
         tbody.innerHTML = '';
@@ -358,7 +678,7 @@
 
                 const actionCell = document.createElement('td');
                 const btn = document.createElement('button');
-                btn.className = 'btn btn-sm btn-primary';
+                btn.className = 'btn btn-sm btn-info';
                 btn.textContent = '@T["Details"]';
                 btn.addEventListener('click', () => {
                     showQueryDetails(query);
@@ -369,6 +689,9 @@
 
                 tbody.appendChild(row);
             });
+
+
+
     }
 
     function flagSearchdomainAsErroneous(domainKey) {
@@ -447,8 +770,7 @@
 
     function showQueryDetails(query) {
         // Title
-        document.getElementById('queryDetailsTitle').innerText =
-            `Query: ${query.Name}`;
+        document.getElementById('queryDetailsQueryName').innerText = query.Name;
 
         /* ---------- Access times ---------- */
         const accessList = document.getElementById('queryAccessTimes');

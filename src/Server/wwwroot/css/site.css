@@ -45,3 +45,7 @@ body {
 .d-none {
     display: none;
 }
+
+.modal-title {
+  font-size: 1.25rem;
+}

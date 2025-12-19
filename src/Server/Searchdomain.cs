@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Text.Json;
 using ElmahCore.Mvc.Logger;
 using MySql.Data.MySqlClient;
 using Server.Helper;
@@ -14,6 +15,7 @@ public class Searchdomain
     public AIProvider aIProvider;
     public string searchdomain;
     public int id;
+    public SearchdomainSettings settings;
     public Dictionary<string, DateTimedSearchResult> searchCache; // Key: query, Value: Search results for that query (with timestamp)
     public List<Entity> entityCache;
     public List<string> modelsInUse;
@@ -36,6 +38,7 @@ public class Searchdomain
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection, connectionString);
+        settings = GetSettings();
         modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
         if (!runEmpty)
         {
@@ -227,6 +230,19 @@ public class Searchdomain
         this.id = reader.GetInt32(0);
         reader.Close();
         return this.id;
+    }
+
+    public SearchdomainSettings GetSettings()
+    {
+        Dictionary<string, dynamic> parameters = new()
+        {
+            ["name"] = searchdomain
+        };
+        DbDataReader reader = helper.ExecuteSQLCommand("SELECT settings from searchdomain WHERE name = @name", parameters);
+        reader.Read();
+        string settingsString = reader.GetString(0);
+        reader.Close();
+        return JsonSerializer.Deserialize<SearchdomainSettings>(settingsString);
     }
 
     public void InvalidateSearchCache()
