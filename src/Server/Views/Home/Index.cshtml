@@ -837,7 +837,7 @@
             if (cacheUtilization != null && cacheUtilization.SearchCacheSizeBytes != null)
             {
                 document.querySelector('#cacheUtilization').innerText =
-                    `${(cacheUtilization.SearchCacheSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
+                    `${NumberOfBytesAsHumanReadable(cacheUtilization.SearchCacheSizeBytes)}`;
             } else {
                 // TODO add toast
                 console.error('Failed to fetch searchdomain cache utilization');
@@ -848,7 +848,7 @@
             if (databaseUtilization != null && databaseUtilization.SearchdomainDatabaseSizeBytes != null)
             {
                 document.querySelector('#databaseUtilization').innerText =
-                    `${(databaseUtilization.SearchdomainDatabaseSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
+                    `${NumberOfBytesAsHumanReadable(databaseUtilization.SearchdomainDatabaseSizeBytes)}`;
             } else {
                 // TODO add toast
                 console.error('Failed to fetch searchdomain database utilization');
@@ -1065,6 +1065,16 @@
         modal.show();
     }
 
+    function NumberOfBytesAsHumanReadable(bytes, decimals = 2) {
+        if (bytes === 0) return '0 B';
+        if (bytes > 1.20892581961*(10**27)) return "∞ B";
+        const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']; // 
+        const unitIndex = Math.floor(Math.log2(bytes) / 10);
+        const unit = units[Math.min(unitIndex, units.length - 1)];
+        const value = bytes / Math.pow(1024, unitIndex);
+        
+        return `${value.toFixed(decimals)} ${unit}`;
+    }
 
     function getEntityAttributes(containerName = 'createEntityAttributesContainer') {
         const container = document.getElementById(containerName);
