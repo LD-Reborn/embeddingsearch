@@ -25,7 +25,7 @@ public class EntityController : ControllerBase
     }
 
     [HttpGet("Query")]
-    public ActionResult<EntityQueryResults> Query(string searchdomain, string query)
+    public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN)
     {
         Searchdomain searchdomain_;
         try
@@ -40,7 +40,7 @@ public class EntityController : ControllerBase
             _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
             return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
         }
-        var results = searchdomain_.Search(query);
+        List<(float, string)> results = searchdomain_.Search(query, topN);
         List<EntityQueryResult> queryResults = [.. results.Select(r => new EntityQueryResult
         {
             Name = r.Item2,
