@@ -63,7 +63,7 @@
             <h3>@T["Settings"]</h3>
             <div class="col-md-6">
               <input type="checkbox" class="form-check-input" id="searchdomainConfigCacheReconciliation" />
-              <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconsiliation"]</label>
+              <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconciliation"]</label>
             </div>
             <div class="col-md-2 mt-3 mt-md-0">
               <button class="btn btn-warning w-100" id="searchdomainConfigUpdate">@T["Update"]</button>
@@ -305,7 +305,7 @@
         <label for="createSearchdomainName" class="form-label">@T["Searchdomain name"]</label>
         <input type="text" class="form-control mb-3" id="createSearchdomainName" placeholder="@T["Searchdomain name"]" />
         <input type="checkbox" class="form-check-input" id="createSearchdomainWithCacheReconciliation" />
-        <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconsiliation"]</label>
+        <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconciliation"]</label>
       </div>
 
       <div class="modal-footer">
@@ -778,7 +778,7 @@
         document.querySelector('#searchdomainName').innerText = domainName;
 
         let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
-        let configElementCacheReconsiliation = document.getElementById('searchdomainConfigCacheReconciliation');
+        let configElementCachereconciliation = document.getElementById('searchdomainConfigCacheReconciliation');
 
         let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
         let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
@@ -824,11 +824,11 @@
             if (searchdomainConfig != null && searchdomainConfig.Settings != null)
             {
                 console.log(searchdomainConfig);
-                configElementCacheReconsiliation.checked = searchdomainConfig.Settings.CacheReconciliation;
-                configElementCacheReconsiliation.disabled = false;
+                configElementCachereconciliation.checked = searchdomainConfig.Settings.CacheReconciliation;
+                configElementCachereconciliation.disabled = false;
             } else {
                 //configElement.value = 'Error fetching searchdomain config';
-                configElementCacheReconsiliation.disabled = true;
+                configElementCachereconciliation.disabled = true;
                 // TODO add toast
                 console.error('Failed to fetch searchdomain config');
             }
