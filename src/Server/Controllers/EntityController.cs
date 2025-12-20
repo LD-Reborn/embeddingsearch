@@ -85,7 +85,7 @@ public class EntityController : ControllerBase
         } catch (Exception ex)
         {
             if (ex.InnerException is not null) ex = ex.InnerException;
-            _logger.LogError("Unable to index the provided entities. {ex.Message}", [ex.Message]);
+            _logger.LogError("Unable to index the provided entities. {ex.Message} - {ex.StackTrace}", [ex.Message, ex.StackTrace]);
             return Ok(new EntityIndexResult() { Success = false, Message = ex.Message });
         }
 

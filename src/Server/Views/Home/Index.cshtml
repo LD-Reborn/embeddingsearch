@@ -1,11 +1,17 @@
 ﻿@using Server.Models
 @using System.Web
 @using Server.Services
+@using Server
+
 @inject LocalizationService T
+@inject AIProvider AIProvider
 @model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
     int i = 0;
+    string[] probMethods = [.. Enum.GetValues(typeof(ProbMethodEnum)).Cast<ProbMethodEnum>().Select(e => e.ToString())];
+    string[] similarityMethods = [.. Enum.GetValues(typeof(SimilarityMethodEnum)).Cast<SimilarityMethodEnum>().Select(e => e.ToString())];
+    string[] models = AIProvider.GetModels();
     Dictionary<int, string> domains = [];
     Model.Searchdomains.ForEach(domain =>
     {
@@ -130,6 +136,7 @@
                 <tbody>
                 </tbody>
               </table>
+              <buttton class="btn btn-primary" id="entityCreate">@T["Add new entity"]</buttton>
             </div>
           </div>
 
@@ -314,11 +321,90 @@
   </div>
 </div>
 
+<!-- Create entity Modal -->
+<div class="modal fade" id="createEntityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h2 class="modal-title" id="createEntityTitle">@T["Create entity"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Entity base -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="createEntityName" class="form-label">@T["Entity name"]</label>
+            <input type="text" class="form-control mb-3" id="createEntityName" placeholder="@T["Entity name"]" />
+          </div>
+          <div class="col-md-6">
+            <label for="createEntityProbMethod" class="form-label">@T["Probmethod"]</label>
+            <input list="probMethods" id="createEntityProbMethod" class="form-control" aria-label="@T["Probmethod"]">
+            <datalist id="probMethods">
+              @foreach (string probMethod in probMethods)
+              {
+                <option value=@probMethod>@probMethod</option>
+              }
+            </datalist>
+          </div>
+        </div>
+        <!-- Attributes -->
+        <div class="row g-3">
+          <h3 class="fs-5">@T["Attributes"]</h3>
+          <table>
+            <thead>
+              <tr>
+                <td>@T["Name"]</td>
+                <td>@T["Value"]</td>
+                <td class="visually-hidden">@T["Action"]</td>
+              </tr>
+            </thead>
+            <tbody id="createEntityAttributesContainer"></tbody>
+          </table>
+          <button type="button" id="createEntityAttributesAdd" class="btn btn-primary">@T["Add attribute"]</button>
+        </div>
+        <!-- Datapoints -->
+        <div class="row g-3 mt-3">
+          <h3 class="fs-5">@T["Datapoints"]</h3>
+          <table>
+            <thead>
+              <tr>
+                <td>@T["Name"]</td>
+                <td>@T["Value"]</td>
+                <td>@T["Probmethod_embedding"]</td>
+                <td>@T["Similarity method"]</td>
+                <td>@T["Model"]</td>
+                <td class="visually-hidden">@T["Action"]</td>
+              </tr>
+            </thead>
+            <tbody id="createEntityDatapointsContainer"></tbody>
+          </table>
+          <button type="button" id="createEntityDatapointsAdd" class="btn btn-primary">@T["Add datapoint"]</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="EntityConfirmCreate" class="btn btn-primary" data-bs-dismiss="modal">
+          @T["Create"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 
 <script>
     var domains = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(domains))');
+    var probMethods = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(probMethods))');
+    var similarityMethods = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(similarityMethods))');
     var entities = null;
     var queries = null;
+    var models = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(models))');
 
     document.addEventListener('DOMContentLoaded', () => {
         const filterInput = document.getElementById('entitiesFilter');
@@ -386,6 +472,166 @@
                     document.getElementById('createSearchdomainModal')
                 );
                 modal.show();
+            });
+        
+        document
+            .getElementById('entityCreate')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('createEntityModal')
+                );
+                modal.show();
+                document.getElementById('createEntityDatapointsAdd').click();
+            });
+
+        document
+            .getElementById('createEntityAttributesAdd')
+            .addEventListener('click', () => {
+                var uuid = crypto.randomUUID();
+                var entityAttributesContainer = document.getElementById('createEntityAttributesContainer');
+                var tr = document.createElement('tr');
+                tr.setAttribute('data-uid', uuid);
+                var tdKey = document.createElement('td');
+                var keyInput = document.createElement('input');
+                keyInput.classList.add('form-control')
+                keyInput.ariaLabel = '@T["Key"]';
+                tdKey.append(keyInput);
+                var tdValue = document.createElement('td');
+                var ValueInput = document.createElement('textarea');
+                ValueInput.classList.add('form-control')                
+                ValueInput.ariaLabel = '@T["Value"]';
+                tdValue.append(ValueInput);
+                var tdAction = document.createElement('td');
+                var tdButton = document.createElement('button');
+                tdButton.classList.add('btn', 'btn-danger');
+                tdButton.textContent = '@T["Remove"]';
+                tdButton.ariaLabel = '@T["Remove attribute"]';
+                tdAction.append(tdButton);
+                tdButton.onclick = function() {
+                  tr.remove();
+                };
+                tr.append(tdKey);
+                tr.append(tdValue);
+                tr.append(tdAction);
+                entityAttributesContainer.append(tr);
+            });
+
+        document
+            .getElementById('createEntityDatapointsAdd')
+            .addEventListener('click', () => {
+                var uuid = crypto.randomUUID();
+                var enntityDatapointsContainer = document.getElementById('createEntityDatapointsContainer');
+                var tr = document.createElement('tr');
+                tr.setAttribute('data-uid', uuid);
+                var tdName = document.createElement('td');
+                var nameInput = document.createElement('input');
+                nameInput.classList.add('form-control')
+                nameInput.ariaLabel = '@T["Name"]';
+                tdName.append(nameInput);
+                var tdValue = document.createElement('td');
+                var ValueInput = document.createElement('textarea');
+                ValueInput.classList.add('form-control')                
+                ValueInput.ariaLabel = '@T["Value"]';
+                tdValue.append(ValueInput);
+
+                var tdProbmethodEmbedding = document.createElement('td');
+                var probMethodSelect = document.createElement('select');
+                probMethodSelect.classList.add('probmethod');
+                for (i in probMethods)
+                {
+                    let probMethodSelectElement = document.createElement('option');
+                    probMethodSelectElement.value = probMethods[i];
+                    probMethodSelectElement.text = probMethods[i];
+                    probMethodSelect.append(probMethodSelectElement);
+                }
+                probMethodSelect.classList.add('form-control')                
+                probMethodSelect.ariaLabel = '@T["Probmethod_embedding"]';
+                tdProbmethodEmbedding.append(probMethodSelect);
+
+                var tdSimilarityMethod = document.createElement('td');
+                var similarityMethodSelect = document.createElement('select');
+                similarityMethodSelect.classList.add('similarityMethod');
+                for (i in similarityMethods)
+                {
+                    let similarityMethodSelectElement = document.createElement('option');
+                    similarityMethodSelectElement.value = similarityMethods[i];
+                    similarityMethodSelectElement.text = similarityMethods[i];
+                    similarityMethodSelect.append(similarityMethodSelectElement);
+                }
+                similarityMethodSelect.classList.add('form-control')                
+                similarityMethodSelect.ariaLabel = '@T["Similarity method"]';
+                tdSimilarityMethod.append(similarityMethodSelect);
+
+                var tdModel = document.createElement('td');
+                var modelSelect = document.createElement('select');
+                modelSelect.classList.add('model');
+                modelSelect.multiple = true;
+                for (i in models)
+                {
+                    let modelSelectElement = document.createElement('option');
+                    modelSelectElement.value = models[i];
+                    modelSelectElement.text = models[i];
+                    modelSelect.append(modelSelectElement);
+                }
+                modelSelect.classList.add('form-control')
+                modelSelect.ariaLabel = '@T["Probmethod_embedding"]';
+                tdModel.append(modelSelect);
+                
+                
+                var tdAction = document.createElement('td');
+                var tdButton = document.createElement('button');
+                tdButton.classList.add('btn', 'btn-danger');
+                tdButton.textContent = '@T["Remove"]';
+                tdButton.ariaLabel = '@T["Remove attribute"]';
+                tdAction.append(tdButton);
+                tdButton.onclick = function() {
+                  tr.remove();
+                };
+                tr.append(tdName);
+                tr.append(tdValue);
+                tr.append(tdProbmethodEmbedding);
+                tr.append(tdSimilarityMethod);
+                tr.append(tdModel);
+                tr.append(tdAction);
+                enntityDatapointsContainer.append(tr);
+
+            });
+
+        document
+            .getElementById('EntityConfirmCreate')
+            .addEventListener('click', () => {
+                var name = document.getElementById('createEntityName').value;
+                var probMethod = document.getElementById('createEntityProbMethod').value;
+                var attributes = getEntityAttributes();
+                var datapoints = getEntityDatapoints();
+                var data = [{
+                  "name": name,
+                  "probmethod": probMethod,
+                  "searchdomain": encodeURIComponent(domains[getSelectedDomainKey()]),
+                  "attributes": attributes,
+                  "datapoints": datapoints
+                }];
+                // TODO add throbber to indicate loading
+                fetch(`/Entity/Index`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }).then(async response => {
+                    result = await response.json();
+                    if (response.ok && result.Success) {
+                        // TODO add toast
+                        console.log('Entity was created successfully');
+                        selectDomain(getSelectedDomainKey());
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to create entity:', result.Message);
+                    }
+                }).catch(error => {
+                    console.error('Error creating entity:', error);
+                });
+
             });
 
         document
@@ -817,6 +1063,65 @@
             document.getElementById('queryDetailsModal')
         );
         modal.show();
+    }
+
+
+    function getEntityAttributes(containerName = 'createEntityAttributesContainer') {
+        const container = document.getElementById(containerName);
+        const rows = container.querySelectorAll('tr[data-uid]');
+        const attributes = {};
+        
+        rows.forEach(row => {
+            const keyInput = row.querySelector('input.form-control');
+            const valueTextarea = row.querySelector('textarea.form-control');
+            
+            if (keyInput && valueTextarea) {
+                const key = keyInput.value.trim();
+                const value = valueTextarea.value.trim();
+                
+                if (key) {
+                    attributes[key] = value;
+                }
+            }
+        });
+        
+        return attributes;
+    }
+
+    function getEntityDatapoints(containerName = 'createEntityDatapointsContainer') {
+        const container = document.getElementById(containerName);
+        const rows = container.querySelectorAll('tr[data-uid]');
+        const datapoints = [];
+        
+        rows.forEach(row => {
+            const keyInput = row.querySelector('input.form-control');
+            const valueTextarea = row.querySelector('textarea.form-control');
+            const probmethodSelect = row.querySelector('select.probmethod');
+            const similaritymethodSelect = row.querySelector('select.similarityMethod');
+            const modelSelect = row.querySelector('select.model');
+            
+            if (keyInput && valueTextarea && probmethodSelect && modelSelect) {
+                const key = keyInput.value.trim();
+                const value = valueTextarea.value.trim();
+                const probMethod = probmethodSelect.selectedOptions[0].value;
+                const similarityMethod = similaritymethodSelect.selectedOptions[0].value;
+                const modelSelection = Array.from(modelSelect.selectedOptions)
+                    .map(option => option.value);
+                
+                if (key) {
+                    let datapoint = {
+                      "name": key,
+                      "text": value,
+                      "probmethod_embedding": probMethod,
+                      "similarityMethod": similarityMethod,
+                      "model": modelSelection
+                    };
+                    datapoints.push(datapoint);
+                }
+            }
+        });
+        
+        return datapoints;
     }
 
 </script>
