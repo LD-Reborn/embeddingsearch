@@ -146,13 +146,28 @@ public class EntityController : ControllerBase
     [HttpGet("Delete")]
     public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName)
     {
-        Entity? entity_ = SearchdomainHelper.CacheGetEntity([], entityName);
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        } catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Searchdomain not found" });
+        } catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
+        }
+        
+        Entity? entity_ = SearchdomainHelper.CacheGetEntity(searchdomain_.entityCache, entityName);
         if (entity_ is null)
         {
             _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
             return Ok(new EntityDeleteResults() {Success = false, Message = "Entity not found"});
         }
         _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
+        searchdomain_.entityCache.RemoveAll(entity => entity.name == entityName);
         return Ok(new EntityDeleteResults() {Success = true});
     }
 }
