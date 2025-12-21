@@ -55,10 +55,7 @@ public class EntityController : ControllerBase
         try
         {
             List<Entity>? entities = _searchdomainHelper.EntitiesFromJSON(
-                [],
-                _domainManager.embeddingCache,
-                _domainManager.aIProvider,
-                _domainManager.helper,
+                _domainManager,
                 _logger,
                 JsonSerializer.Serialize(jsonEntities));
             if (entities is not null && jsonEntities is not null)
