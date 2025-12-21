@@ -92,8 +92,13 @@ public class EntityController : ControllerBase
     }
 
     [HttpGet("List")]
-    public ActionResult<EntityListResults> List(string searchdomain, bool returnEmbeddings = false)
+    public ActionResult<EntityListResults> List(string searchdomain, bool returnModels = false, bool returnEmbeddings = false)
     {
+        if (returnEmbeddings && !returnModels)
+        {
+            _logger.LogError("Invalid request for {searchdomain} - embeddings return requested but without models - not possible!", [searchdomain]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Invalid request" });            
+        }
         Searchdomain searchdomain_;
         try
         {
@@ -118,12 +123,12 @@ public class EntityController : ControllerBase
             List<DatapointResult> datapointResults = [];
             foreach (Datapoint datapoint in entity.datapoints)
             {
-                if (returnEmbeddings)
+                if (returnModels)
                 {
                     List<EmbeddingResult> embeddingResults = [];
                     foreach ((string, float[]) embedding in datapoint.embeddings)
                     {
-                        embeddingResults.Add(new EmbeddingResult() {Model = embedding.Item1, Embeddings = embedding.Item2});
+                        embeddingResults.Add(new EmbeddingResult() {Model = embedding.Item1, Embeddings = returnEmbeddings ? embedding.Item2 : []});
                     }
                     datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.name, SimilarityMethod = datapoint.similarityMethod.name, Embeddings = embeddingResults});
                 }
@@ -135,6 +140,7 @@ public class EntityController : ControllerBase
             EntityListResult entityListResult = new()
             {
                 Name = entity.name,
+                ProbMethod = entity.probMethodName,
                 Attributes = attributeResults,
                 Datapoints = datapointResults
             };
