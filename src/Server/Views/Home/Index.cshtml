@@ -275,7 +275,8 @@
       </div>
 
       <div class="modal-body">
-        <p>@T["Are you sure you want to delete this searchdomain? This action cannot be undone."]</p>
+        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteSearchdomainConfirmationModalName"])</p>
+        <p>@T["IrreversibleActionWarning"]</p>
       </div>
 
       <div class="modal-footer">
@@ -408,7 +409,8 @@
       </div>
 
       <div class="modal-body">
-        <p>@T["Are you sure you want to delete this entity? This action cannot be undone."]</p>
+        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteEntityConfirmationModalName"])</p>
+        <p>@T["IrreversibleActionWarning"]</p>
       </div>
 
       <div class="modal-footer">
@@ -475,6 +477,9 @@
                     document.getElementById('deleteSearchdomainModal')
                 );
                 modal.show();
+                let searchdomain = domains[getSelectedDomainKey()];
+                let deleteSearchdomainConfirmationModalName = document.getElementById('deleteSearchdomainConfirmationModalName');
+                deleteSearchdomainConfirmationModalName.textContent = searchdomain;
             });
         document
             .getElementById('searchdomainConfirmDelete')
@@ -964,6 +969,8 @@
                 modal.show();
               let entityConfirmDelete = document.getElementById('EntityConfirmDelete');
               entityConfirmDelete.setAttribute('data-name', entity.Name);
+              let deleteEntityConfirmationModalName = document.getElementById('deleteEntityConfirmationModalName');
+              deleteEntityConfirmationModalName.textContent = entity.Name;
             });
 
             actionCell.appendChild(detailsButton);
