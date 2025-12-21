@@ -41,6 +41,8 @@ public class EntityListResult
 {
     [JsonPropertyName("Name")]
     public required string Name { get; set; }
+    [JsonPropertyName("ProbMethod")]
+    public required string ProbMethod { get; set; }
     [JsonPropertyName("Attributes")]
     public required List<AttributeResult> Attributes { get; set; }
     [JsonPropertyName("Datapoints")]
