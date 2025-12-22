@@ -187,7 +187,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                 if (!oldEntityHasDatapoint)
                 {
                     // Datapoint - New
-                    Datapoint datapoint = BuildDatapointFromJsonDatapoint(jsonDatapoint, (int)preexistingEntityID, searchdomain);
+                    Datapoint datapoint = DatabaseInsertDatapointWithEmbeddings(helper, searchdomain, jsonDatapoint, (int)preexistingEntityID);
                     preexistingEntity.datapoints.Add(datapoint);
                 }
             }
