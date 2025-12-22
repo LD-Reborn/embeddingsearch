@@ -142,7 +142,7 @@ public class Searchdomain
             Probmethods.probMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
             if (datapoint_unassigned.TryGetValue(id, out List<Datapoint>? datapoints) && probmethod is not null)
             {
-                Entity entity = new(attributes, probmethod, datapoints, name)
+                Entity entity = new(attributes, probmethod, probmethodString, datapoints, name)
                 {
                     id = id
                 };
@@ -154,7 +154,7 @@ public class Searchdomain
         embeddingCache = []; // TODO remove this and implement proper remediation to improve performance
     }
 
-    public List<(float, string)> Search(string query)
+    public List<(float, string)> Search(string query, int? topN = null)
     {
         if (searchCache.TryGetValue(query, out DateTimedSearchResult cachedResult))
         {
@@ -190,9 +190,14 @@ public class Searchdomain
             }
             result.Add((entity.probMethod(datapointProbs), entity.name));
         }
-        List<(float, string)> results = [.. result.OrderByDescending(s => s.Item1)];
+        IEnumerable<(float, string)> sortedResults = result.OrderByDescending(s => s.Item1);
+        if (topN is not null)
+        {
+            sortedResults = sortedResults.Take(topN ?? 0);
+        }
+        List<(float, string)> results = [.. sortedResults];
         List<ResultItem> searchResult = new(
-            [.. results.Select(r =>
+            [.. sortedResults.Select(r =>
                 new ResultItem(r.Item1, r.Item2 ))]
         );
         searchCache[query] = new DateTimedSearchResult(DateTime.Now, searchResult);

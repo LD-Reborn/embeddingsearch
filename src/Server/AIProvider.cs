@@ -116,6 +116,79 @@ public class AIProvider
             throw;
         }
     }
+
+    public string[] GetModels()
+    {
+        var aIProviders = aIProvidersConfiguration.AiProviders;
+        List<string> results = [];
+        foreach (KeyValuePair<string, AIProviderConfiguration> aIProviderKV in aIProviders)
+        {
+            string aIProviderName = aIProviderKV.Key;
+            AIProviderConfiguration aIProvider = aIProviderKV.Value;
+
+            using var httpClient = new HttpClient();
+
+            string modelNameJsonPath = "";
+            Uri baseUri = new(aIProvider.BaseURL);
+            Uri requestUri;
+            string[][] requestHeaders = [];
+            switch (aIProvider.Handler)
+            {
+                case "ollama":
+                    modelNameJsonPath = "$.models[*].name";
+                    requestUri = new Uri(baseUri, "/api/tags");
+                    break;
+                case "openai":
+                    modelNameJsonPath = "$.data[*].id";
+                    requestUri = new Uri(baseUri, "/v1/models");
+                    if (aIProvider.ApiKey is not null)
+                    {
+                        requestHeaders = [
+                            ["Authorization", $"Bearer {aIProvider.ApiKey}"]
+                        ];
+                    }
+                    break;
+                default:
+                    _logger.LogError("Unknown handler {aIProvider.Handler} in AiProvider {provider}.", [aIProvider.Handler, aIProvider]);
+                    throw new ServerConfigurationException($"Unknown handler {aIProvider.Handler} in AiProvider {aIProvider}.");
+            }
+
+            var request = new HttpRequestMessage()
+            {
+                RequestUri = requestUri,
+                Method = HttpMethod.Post
+            };
+            
+            foreach (var header in requestHeaders)
+            {
+                request.Headers.Add(header[0], header[1]);
+            }
+            HttpResponseMessage response = httpClient.GetAsync(requestUri).Result;
+            string responseContent = response.Content.ReadAsStringAsync().Result;
+            try
+            {
+                JObject responseContentJson = JObject.Parse(responseContent);
+                IEnumerable<JToken>? responseContentTokens = responseContentJson.SelectTokens(modelNameJsonPath);
+                if (responseContentTokens is null)
+                {
+                    _logger.LogError("Unable to select tokens using JSONPath {modelNameJsonPath} for string: {responseContent}.", [modelNameJsonPath, responseContent]);
+                    throw new JSONPathSelectionException(modelNameJsonPath, responseContent);
+                }
+                IEnumerable<string?> aIProviderResult = responseContentTokens.Values<string>();
+                foreach (string? result in aIProviderResult)
+                {
+                    if (result is null) continue;
+                    results.Add(aIProviderName + ":" + result);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Unable to parse the response to valid models. {ex.Message}", [ex.Message]);
+                throw;
+            }
+        }
+        return [.. results];
+    }
 }
 
 public class AIProvidersConfiguration

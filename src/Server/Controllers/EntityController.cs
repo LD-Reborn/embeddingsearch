@@ -25,7 +25,7 @@ public class EntityController : ControllerBase
     }
 
     [HttpGet("Query")]
-    public ActionResult<EntityQueryResults> Query(string searchdomain, string query)
+    public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN)
     {
         Searchdomain searchdomain_;
         try
@@ -40,7 +40,7 @@ public class EntityController : ControllerBase
             _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
             return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
         }
-        var results = searchdomain_.Search(query);
+        List<(float, string)> results = searchdomain_.Search(query, topN);
         List<EntityQueryResult> queryResults = [.. results.Select(r => new EntityQueryResult
         {
             Name = r.Item2,
@@ -55,10 +55,7 @@ public class EntityController : ControllerBase
         try
         {
             List<Entity>? entities = _searchdomainHelper.EntitiesFromJSON(
-                [],
-                _domainManager.embeddingCache,
-                _domainManager.aIProvider,
-                _domainManager.helper,
+                _domainManager,
                 _logger,
                 JsonSerializer.Serialize(jsonEntities));
             if (entities is not null && jsonEntities is not null)
@@ -85,15 +82,20 @@ public class EntityController : ControllerBase
         } catch (Exception ex)
         {
             if (ex.InnerException is not null) ex = ex.InnerException;
-            _logger.LogError("Unable to index the provided entities. {ex.Message}", [ex.Message]);
+            _logger.LogError("Unable to index the provided entities. {ex.Message} - {ex.StackTrace}", [ex.Message, ex.StackTrace]);
             return Ok(new EntityIndexResult() { Success = false, Message = ex.Message });
         }
 
     }
 
     [HttpGet("List")]
-    public ActionResult<EntityListResults> List(string searchdomain, bool returnEmbeddings = false)
+    public ActionResult<EntityListResults> List(string searchdomain, bool returnModels = false, bool returnEmbeddings = false)
     {
+        if (returnEmbeddings && !returnModels)
+        {
+            _logger.LogError("Invalid request for {searchdomain} - embeddings return requested but without models - not possible!", [searchdomain]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Invalid request" });            
+        }
         Searchdomain searchdomain_;
         try
         {
@@ -118,12 +120,12 @@ public class EntityController : ControllerBase
             List<DatapointResult> datapointResults = [];
             foreach (Datapoint datapoint in entity.datapoints)
             {
-                if (returnEmbeddings)
+                if (returnModels)
                 {
                     List<EmbeddingResult> embeddingResults = [];
                     foreach ((string, float[]) embedding in datapoint.embeddings)
                     {
-                        embeddingResults.Add(new EmbeddingResult() {Model = embedding.Item1, Embeddings = embedding.Item2});
+                        embeddingResults.Add(new EmbeddingResult() {Model = embedding.Item1, Embeddings = returnEmbeddings ? embedding.Item2 : []});
                     }
                     datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.name, SimilarityMethod = datapoint.similarityMethod.name, Embeddings = embeddingResults});
                 }
@@ -135,6 +137,7 @@ public class EntityController : ControllerBase
             EntityListResult entityListResult = new()
             {
                 Name = entity.name,
+                ProbMethod = entity.probMethodName,
                 Attributes = attributeResults,
                 Datapoints = datapointResults
             };
@@ -146,13 +149,28 @@ public class EntityController : ControllerBase
     [HttpGet("Delete")]
     public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName)
     {
-        Entity? entity_ = SearchdomainHelper.CacheGetEntity([], entityName);
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        } catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Searchdomain not found" });
+        } catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
+        }
+        
+        Entity? entity_ = SearchdomainHelper.CacheGetEntity(searchdomain_.entityCache, entityName);
         if (entity_ is null)
         {
             _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
             return Ok(new EntityDeleteResults() {Success = false, Message = "Entity not found"});
         }
         _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
+        searchdomain_.entityCache.RemoveAll(entity => entity.name == entityName);
         return Ok(new EntityDeleteResults() {Success = true});
     }
 }

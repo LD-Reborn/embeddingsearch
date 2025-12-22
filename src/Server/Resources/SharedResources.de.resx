@@ -18,4 +18,10 @@
   <data name="InvalidCredentials" xml:space="preserve">
     <value>Ungültiger Benutzername oder Passwort.</value>
   </data>
+  <data name="GenericDeleteConfirmation" xml:space="preserve">
+    <value>Sind Sie sicher, dass Sie &lt;strong id="{0}"&gt;diese Entity&lt;/strong&gt; löschen wollen?</value>
+  </data>
+  <data name="IrreversibleActionWarning" xml:space="preserve">
+    <value>Diese Aktion kann nicht rückgängig gemacht werden.</value>
+  </data>
 </root>

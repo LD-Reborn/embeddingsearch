@@ -1,11 +1,17 @@
 ﻿@using Server.Models
 @using System.Web
 @using Server.Services
+@using Server
+
 @inject LocalizationService T
+@inject AIProvider AIProvider
 @model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
     int i = 0;
+    string[] probMethods = [.. Enum.GetValues(typeof(ProbMethodEnum)).Cast<ProbMethodEnum>().Select(e => e.ToString())];
+    string[] similarityMethods = [.. Enum.GetValues(typeof(SimilarityMethodEnum)).Cast<SimilarityMethodEnum>().Select(e => e.ToString())];
+    string[] models = AIProvider.GetModels();
     Dictionary<int, string> domains = [];
     Model.Searchdomains.ForEach(domain =>
     {
@@ -57,7 +63,7 @@
             <h3>@T["Settings"]</h3>
             <div class="col-md-6">
               <input type="checkbox" class="form-check-input" id="searchdomainConfigCacheReconciliation" />
-              <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconsiliation"]</label>
+              <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconciliation"]</label>
             </div>
             <div class="col-md-2 mt-3 mt-md-0">
               <button class="btn btn-warning w-100" id="searchdomainConfigUpdate">@T["Update"]</button>
@@ -130,6 +136,7 @@
                 <tbody>
                 </tbody>
               </table>
+              <buttton class="btn btn-primary" id="entityCreate">@T["Add new entity"]</buttton>
             </div>
           </div>
 
@@ -200,26 +207,70 @@
       <div class="modal-body">
 
         <!-- Access times -->
-        <h3>Access times</h3>
-        <ul id="queryAccessTimes" class="list-group mb-4"></ul>
+        <h3>@T["Access times"]</h3>
+        <ul id="queryDetailsAccessTimes" class="list-group mb-4"></ul>
 
         <!-- Results -->
-        <h3>Results</h3>
+        <h3>@T["Results"]</h3>
         <table class="table table-sm table-striped">
           <thead>
             <tr>
-              <th>Score</th>
-              <th>Name</th>
+              <th>@T["Score"]</th>
+              <th>@T["Name"]</th>
             </tr>
           </thead>
-          <tbody id="queryResultsBody"></tbody>
+          <tbody id="queryDetailsResultsBody"></tbody>
         </table>
 
       </div>
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Close
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Query Update Modal -->
+<div class="modal fade" id="queryUpdateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-warning">
+        <h2 class="modal-title" id="queryUpdateTitle">@T["Query Update"] - <span id="queryUpdateQueryName"></span></h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Access times -->
+        <h3>@T["Access times"]</h3>
+        <ul id="queryUpdateAccessTimes" class="list-group mb-4"></ul>
+
+        <!-- Results -->
+        <h3>@T["Results"]</h3>
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th style="width: 85px;">@T["Score"]</th>
+              <th>@T["Name"]</th>
+              <th>@T["Action"]</th>
+            </tr>
+          </thead>
+          <tbody id="queryUpdateResultsBody"></tbody>
+        </table>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-warning" id="queryUpdateConfirm" data-bs-dismiss="modal">
+          @T["Update"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
         </button>
       </div>
 
@@ -268,15 +319,16 @@
       </div>
 
       <div class="modal-body">
-        <p>@T["Are you sure you want to delete this searchdomain? This action cannot be undone."]</p>
+        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteSearchdomainConfirmationModalName"])</p>
+        <p>@T["IrreversibleActionWarning"]</p>
       </div>
 
       <div class="modal-footer">
         <button type="button" id="searchdomainConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
-          Delete
+          @T["Delete"]
         </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Close
+          @T["Close"]
         </button>
       </div>
 
@@ -298,7 +350,7 @@
         <label for="createSearchdomainName" class="form-label">@T["Searchdomain name"]</label>
         <input type="text" class="form-control mb-3" id="createSearchdomainName" placeholder="@T["Searchdomain name"]" />
         <input type="checkbox" class="form-check-input" id="createSearchdomainWithCacheReconciliation" />
-        <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconsiliation"]</label>
+        <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconciliation"]</label>
       </div>
 
       <div class="modal-footer">
@@ -314,11 +366,274 @@
   </div>
 </div>
 
+<!-- Create entity Modal -->
+<div class="modal fade" id="createEntityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h2 class="modal-title" id="createEntityTitle">@T["Create entity"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Entity base -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="createEntityName" class="form-label">@T["Entity name"]</label>
+            <input type="text" class="form-control mb-3" id="createEntityName" placeholder="@T["Entity name"]" />
+          </div>
+          <div class="col-md-6">
+            <label for="createEntityProbMethod" class="form-label">@T["Probmethod"]</label>
+            <input list="probMethods" id="createEntityProbMethod" class="form-control" aria-label="@T["Probmethod"]">
+            <datalist id="probMethods">
+              @foreach (string probMethod in probMethods)
+              {
+                <option value=@probMethod>@probMethod</option>
+              }
+            </datalist>
+          </div>
+        </div>
+        <!-- Attributes -->
+        <div class="row g-3">
+          <h3 class="fs-5">@T["Attributes"]</h3>
+          <table>
+            <thead>
+              <tr>
+                <td>@T["Name"]</td>
+                <td>@T["Value"]</td>
+                <td class="visually-hidden">@T["Action"]</td>
+              </tr>
+            </thead>
+            <tbody id="createEntityAttributesContainer"></tbody>
+          </table>
+          <button type="button" id="createEntityAttributesAdd" class="btn btn-primary">@T["Add attribute"]</button>
+        </div>
+        <!-- Datapoints -->
+        <div class="row g-3 mt-3">
+          <h3 class="fs-5">@T["Datapoints"]</h3>
+          <table>
+            <thead>
+              <tr>
+                <td>@T["Name"]</td>
+                <td>@T["Value"]</td>
+                <td>@T["Probmethod_embedding"]</td>
+                <td>@T["Similarity method"]</td>
+                <td>@T["Model"]</td>
+                <td class="visually-hidden">@T["Action"]</td>
+              </tr>
+            </thead>
+            <tbody id="createEntityDatapointsContainer"></tbody>
+          </table>
+          <button type="button" id="createEntityDatapointsAdd" class="btn btn-primary">@T["Add datapoint"]</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="EntityConfirmCreate" class="btn btn-primary" data-bs-dismiss="modal">
+          @T["Create"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Delete entity Modal -->
+<div class="modal fade" id="deleteEntityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-danger text-white">
+        <h2 class="modal-title" id="deleteEntityTitle">@T["Delete entity"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteEntityConfirmationModalName"])</p>
+        <p>@T["IrreversibleActionWarning"]</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="EntityConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
+          @T["Delete"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Update entity Modal -->
+<div class="modal fade" id="updateEntityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-warning text">
+        <h2 class="modal-title" id="updateEntityTitle">@T["Update entity"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Entity base -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="updateEntityName" class="form-label">@T["Entity name"]</label>
+            <input type="text" class="form-control mb-3" id="updateEntityName" placeholder="@T["Entity name"]" />
+          </div>
+          <div class="col-md-6">
+            <label for="updateEntityProbMethod" class="form-label">@T["Probmethod"]</label>
+            <input list="probMethods" id="updateEntityProbMethod" class="form-control" aria-label="@T["Probmethod"]">
+            <datalist id="probMethods">
+              @foreach (string probMethod in probMethods)
+              {
+                <option value=@probMethod>@probMethod</option>
+              }
+            </datalist>
+          </div>
+        </div>
+        <!-- Attributes -->
+        <div class="row g-3">
+          <h3 class="fs-5">@T["Attributes"]</h3>
+          <table>
+            <thead>
+              <tr>
+                <td>@T["Name"]</td>
+                <td>@T["Value"]</td>
+                <td class="visually-hidden">@T["Action"]</td>
+              </tr>
+            </thead>
+            <tbody id="updateEntityAttributesContainer"></tbody>
+          </table>
+          <button type="button" id="updateEntityAttributesAdd" class="btn btn-primary">@T["Add attribute"]</button>
+        </div>
+        <!-- Datapoints -->
+        <div class="row g-3 mt-3">
+          <h3 class="fs-5">@T["Datapoints"]</h3>
+          <table>
+            <thead>
+              <tr>
+                <td>@T["Name"]</td>
+                <td>@T["Value"]</td>
+                <td>@T["Probmethod_embedding"]</td>
+                <td>@T["Similarity method"]</td>
+                <td>@T["Model"]</td>
+                <td class="visually-hidden">@T["Action"]</td>
+              </tr>
+            </thead>
+            <tbody id="updateEntityDatapointsContainer"></tbody>
+          </table>
+          <button type="button" id="updateEntityDatapointsAdd" class="btn btn-primary">@T["Add datapoint"]</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="EntityConfirmUpdate" class="btn btn-warning" data-bs-dismiss="modal">
+          @T["Update"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Delete query Modal -->
+<div class="modal fade" id="deleteQueryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-danger text-white">
+        <h2 class="modal-title" id="deleteQueryTitle">@T["Delete query"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteQueryConfirmationModalName"])</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="queryConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
+          @T["Delete"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <script>
     var domains = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(domains))');
+    var probMethods = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(probMethods))');
+    var similarityMethods = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(similarityMethods))');
     var entities = null;
     var queries = null;
+    var models = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(models))');
+
+    let draggedRow = null;
+    document.addEventListener("dragstart", e => {
+      if (e.target.tagName === "TR") {
+        draggedRow = e.target;
+        e.target.classList.add("table-warning");
+      }
+    });
+
+    document.addEventListener("dragend", e => {
+      if (e.target.tagName === "TR") {
+        e.target.classList.remove("table-warning");
+      }
+      document.querySelectorAll(".table-warning").forEach(x => x.classList.remove("table-warning"));
+    });
+
+    document.addEventListener("dragenter", e => {
+      if (e.target.tagName === "TR") {
+        e.target.classList.add("table-warning");
+      } else if (e.target.tagName == "TD") {
+        e.target.parentElement.classList.add("table-warning");
+      }
+    });
+
+    document.addEventListener("dragleave", e => {
+      if (e.target.tagName === "TR") {
+        e.target.classList.remove("table-warning");
+      } else if (e.target.tagName == "TD") {
+        e.target.parentElement.classList.remove("table-warning");
+      }
+    });
+    document.addEventListener("dragover", e => {
+      if (e.target.closest("tr")) {
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener("drop", e => {
+      const targetRow = e.target.closest("tr");
+      if (draggedRow && targetRow && draggedRow !== targetRow && targetRow.parentElement.tagName !== "THEAD") {        
+        if (!draggedRow || !targetRow || draggedRow === targetRow) return;
+
+        const rect = targetRow.getBoundingClientRect();
+        const isAfter = e.clientY > rect.top + rect.height / 2;
+
+        const parent = targetRow.parentNode;
+
+        if (isAfter) {
+          parent.insertBefore(draggedRow, targetRow.nextSibling);
+        } else {
+          parent.insertBefore(draggedRow, targetRow);
+        }
+      }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         const filterInput = document.getElementById('entitiesFilter');
@@ -363,6 +678,9 @@
                     document.getElementById('deleteSearchdomainModal')
                 );
                 modal.show();
+                let searchdomain = domains[getSelectedDomainKey()];
+                let deleteSearchdomainConfirmationModalName = document.getElementById('deleteSearchdomainConfirmationModalName');
+                deleteSearchdomainConfirmationModalName.textContent = searchdomain;
             });
         document
             .getElementById('searchdomainConfirmDelete')
@@ -386,6 +704,67 @@
                     document.getElementById('createSearchdomainModal')
                 );
                 modal.show();
+            });
+        
+        document
+            .getElementById('entityCreate')
+            .addEventListener('click', () => {
+                const modal = new bootstrap.Modal(
+                    document.getElementById('createEntityModal')
+                );
+                modal.show();
+                document.getElementById('createEntityDatapointsAdd').click();
+            });
+
+        document
+            .getElementById('createEntityAttributesAdd')
+            .addEventListener('click', () => {
+                var uuid = crypto.randomUUID();
+                addEntityAttribute('createEntityAttributesContainer', uuid);
+            });
+
+        document
+            .getElementById('createEntityDatapointsAdd')
+            .addEventListener('click', () => {
+                var uuid = crypto.randomUUID();
+                addEntityDatapoint('createEntityDatapointsContainer', uuid, "", "");
+            });
+
+        document
+            .getElementById('EntityConfirmCreate')
+            .addEventListener('click', () => {
+                var name = document.getElementById('createEntityName').value;
+                var probMethod = document.getElementById('createEntityProbMethod').value;
+                var attributes = getEntityAttributes();
+                var datapoints = getEntityDatapoints();
+                var data = [{
+                  "name": name,
+                  "probmethod": probMethod,
+                  "searchdomain": encodeURIComponent(domains[getSelectedDomainKey()]),
+                  "attributes": attributes,
+                  "datapoints": datapoints
+                }];
+                // TODO add throbber to indicate loading
+                fetch(`/Entity/Index`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }).then(async response => {
+                    result = await response.json();
+                    if (response.ok && result.Success) {
+                        // TODO add toast
+                        console.log('Entity was created successfully');
+                        selectDomain(getSelectedDomainKey());
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to create entity:', result.Message);
+                    }
+                }).catch(error => {
+                    console.error('Error creating entity:', error);
+                });
+
             });
 
         document
@@ -433,6 +812,131 @@
                     }
                 }).catch(error => {
                     console.error('Error clearing searchdomain cache:', error);
+                });
+            });
+
+        document
+          .getElementById('EntityConfirmDelete')
+          .addEventListener('click', () => {
+                const domainKey = getSelectedDomainKey();
+                const entityName = document.getElementById('EntityConfirmDelete').getAttribute('data-name');
+                fetch(`/Entity/Delete?searchdomain=${encodeURIComponent(domains[domainKey])}&entityName=${entityName}`, {
+                    method: 'GET'
+                }).then(async response => {
+                    let result = await response.json();
+                    if (response.ok && result.Success) {
+                        // TODO add toast
+                        console.log('Entity deleted successfully');
+                        selectDomain(getSelectedDomainKey());
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to delete entity:', result.Message);
+                    }
+                }).catch(error => {
+                    console.error('Error deleting entity:', error);
+                });
+          });
+
+        document
+            .getElementById('updateEntityAttributesAdd')
+            .addEventListener('click', () => {
+                var uuid = crypto.randomUUID();
+                addEntityAttribute('updateEntityAttributesContainer', uuid);
+            });
+
+        document
+            .getElementById('updateEntityDatapointsAdd')
+            .addEventListener('click', () => {
+                var uuid = crypto.randomUUID();
+                addEntityDatapoint('updateEntityDatapointsContainer', uuid, "", "");
+            });
+
+        document
+            .getElementById('EntityConfirmUpdate')
+            .addEventListener('click', () => {
+                var name = document.getElementById('updateEntityName').value;
+                var probMethod = document.getElementById('updateEntityProbMethod').value;
+                var attributes = getEntityAttributes('updateEntityAttributesContainer');
+                var datapoints = getEntityDatapoints('updateEntityDatapointsContainer');
+                var data = [{
+                  "name": name,
+                  "probmethod": probMethod,
+                  "searchdomain": encodeURIComponent(domains[getSelectedDomainKey()]),
+                  "attributes": attributes,
+                  "datapoints": datapoints
+                }];
+                console.log(data);
+                // TODO add throbber to indicate loading
+                fetch(`/Entity/Index`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }).then(async response => {
+                    result = await response.json();
+                    if (response.ok && result.Success) {
+                        // TODO add toast
+                        console.log('Entity was created successfully');
+                        selectDomain(getSelectedDomainKey());
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to create entity:', result.Message);
+                    }
+                }).catch(error => {
+                    console.error('Error creating entity:', error);
+                });
+
+            });
+        document
+            .getElementById('queryConfirmDelete')
+            .addEventListener('click', () => {
+                let searchdomain = domains[getSelectedDomainKey()];
+                let query = document.getElementById('deleteQueryConfirmationModalName').textContent;
+                fetch(`/Searchdomain/Searches?searchdomain=${searchdomain}&query=${query}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).then(async response => {
+                    result = await response.json();
+                    if (response.ok && result.Success) {
+                        // TODO add toast
+                        console.log('Search query was deleted successfully');
+                        selectDomain(getSelectedDomainKey());
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to delete query:', result.Message);
+                    }
+                }).catch(error => {
+                    console.error('Error creating entity:', error);
+                });
+            });
+        document
+            .getElementById('queryUpdateConfirm')
+            .addEventListener('click', () => {
+                let searchdomain = domains[getSelectedDomainKey()];
+                let query = document.getElementById('queryUpdateQueryName').textContent;
+                let data = getQueryUpdateTableData();
+                console.log()
+                fetch(`/Searchdomain/Searches?searchdomain=${searchdomain}&query=${query}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }).then(async response => {
+                    result = await response.json();
+                    if (response.ok && result.Success) {
+                        // TODO add toast
+                        console.log('Search query was deleted successfully');
+                        selectDomain(getSelectedDomainKey());
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to delete query:', result.Message);
+                    }
+                }).catch(error => {
+                    console.error('Error creating entity:', error);
                 });
             });
     });
@@ -532,13 +1036,13 @@
         document.querySelector('#searchdomainName').innerText = domainName;
 
         let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
-        let configElementCacheReconsiliation = document.getElementById('searchdomainConfigCacheReconciliation');
+        let configElementCachereconciliation = document.getElementById('searchdomainConfigCacheReconciliation');
 
         let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
         let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
 
         /* ---------- ENTITIES ---------- */
-        let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false`;
+        let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false&returnModels=true`;
         let entitiesCard = document.querySelector("#entitiesTable").parentElement;
         clearEntitiesTable();
         showEntitiesLoading(entitiesCard);
@@ -578,11 +1082,11 @@
             if (searchdomainConfig != null && searchdomainConfig.Settings != null)
             {
                 console.log(searchdomainConfig);
-                configElementCacheReconsiliation.checked = searchdomainConfig.Settings.CacheReconciliation;
-                configElementCacheReconsiliation.disabled = false;
+                configElementCachereconciliation.checked = searchdomainConfig.Settings.CacheReconciliation;
+                configElementCachereconciliation.disabled = false;
             } else {
                 //configElement.value = 'Error fetching searchdomain config';
-                configElementCacheReconsiliation.disabled = true;
+                configElementCachereconciliation.disabled = true;
                 // TODO add toast
                 console.error('Failed to fetch searchdomain config');
             }
@@ -591,7 +1095,7 @@
             if (cacheUtilization != null && cacheUtilization.SearchCacheSizeBytes != null)
             {
                 document.querySelector('#cacheUtilization').innerText =
-                    `${(cacheUtilization.SearchCacheSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
+                    `${NumberOfBytesAsHumanReadable(cacheUtilization.SearchCacheSizeBytes)}`;
             } else {
                 // TODO add toast
                 console.error('Failed to fetch searchdomain cache utilization');
@@ -602,7 +1106,7 @@
             if (databaseUtilization != null && databaseUtilization.SearchdomainDatabaseSizeBytes != null)
             {
                 document.querySelector('#databaseUtilization').innerText =
-                    `${(databaseUtilization.SearchdomainDatabaseSizeBytes / (1024 * 1024)).toFixed(2)}MiB`;
+                    `${NumberOfBytesAsHumanReadable(databaseUtilization.SearchdomainDatabaseSizeBytes)}`;
             } else {
                 // TODO add toast
                 console.error('Failed to fetch searchdomain database utilization');
@@ -642,15 +1146,64 @@
             row.appendChild(nameCell);
 
             var actionCell = document.createElement('td');
+            actionCell.classList.add('btn-group');
             var detailsButton = document.createElement('button');
             detailsButton.className = 'btn btn-info btn-sm';
-            detailsButton.textContent = 'Details';
+            detailsButton.textContent = '@T["Details"]';
             detailsButton.setAttribute("data-index", entities.findIndex(en => en == entity));
             detailsButton.addEventListener('click', () => {
               showEntityDetails(entity);
             });
 
+            var updateButton = document.createElement('button');
+            updateButton.className = 'btn btn-warning btn-sm';
+            updateButton.textContent = '@T["Update"]';
+            updateButton.setAttribute("data-index", entities.findIndex(en => en == entity));
+            updateButton.addEventListener('click', () => {
+              const modal = new bootstrap.Modal(
+                  document.getElementById('updateEntityModal')
+              );
+              modal.show();
+
+              let updateEntityName = document.getElementById('updateEntityName');
+              updateEntityName.value = entity.Name;
+              let updateEntityProbMethod = document.getElementById('updateEntityProbMethod');
+              updateEntityProbMethod.value = entity.ProbMethod;
+
+              let updateEntityAttributesContainer = document.getElementById('updateEntityAttributesContainer');
+              updateEntityAttributesContainer.textContent = "";
+              for (i in entity.Attributes)
+              {
+                  let attribute = entity.Attributes[i];
+                  addEntityAttribute('updateEntityAttributesContainer', attribute.Name, attribute.Name, attribute.Value);
+              }
+              let updateEntityDatapointsContainer = document.getElementById('updateEntityDatapointsContainer');
+              updateEntityDatapointsContainer.textContent = "";
+              for (i in entity.Datapoints)
+              {
+                  let datapoint = entity.Datapoints[i];
+                  addEntityDatapoint('updateEntityDatapointsContainer', datapoint.Name, datapoint.Name, null, datapoint.ProbMethod, datapoint.SimilarityMethod, Array.from(datapoint.Embeddings, x => x.Model));
+              } 
+            });
+
+            var deleteButton = document.createElement('button');
+            deleteButton.className = 'btn btn-danger btn-sm';
+            deleteButton.textContent = '@T["Delete"]';
+            deleteButton.setAttribute("data-index", entities.findIndex(en => en == entity));
+            deleteButton.addEventListener('click', () => {
+              const modal = new bootstrap.Modal(
+                  document.getElementById('deleteEntityModal')
+              );
+              modal.show();
+              let entityConfirmDelete = document.getElementById('EntityConfirmDelete');
+              entityConfirmDelete.setAttribute('data-name', entity.Name);
+              let deleteEntityConfirmationModalName = document.getElementById('deleteEntityConfirmationModalName');
+              deleteEntityConfirmationModalName.textContent = entity.Name;
+            });
+
             actionCell.appendChild(detailsButton);
+            actionCell.appendChild(updateButton);
+            actionCell.appendChild(deleteButton);
             row.appendChild(actionCell);
 
             tableBody.appendChild(row);
@@ -677,14 +1230,37 @@
                 row.appendChild(nameCell);
 
                 const actionCell = document.createElement('td');
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-sm btn-info';
-                btn.textContent = '@T["Details"]';
-                btn.addEventListener('click', () => {
+                actionCell.classList.add('btn-group');
+                const btnDetails = document.createElement('button');
+                btnDetails.className = 'btn btn-sm btn-info';
+                btnDetails.textContent = '@T["Details"]';
+                btnDetails.addEventListener('click', () => {
                     showQueryDetails(query);
                 });
+                const btnUpdate = document.createElement('button');
+                btnUpdate.className = 'btn btn-sm btn-warning';
+                btnUpdate.textContent = '@T["Update"]';
+                btnUpdate.addEventListener('click', () => {
+                    showQueryUpdate(query);
+                });
 
-                actionCell.appendChild(btn);
+                const btnDelete = document.createElement('button');
+                btnDelete.className = 'btn btn-sm btn-danger';
+                btnDelete.textContent = '@T["Delete"]';
+                btnDelete.addEventListener('click', () => {
+                    const modal = new bootstrap.Modal(
+                      document.getElementById('deleteQueryModal')
+                    );
+                    modal.show();
+                    let queryConfirmDelete = document.getElementById('queryConfirmDelete');
+                    queryConfirmDelete.setAttribute('data-name', query.Name);
+                    let deleteQueryConfirmationModalName = document.getElementById('deleteQueryConfirmationModalName');
+                    deleteQueryConfirmationModalName.textContent = query.Name;
+                });
+
+                actionCell.appendChild(btnDetails);
+                actionCell.appendChild(btnUpdate);
+                actionCell.appendChild(btnDelete);
                 row.appendChild(actionCell);
 
                 tbody.appendChild(row);
@@ -773,7 +1349,7 @@
         document.getElementById('queryDetailsQueryName').innerText = query.Name;
 
         /* ---------- Access times ---------- */
-        const accessList = document.getElementById('queryAccessTimes');
+        const accessList = document.getElementById('queryDetailsAccessTimes');
         accessList.innerHTML = '';
 
         if (!query.AccessDateTimes || query.AccessDateTimes.length === 0) {
@@ -791,7 +1367,7 @@
         }
 
         /* ---------- Results ---------- */
-        const resultsBody = document.getElementById('queryResultsBody');
+        const resultsBody = document.getElementById('queryDetailsResultsBody');
         resultsBody.innerHTML = '';
 
         if (!query.Results || query.Results.length === 0) {
@@ -819,4 +1395,287 @@
         modal.show();
     }
 
+    function showQueryUpdate(query) {
+        // Title
+        document.getElementById('queryUpdateQueryName').innerText = query.Name;
+
+        /* ---------- Access times ---------- */
+        const accessList = document.getElementById('queryUpdateAccessTimes');
+        accessList.innerHTML = '';
+
+        if (!query.AccessDateTimes || query.AccessDateTimes.length === 0) {
+            accessList.innerHTML = `
+                <li class="list-group-item text-muted text-center">
+                    No access times
+                </li>`;
+        } else {
+            query.AccessDateTimes.forEach(dt => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = new Date(dt).toLocaleString();
+                accessList.appendChild(li);
+            });
+        }
+
+        /* ---------- Results ---------- */
+        const resultsBody = document.getElementById('queryUpdateResultsBody');
+        resultsBody.innerHTML = '';
+
+        if (!query.Results || query.Results.length === 0) {
+            resultsBody.innerHTML = `
+                <tr>
+                  <td colspan="2" class="text-muted text-center">
+                    No results
+                  </td>
+                </tr>`;
+        } else {
+            query.Results.forEach(r => {
+                const row = document.createElement('tr');
+                row.setAttribute("draggable", true);
+                const tdScore = document.createElement('td');
+                const scoreInput = document.createElement('input');
+                scoreInput.classList.add('form-control');
+                scoreInput.value = r.Score.toFixed(4);
+                tdScore.append(scoreInput);
+                const tdName = document.createElement('td');
+                tdName.classList.add("text-break");
+                tdName.innerText = r.Name;
+                const tdAction = document.createElement('td');
+                const deleteButton = document.createElement('button');
+                deleteButton.classList.add('btn', 'btn-danger', 'btn-sm');
+                deleteButton.innerText = '@T["Delete"]';
+                deleteButton.onclick = function() {
+                    row.remove();
+                };
+                tdAction.append(deleteButton);
+                row.append(tdScore);
+                row.append(tdName);
+                row.append(tdAction);
+                resultsBody.appendChild(row);
+            });
+        }
+
+        // Show modal
+        const modal = new bootstrap.Modal(
+          document.getElementById('queryUpdateModal')
+        );
+        modal.show();
+    }
+
+    function NumberOfBytesAsHumanReadable(bytes, decimals = 2) {
+        if (bytes === 0) return '0 B';
+        if (bytes > 1.20892581961*(10**27)) return "∞ B";
+        const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']; // 
+        const unitIndex = Math.floor(Math.log2(bytes) / 10);
+        const unit = units[Math.min(unitIndex, units.length - 1)];
+        const value = bytes / Math.pow(1024, unitIndex);
+        
+        return `${value.toFixed(decimals)} ${unit}`;
+    }
+
+    function getEntityAttributes(containerName = 'createEntityAttributesContainer') {
+        const container = document.getElementById(containerName);
+        const rows = container.querySelectorAll('tr[data-uid]');
+        const attributes = {};
+        
+        rows.forEach(row => {
+            const keyInput = row.querySelector('input.form-control');
+            const valueTextarea = row.querySelector('textarea.form-control');
+            
+            if (keyInput && valueTextarea) {
+                const key = keyInput.value.trim();
+                const value = valueTextarea.value.trim();
+                
+                if (key) {
+                    attributes[key] = value;
+                }
+            }
+        });
+        
+        return attributes;
+    }
+
+    function getEntityDatapoints(containerName = 'createEntityDatapointsContainer') {
+        const container = document.getElementById(containerName);
+        const rows = container.querySelectorAll('tr[data-uid]');
+        const datapoints = [];
+        
+        rows.forEach(row => {
+            const keyInput = row.querySelector('input.form-control');
+            const valueTextarea = row.querySelector('textarea.form-control');
+            const probmethodSelect = row.querySelector('select.probmethod');
+            const similaritymethodSelect = row.querySelector('select.similarityMethod');
+            const modelSelect = row.querySelector('select.model');
+            
+            if (keyInput && valueTextarea && probmethodSelect && modelSelect) {
+                const key = keyInput.value.trim();
+                var value = valueTextarea.value.trim();
+                if (value != null && value.length == 0) {
+                    value = null;
+                }
+                const probMethod = probmethodSelect.selectedOptions[0].value;
+                const similarityMethod = similaritymethodSelect.selectedOptions[0].value;
+                const modelSelection = Array.from(modelSelect.selectedOptions)
+                    .map(option => option.value);
+                
+                if (key) {
+                    let datapoint = {
+                      "name": key,
+                      "text": value,
+                      "probmethod_embedding": probMethod,
+                      "similarityMethod": similarityMethod,
+                      "model": modelSelection
+                    };
+                    datapoints.push(datapoint);
+                }
+            }
+        });
+        
+        return datapoints;
+    }
+
+    function addEntityAttribute(containerName = 'createEntityAttributesContainer', uid, key = '', value = '')
+    {
+        var container = document.getElementById(containerName);
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-uid', uid);
+        var tdKey = document.createElement('td');
+        var keyInput = document.createElement('input');
+        keyInput.classList.add('form-control');
+        keyInput.ariaLabel = '@T["Key"]';
+        keyInput.value = key;
+        tdKey.append(keyInput);
+        var tdValue = document.createElement('td');
+        var ValueInput = document.createElement('textarea');
+        ValueInput.classList.add('form-control');
+        ValueInput.ariaLabel = '@T["Value"]';
+        ValueInput.value = value;
+        tdValue.append(ValueInput);
+        var tdAction = document.createElement('td');
+        var tdButton = document.createElement('button');
+        tdButton.classList.add('btn', 'btn-danger');
+        tdButton.textContent = '@T["Remove"]';
+        tdButton.ariaLabel = '@T["Remove attribute"]';
+        tdAction.append(tdButton);
+        tdButton.onclick = function() {
+          tr.remove();
+        };
+        tr.append(tdKey);
+        tr.append(tdValue);
+        tr.append(tdAction);
+        container.append(tr);
+    }
+
+    function addEntityDatapoint(containerName = 'createEntityDatapointsContainer', uid, name = null, value = null, probmethod_embedding = null, similarityMethod = null, selectedModels = [])
+    {
+        var entityDatapointsContainer = document.getElementById(containerName);
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-uid', uid);
+        var tdName = document.createElement('td');
+        var nameInput = document.createElement('input');
+        nameInput.classList.add('form-control')
+        nameInput.ariaLabel = '@T["Name"]';
+        if (name != null) nameInput.value = name;
+        tdName.append(nameInput);
+        var tdValue = document.createElement('td');
+        var ValueInput = document.createElement('textarea');
+        ValueInput.classList.add('form-control')                
+        ValueInput.ariaLabel = '@T["Value"]';
+        if (value != null) {
+            ValueInput.value = value;
+        } else {
+            nameInput.readOnly = true;
+            ValueInput.readOnly = true;
+        }
+        tdValue.append(ValueInput);
+
+        var tdProbmethodEmbedding = document.createElement('td');
+        var probMethodSelect = document.createElement('select');
+        probMethodSelect.classList.add('probmethod');
+        for (i in probMethods)
+        {
+            let probMethodSelectElement = document.createElement('option');
+            probMethodSelectElement.value = probMethods[i];
+            probMethodSelectElement.text = probMethods[i];
+            probMethodSelect.append(probMethodSelectElement);
+        }
+        probMethodSelect.classList.add('form-control')                
+        probMethodSelect.ariaLabel = '@T["Probmethod_embedding"]';
+        if (probmethod_embedding != null) probMethodSelect.value = probmethod_embedding;
+        tdProbmethodEmbedding.append(probMethodSelect);
+
+        var tdSimilarityMethod = document.createElement('td');
+        var similarityMethodSelect = document.createElement('select');
+        similarityMethodSelect.classList.add('similarityMethod');
+        for (i in similarityMethods)
+        {
+            let similarityMethodSelectElement = document.createElement('option');
+            similarityMethodSelectElement.value = similarityMethods[i];
+            similarityMethodSelectElement.text = similarityMethods[i];
+            similarityMethodSelect.append(similarityMethodSelectElement);
+        }
+        similarityMethodSelect.classList.add('form-control')                
+        similarityMethodSelect.ariaLabel = '@T["Similarity method"]';
+        if (similarityMethod != null) similarityMethodSelect.value = similarityMethod;
+        tdSimilarityMethod.append(similarityMethodSelect);
+
+        var tdModel = document.createElement('td');
+        var modelSelect = document.createElement('select');
+        modelSelect.classList.add('model');
+        modelSelect.multiple = true;
+        for (i in models)
+        {
+            let modelSelectElement = document.createElement('option');
+            modelSelectElement.value = models[i];
+            modelSelectElement.text = models[i];
+            modelSelectElement.selected = selectedModels.findIndex(x => x === models[i] || (x + ":latest") === models[i]) >= 0;
+            modelSelect.append(modelSelectElement);
+        }
+        modelSelect.classList.add('form-control')
+        modelSelect.ariaLabel = '@T["Probmethod_embedding"]';
+        if (value == null) {
+            modelSelect.disabled = true;
+        }
+        tdModel.append(modelSelect);
+        
+        
+        var tdAction = document.createElement('td');
+        var tdButton = document.createElement('button');
+        tdButton.classList.add('btn', 'btn-danger');
+        tdButton.textContent = '@T["Remove"]';
+        tdButton.ariaLabel = '@T["Remove attribute"]';
+        tdAction.append(tdButton);
+        tdButton.onclick = function() {
+          tr.remove();
+        };
+        tr.append(tdName);
+        tr.append(tdValue);
+        tr.append(tdProbmethodEmbedding);
+        tr.append(tdSimilarityMethod);
+        tr.append(tdModel);
+        tr.append(tdAction);
+        entityDatapointsContainer.append(tr);
+    }
+
+    function getQueryUpdateTableData() {
+        const tbody = document.getElementById('queryUpdateResultsBody');
+        const rows = tbody.getElementsByTagName('tr');
+        const result = [];
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+            
+            // Get the text content from the second cell (index 1) which contains the path
+            const score = parseFloat(cells[0].firstChild.value);
+            const name = cells[1].textContent.trim();
+            
+            result.push({
+                "Score": score,
+                "Name": name
+            });
+        }
+        
+        return result;
+    }
 </script>

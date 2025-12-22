@@ -18,4 +18,10 @@
   <data name="InvalidCredentials" xml:space="preserve">
     <value>Invalid credentials.</value>
   </data>
+  <data name="GenericDeleteConfirmation" xml:space="preserve">
+    <value>Are you sure you want to delete &lt;strong id="{0}"&gt;this entity&lt;/strong&gt;?</value>
+  </data>
+  <data name="IrreversibleActionWarning" xml:space="preserve">
+    <value>This action cannot be undone.</value>
+  </data>
 </root>
