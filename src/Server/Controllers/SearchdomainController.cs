@@ -185,6 +185,36 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainDeleteSearchResult() {Success = false, Message = "Query not found in search cache"});
     }
 
+    [HttpPatch("Searches")]
+    public ActionResult<SearchdomainUpdateSearchResult> UpdateSearch(string searchdomain, string query, [FromBody]List<ResultItem> results)
+    {
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        }
+        catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
+            return Ok(new SearchdomainUpdateSearchResult() { Success = false, Message = "Searchdomain not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new SearchdomainUpdateSearchResult() { Success = false, Message = ex.Message });
+        }
+        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
+        bool containsKey = searchCache.ContainsKey(query);
+        if (containsKey)
+        {
+            DateTimedSearchResult element = searchCache[query];
+            element.Results = results;
+            searchCache[query] = element;
+            return Ok(new SearchdomainUpdateSearchResult() {Success = true});
+        }
+        return Ok(new SearchdomainUpdateSearchResult() {Success = false, Message = "Query not found in search cache"});
+    }
+
     [HttpGet("GetSettings")]
     public ActionResult<SearchdomainSettingsResults> GetSettings(string searchdomain)
     {

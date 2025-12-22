@@ -2,12 +2,19 @@
 using System.Text.Json.Serialization;
 
 namespace Shared.Models;
-public readonly struct ResultItem(float score, string name)
+public readonly struct ResultItem
 {
     [JsonPropertyName("Score")]
-    public readonly float Score { get; } = score;
+    public readonly float Score { get; }
     [JsonPropertyName("Name")]
-    public readonly string Name { get; } = name;
+    public readonly string Name { get; }
+
+    [JsonConstructor]
+    public ResultItem(float score, string name)
+    {
+        Score = score;
+        Name = name;
+    }
 
     public static long EstimateSize(ResultItem item)
     {

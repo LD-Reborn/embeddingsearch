@@ -64,6 +64,15 @@ public class SearchdomainDeleteSearchResult
     public string? Message { get; set; }    
 }
 
+public class SearchdomainUpdateSearchResult
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }    
+}
+
 public class SearchdomainSettingsResults
 {
     [JsonPropertyName("Success")]
