@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ElmahCore;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Server.Exceptions;
 using Server.Helper;
@@ -154,6 +155,34 @@ public class SearchdomainController : ControllerBase
         Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
         
         return Ok(new SearchdomainSearchesResults() { Searches = searchCache, Success = true });
+    }
+
+    [HttpDelete("Searches")]
+    public ActionResult<SearchdomainDeleteSearchResult> DeleteSearch(string searchdomain, string query)
+    {
+        Searchdomain searchdomain_;
+        try
+        {
+            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
+        }
+        catch (SearchdomainNotFoundException)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
+            return Ok(new SearchdomainDeleteSearchResult() { Success = false, Message = "Searchdomain not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return Ok(new SearchdomainDeleteSearchResult() { Success = false, Message = ex.Message });
+        }
+        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
+        bool containsKey = searchCache.ContainsKey(query);
+        if (containsKey)
+        {
+            searchCache.Remove(query);
+            return Ok(new SearchdomainDeleteSearchResult() {Success = true});
+        }
+        return Ok(new SearchdomainDeleteSearchResult() {Success = false, Message = "Query not found in search cache"});
     }
 
     [HttpGet("GetSettings")]

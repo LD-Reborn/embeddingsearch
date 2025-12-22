@@ -502,6 +502,33 @@
   </div>
 </div>
 
+<!-- Delete query Modal -->
+<div class="modal fade" id="deleteQueryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-m modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-danger text-white">
+        <h2 class="modal-title" id="deleteQueryTitle">@T["Delete query"]</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteQueryConfirmationModalName"])</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="queryConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
+          @T["Delete"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
     var domains = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(domains))');
     var probMethods = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(probMethods))');
@@ -762,6 +789,30 @@
                     console.error('Error creating entity:', error);
                 });
 
+            });
+        document
+            .getElementById('queryConfirmDelete')
+            .addEventListener('click', () => {
+                let searchdomain = domains[getSelectedDomainKey()];
+                let query = document.getElementById('deleteQueryConfirmationModalName').textContent;
+                fetch(`/Searchdomain/Searches?searchdomain=${searchdomain}&query=${query}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).then(async response => {
+                    result = await response.json();
+                    if (response.ok && result.Success) {
+                        // TODO add toast
+                        console.log('Search query was deleted successfully');
+                        selectDomain(getSelectedDomainKey());
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to delete query:', result.Message);
+                    }
+                }).catch(error => {
+                    console.error('Error creating entity:', error);
+                });
             });
     });
 
@@ -1054,14 +1105,29 @@
                 row.appendChild(nameCell);
 
                 const actionCell = document.createElement('td');
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-sm btn-info';
-                btn.textContent = '@T["Details"]';
-                btn.addEventListener('click', () => {
+                actionCell.classList.add('btn-group');
+                const btnDetails = document.createElement('button');
+                btnDetails.className = 'btn btn-sm btn-info';
+                btnDetails.textContent = '@T["Details"]';
+                btnDetails.addEventListener('click', () => {
                     showQueryDetails(query);
                 });
+                const btnDelete = document.createElement('button');
+                btnDelete.className = 'btn btn-sm btn-danger';
+                btnDelete.textContent = '@T["Delete"]';
+                btnDelete.addEventListener('click', () => {
+                    const modal = new bootstrap.Modal(
+                      document.getElementById('deleteQueryModal')
+                    );
+                    modal.show();
+                    let queryConfirmDelete = document.getElementById('queryConfirmDelete');
+                    queryConfirmDelete.setAttribute('data-name', query.Name);
+                    let deleteQueryConfirmationModalName = document.getElementById('deleteQueryConfirmationModalName');
+                    deleteQueryConfirmationModalName.textContent = query.Name;
+                });
 
-                actionCell.appendChild(btn);
+                actionCell.appendChild(btnDetails);
+                actionCell.appendChild(btnDelete);
                 row.appendChild(actionCell);
 
                 tbody.appendChild(row);
