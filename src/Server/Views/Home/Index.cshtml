@@ -207,26 +207,70 @@
       <div class="modal-body">
 
         <!-- Access times -->
-        <h3>Access times</h3>
-        <ul id="queryAccessTimes" class="list-group mb-4"></ul>
+        <h3>@T["Access times"]</h3>
+        <ul id="queryDetailsAccessTimes" class="list-group mb-4"></ul>
 
         <!-- Results -->
-        <h3>Results</h3>
+        <h3>@T["Results"]</h3>
         <table class="table table-sm table-striped">
           <thead>
             <tr>
-              <th>Score</th>
-              <th>Name</th>
+              <th>@T["Score"]</th>
+              <th>@T["Name"]</th>
             </tr>
           </thead>
-          <tbody id="queryResultsBody"></tbody>
+          <tbody id="queryDetailsResultsBody"></tbody>
         </table>
 
       </div>
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Close
+          @T["Close"]
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Query Update Modal -->
+<div class="modal fade" id="queryUpdateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-warning">
+        <h2 class="modal-title" id="queryUpdateTitle">@T["Query Update"] - <span id="queryUpdateQueryName"></span></h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Access times -->
+        <h3>@T["Access times"]</h3>
+        <ul id="queryUpdateAccessTimes" class="list-group mb-4"></ul>
+
+        <!-- Results -->
+        <h3>@T["Results"]</h3>
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th style="width: 85px;">@T["Score"]</th>
+              <th>@T["Name"]</th>
+              <th>@T["Action"]</th>
+            </tr>
+          </thead>
+          <tbody id="queryUpdateResultsBody"></tbody>
+        </table>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-warning" id="queryUpdateConfirm" data-bs-dismiss="modal">
+          @T["Update"]
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          @T["Close"]
         </button>
       </div>
 
@@ -537,6 +581,60 @@
     var queries = null;
     var models = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(models))');
 
+    let draggedRow = null;
+    document.addEventListener("dragstart", e => {
+      if (e.target.tagName === "TR") {
+        draggedRow = e.target;
+        e.target.classList.add("table-warning");
+      }
+    });
+
+    document.addEventListener("dragend", e => {
+      if (e.target.tagName === "TR") {
+        e.target.classList.remove("table-warning");
+      }
+      document.querySelectorAll(".table-warning").forEach(x => x.classList.remove("table-warning"));
+    });
+
+    document.addEventListener("dragenter", e => {
+      if (e.target.tagName === "TR") {
+        e.target.classList.add("table-warning");
+      } else if (e.target.tagName == "TD") {
+        e.target.parentElement.classList.add("table-warning");
+      }
+    });
+
+    document.addEventListener("dragleave", e => {
+      if (e.target.tagName === "TR") {
+        e.target.classList.remove("table-warning");
+      } else if (e.target.tagName == "TD") {
+        e.target.parentElement.classList.remove("table-warning");
+      }
+    });
+    document.addEventListener("dragover", e => {
+      if (e.target.closest("tr")) {
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener("drop", e => {
+      const targetRow = e.target.closest("tr");
+      if (draggedRow && targetRow && draggedRow !== targetRow && targetRow.parentElement.tagName !== "THEAD") {        
+        if (!draggedRow || !targetRow || draggedRow === targetRow) return;
+
+        const rect = targetRow.getBoundingClientRect();
+        const isAfter = e.clientY > rect.top + rect.height / 2;
+
+        const parent = targetRow.parentNode;
+
+        if (isAfter) {
+          parent.insertBefore(draggedRow, targetRow.nextSibling);
+        } else {
+          parent.insertBefore(draggedRow, targetRow);
+        }
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
         const filterInput = document.getElementById('entitiesFilter');
 
@@ -800,6 +898,33 @@
                     headers: {
                         'Content-Type': 'application/json'
                     }
+                }).then(async response => {
+                    result = await response.json();
+                    if (response.ok && result.Success) {
+                        // TODO add toast
+                        console.log('Search query was deleted successfully');
+                        selectDomain(getSelectedDomainKey());
+                    } else {
+                        // TODO add toast
+                        console.error('Failed to delete query:', result.Message);
+                    }
+                }).catch(error => {
+                    console.error('Error creating entity:', error);
+                });
+            });
+        document
+            .getElementById('queryUpdateConfirm')
+            .addEventListener('click', () => {
+                let searchdomain = domains[getSelectedDomainKey()];
+                let query = document.getElementById('queryUpdateQueryName').textContent;
+                let data = getQueryUpdateTableData();
+                console.log()
+                fetch(`/Searchdomain/Searches?searchdomain=${searchdomain}&query=${query}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
                 }).then(async response => {
                     result = await response.json();
                     if (response.ok && result.Success) {
@@ -1112,6 +1237,13 @@
                 btnDetails.addEventListener('click', () => {
                     showQueryDetails(query);
                 });
+                const btnUpdate = document.createElement('button');
+                btnUpdate.className = 'btn btn-sm btn-warning';
+                btnUpdate.textContent = '@T["Update"]';
+                btnUpdate.addEventListener('click', () => {
+                    showQueryUpdate(query);
+                });
+
                 const btnDelete = document.createElement('button');
                 btnDelete.className = 'btn btn-sm btn-danger';
                 btnDelete.textContent = '@T["Delete"]';
@@ -1127,6 +1259,7 @@
                 });
 
                 actionCell.appendChild(btnDetails);
+                actionCell.appendChild(btnUpdate);
                 actionCell.appendChild(btnDelete);
                 row.appendChild(actionCell);
 
@@ -1216,7 +1349,7 @@
         document.getElementById('queryDetailsQueryName').innerText = query.Name;
 
         /* ---------- Access times ---------- */
-        const accessList = document.getElementById('queryAccessTimes');
+        const accessList = document.getElementById('queryDetailsAccessTimes');
         accessList.innerHTML = '';
 
         if (!query.AccessDateTimes || query.AccessDateTimes.length === 0) {
@@ -1234,7 +1367,7 @@
         }
 
         /* ---------- Results ---------- */
-        const resultsBody = document.getElementById('queryResultsBody');
+        const resultsBody = document.getElementById('queryDetailsResultsBody');
         resultsBody.innerHTML = '';
 
         if (!query.Results || query.Results.length === 0) {
@@ -1258,6 +1391,73 @@
         // Show modal
         const modal = new bootstrap.Modal(
             document.getElementById('queryDetailsModal')
+        );
+        modal.show();
+    }
+
+    function showQueryUpdate(query) {
+        // Title
+        document.getElementById('queryUpdateQueryName').innerText = query.Name;
+
+        /* ---------- Access times ---------- */
+        const accessList = document.getElementById('queryUpdateAccessTimes');
+        accessList.innerHTML = '';
+
+        if (!query.AccessDateTimes || query.AccessDateTimes.length === 0) {
+            accessList.innerHTML = `
+                <li class="list-group-item text-muted text-center">
+                    No access times
+                </li>`;
+        } else {
+            query.AccessDateTimes.forEach(dt => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = new Date(dt).toLocaleString();
+                accessList.appendChild(li);
+            });
+        }
+
+        /* ---------- Results ---------- */
+        const resultsBody = document.getElementById('queryUpdateResultsBody');
+        resultsBody.innerHTML = '';
+
+        if (!query.Results || query.Results.length === 0) {
+            resultsBody.innerHTML = `
+                <tr>
+                  <td colspan="2" class="text-muted text-center">
+                    No results
+                  </td>
+                </tr>`;
+        } else {
+            query.Results.forEach(r => {
+                const row = document.createElement('tr');
+                row.setAttribute("draggable", true);
+                const tdScore = document.createElement('td');
+                const scoreInput = document.createElement('input');
+                scoreInput.classList.add('form-control');
+                scoreInput.value = r.Score.toFixed(4);
+                tdScore.append(scoreInput);
+                const tdName = document.createElement('td');
+                tdName.classList.add("text-break");
+                tdName.innerText = r.Name;
+                const tdAction = document.createElement('td');
+                const deleteButton = document.createElement('button');
+                deleteButton.classList.add('btn', 'btn-danger', 'btn-sm');
+                deleteButton.innerText = '@T["Delete"]';
+                deleteButton.onclick = function() {
+                    row.remove();
+                };
+                tdAction.append(deleteButton);
+                row.append(tdScore);
+                row.append(tdName);
+                row.append(tdAction);
+                resultsBody.appendChild(row);
+            });
+        }
+
+        // Show modal
+        const modal = new bootstrap.Modal(
+          document.getElementById('queryUpdateModal')
         );
         modal.show();
     }
@@ -1455,5 +1655,27 @@
         tr.append(tdModel);
         tr.append(tdAction);
         entityDatapointsContainer.append(tr);
+    }
+
+    function getQueryUpdateTableData() {
+        const tbody = document.getElementById('queryUpdateResultsBody');
+        const rows = tbody.getElementsByTagName('tr');
+        const result = [];
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const cells = row.getElementsByTagName('td');
+            
+            // Get the text content from the second cell (index 1) which contains the path
+            const score = parseFloat(cells[0].firstChild.value);
+            const name = cells[1].textContent.trim();
+            
+            result.push({
+                "Score": score,
+                "Name": name
+            });
+        }
+        
+        return result;
     }
 </script>
