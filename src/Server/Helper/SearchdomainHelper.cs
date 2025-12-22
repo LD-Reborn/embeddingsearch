@@ -166,7 +166,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     JSONDatapoint? newEntityDatapoint = jsonEntity.Datapoints.FirstOrDefault(x => x.Name == datapoint.name);
                     if (newEntityDatapoint is not null && newEntityDatapoint.Text is not null)
                     {
-                        // Datapoint - Updated
+                        // Datapoint - Updated (text)
                         Dictionary<string, dynamic> parameters = new()
                         {
                             { "datapointName", datapoint.name },
@@ -178,6 +178,21 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                         Datapoint newDatapoint = DatabaseInsertDatapointWithEmbeddings(helper, searchdomain, newEntityDatapoint, (int)preexistingEntityID);
                         preexistingEntity.datapoints.Add(newDatapoint);
 
+                    }
+                    if (newEntityDatapoint is not null && (newEntityDatapoint.Probmethod_embedding != datapoint.probMethod.name || newEntityDatapoint.SimilarityMethod != datapoint.similarityMethod.name))
+                    {
+                        // Datapoint - Updated (probmethod or similaritymethod)
+                        Dictionary<string, dynamic> parameters = new()
+                        {
+                            { "probmethod", newEntityDatapoint.Probmethod_embedding },
+                            { "similaritymethod", newEntityDatapoint.SimilarityMethod },
+                            { "datapointName", datapoint.name },
+                            { "entityId", preexistingEntityID}
+                        };
+                        helper.ExecuteSQLNonQuery("UPDATE datapoint SET probmethod_embedding=@probmethod, similaritymethod=@similaritymethod WHERE id_entity=@entityId AND name=@datapointName", parameters);
+                        Datapoint preexistingDatapoint = preexistingEntity.datapoints.First(x => x == datapoint); // The for loop is a copy. This retrieves the original such that it can be updated.
+                        preexistingDatapoint.probMethod = datapoint.probMethod;
+                        preexistingDatapoint.similarityMethod = datapoint.similarityMethod;
                     }
                 }
             }
