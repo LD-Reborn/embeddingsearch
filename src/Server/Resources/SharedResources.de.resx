@@ -24,4 +24,223 @@
   <data name="IrreversibleActionWarning" xml:space="preserve">
     <value>Diese Aktion kann nicht rückgängig gemacht werden.</value>
   </data>
+  <data name="Searchdomain selection" xml:space="preserve">
+    <value>Searchdomain Auswahl</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Erstellen</value>
+  </data>
+  <data name="Searchdomain information and settings" xml:space="preserve">
+    <value>Searchdomain Informationen und Einstellungen</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Aktionen</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Umbenennen</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Einstellungen</value>
+  </data>
+  <data name="Cache reconciliation" xml:space="preserve">
+    <value>Cache Abgleich</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Anpassen</value>
+  </data>
+  <data name="Search cache" xml:space="preserve">
+    <value>Such-Cache</value>
+  </data>
+  <data name="Search cache utilization" xml:space="preserve">
+    <value>Such-Cache Speicherauslastung</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Leeren</value>
+  </data>
+  <data name="Database size" xml:space="preserve">
+    <value>Größe in der Datenbank</value>
+  </data>
+  <data name="Add new entity" xml:space="preserve">
+    <value>Neue Entity erstellen</value>
+  </data>
+  <data name="Entity Details" xml:space="preserve">
+    <value>Entity Details</value>
+  </data>
+  <data name="Attributes" xml:space="preserve">
+    <value>Attribute</value>
+  </data>
+  <data name="Key" xml:space="preserve">
+    <value>Schlüssel</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Wert</value>
+  </data>
+  <data name="Datapoints" xml:space="preserve">
+    <value>Datapoints</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="ProbMethod" xml:space="preserve">
+    <value>ProbMethod</value>
+  </data>
+  <data name="SimilarityMethod" xml:space="preserve">
+    <value>SimilarityMethod</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Schließen</value>
+  </data>
+  <data name="Query Details" xml:space="preserve">
+    <value>Suchanfrage Details</value>
+  </data>
+  <data name="Access times" xml:space="preserve">
+    <value>Zugriffszeiten</value>
+  </data>
+  <data name="Results" xml:space="preserve">
+    <value>Ergebnisse</value>
+  </data>
+  <data name="Score" xml:space="preserve">
+    <value>Bewertung</value>
+  </data>
+  <data name="Query Update" xml:space="preserve">
+    <value>Suchanfrage anpassen</value>
+  </data>
+  <data name="Rename searchdomain" xml:space="preserve">
+    <value>Searchdomain umbenennen</value>
+  </data>
+  <data name="Delete searchdomain" xml:space="preserve">
+    <value>Searchdomain löschen</value>
+  </data>
+  <data name="Create searchdomain" xml:space="preserve">
+    <value>Searchdomain anlegen</value>
+  </data>
+  <data name="Searchdomain name" xml:space="preserve">
+    <value>Searchdomain Name</value>
+  </data>
+  <data name="Enable cache reconciliation" xml:space="preserve">
+    <value>Cache Abgleich verwenden</value>
+  </data>
+  <data name="Create entity" xml:space="preserve">
+    <value>Entity erstellen</value>
+  </data>
+  <data name="Entity name" xml:space="preserve">
+    <value>Entity Name</value>
+  </data>
+  <data name="Probmethod" xml:space="preserve">
+    <value>Probmethod</value>
+  </data>
+  <data name="Add attribute" xml:space="preserve">
+    <value>Attribut hinzufügen</value>
+  </data>
+  <data name="Probmethod_embedding" xml:space="preserve">
+    <value>Probmethod_embedding</value>
+  </data>
+  <data name="Similarity method" xml:space="preserve">
+    <value>Similarity method</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Modell</value>
+  </data>
+  <data name="Add datapoint" xml:space="preserve">
+    <value>Datapoint hinzufügen</value>
+  </data>
+  <data name="Delete entity" xml:space="preserve">
+    <value>Entity löschen</value>
+  </data>
+  <data name="Update entity" xml:space="preserve">
+    <value>Entity anpassen</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>Aktion</value>
+  </data>
+  <data name="Delete query" xml:space="preserve">
+    <value>Suchanfrage löschen</value>
+  </data>
+  <data name="Creating entity" xml:space="preserve">
+    <value>Erstelle Entity</value>
+  </data>
+  <data name="Entity was created successfully" xml:space="preserve">
+    <value>Entity wurde erfolgreich erstellt</value>
+  </data>
+  <data name="Failed to create entity" xml:space="preserve">
+    <value>Entity konnte nicht erstellt werden</value>
+  </data>
+  <data name="Searchdomain was created successfully" xml:space="preserve">
+    <value>Searchdomain wurde erfolgreich erstellt</value>
+  </data>
+  <data name="Failed to create searchdomain" xml:space="preserve">
+    <value>Searchdomain konnte nicht erstellt werden</value>
+  </data>
+  <data name="Searchdomain cache was cleared successfully" xml:space="preserve">
+    <value>Searchdomain Cache wurde erfolgreich geleert</value>
+  </data>
+  <data name="Failed to clear searchdomain cache" xml:space="preserve">
+    <value>Searchdomain Cache konnte nicht geleert werden</value>
+  </data>
+  <data name="Entity was deleted successfully" xml:space="preserve">
+    <value>Entity wurde erfolgreich gelöscht</value>
+  </data>
+  <data name="Failed to delete entity" xml:space="preserve">
+    <value>Entity konnte nicht gelöscht werden</value>
+  </data>
+  <data name="Updating entity" xml:space="preserve">
+    <value>Entity wird angepasst</value>
+  </data>
+  <data name="Entity was updated successfully" xml:space="preserve">
+    <value>Entity wurde erfolgreich angepasst</value>
+  </data>
+  <data name="Failed to update entity" xml:space="preserve">
+    <value>Entity konnte nicht angepasst werden</value>
+  </data>
+  <data name="Search query was deleted successfully" xml:space="preserve">
+    <value>Suchanfrage wurde erfolgreich gelöscht</value>
+  </data>
+  <data name="Failed to delete search query" xml:space="preserve">
+    <value>Suchanfrage konnte nicht gelöscht werden</value>
+  </data>
+  <data name="Searchdomain was created successfully" xml:space="preserve">
+    <value>Searchdomain wurde erfolgreich erstellt</value>
+  </data>
+  <data name="Updating search query failed" xml:space="preserve">
+    <value>Suchanfrage konnte nicht angepasst werden</value>
+  </data>
+  <data name="Searchdomain was deleted successfully" xml:space="preserve">
+    <value>Searchdomain wurde erfolgreich gelöscht</value>
+  </data>
+  <data name="Failed to delete searchdomain" xml:space="preserve">
+    <value>Konnte Searchdomain nicht löschen</value>
+  </data>
+  <data name="Searchdomain was renamed successfully" xml:space="preserve">
+    <value>Searchdomain wurde erfolgreich umbenannt</value>
+  </data>
+  <data name="Failed to rename searchdomain" xml:space="preserve">
+    <value>Searchdomain konnte nicht umbenannt werden</value>
+  </data>
+  <data name="Searchdomain settings were updated successfully" xml:space="preserve">
+    <value>Searchdomain Einstellungen wurden erfolgreich angepasst</value>
+  </data>
+  <data name="Updating searchdomain settings failed" xml:space="preserve">
+    <value>Searchdomain Einstellungen konnten nicht angepasst werden</value>
+  </data>
+  <data name="Unable to fetch searchdomain config" xml:space="preserve">
+    <value>Searchdomain Einstellungen konnten nicht abgerufen werden</value>
+  </data>
+  <data name="Unable to fetch searchdomain cache utilization" xml:space="preserve">
+    <value>Searchdomain Cache-Auslastung konnte nicht abgerufen werden</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Remove attribute" xml:space="preserve">
+    <value>Attribut entfernen</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="Close alert" xml:space="preserve">
+    <value>Benachrichtigung schließen</value>
+  </data>
 </root>
