@@ -743,7 +743,7 @@
                   "attributes": attributes,
                   "datapoints": datapoints
                 }];
-                // TODO add throbber to indicate loading
+                showToast("@T["Creating entity"]", "primary");
                 fetch(`/Entity/Index`, {
                     method: 'POST',
                     headers: {
@@ -753,14 +753,15 @@
                 }).then(async response => {
                     result = await response.json();
                     if (response.ok && result.Success) {
-                        // TODO add toast
+                        showToast("@T["Entity was created successfully"]", "success");
                         console.log('Entity was created successfully');
                         selectDomain(getSelectedDomainKey());
                     } else {
-                        // TODO add toast
+                        showToast("@T["Failed to create entity"]", "danger");
                         console.error('Failed to create entity:', result.Message);
                     }
                 }).catch(error => {
+                    showToast("@T["Failed to create entity"]", "danger");
                     console.error('Error creating entity:', error);
                 });
 
@@ -780,15 +781,16 @@
                     method: 'GET'
                 }).then(response => {
                     if (response.ok) {
-                        // TODO add toast
+                        showToast("@T["Searchdomain was created successfully"]", "success");
                         console.log('Searchdomain created successfully');
                         // Reload the page to show the new searchdomain
                         location.reload();
                     } else {
-                        // TODO add toast
+                        showToast("@T["Failed to create searchdomain"]", "danger");
                         console.error('Failed to create searchdomain');
                     }
                 }).catch(error => {
+                    showToast("@T["Failed to create searchdomain"]", "danger");
                     console.error('Error creating searchdomain:', error);
                 });
             });
@@ -801,15 +803,16 @@
                     method: 'GET'
                 }).then(response => {
                     if (response.ok) {
-                        // TODO add toast
+                        showToast("@T["Searchdomain cache was cleared successfully"]", "success");
                         console.log('Searchdomain cache cleared successfully');
                         // Update cache utilization display
                         document.querySelector('#cacheUtilization').innerText = '0.00MiB';
                     } else {
-                        // TODO add toast
+                        showToast("@T["Failed to clear searchdomain cache"]", "danger");
                         console.error('Failed to clear searchdomain cache');
                     }
                 }).catch(error => {
+                    showToast("@T["Failed to clear searchdomain cache"]", "danger");
                     console.error('Error clearing searchdomain cache:', error);
                 });
             });
@@ -824,11 +827,11 @@
                 }).then(async response => {
                     let result = await response.json();
                     if (response.ok && result.Success) {
-                        // TODO add toast
+                        showToast("@T["Entity was deleted successfully"]", "success");
                         console.log('Entity deleted successfully');
                         selectDomain(getSelectedDomainKey());
                     } else {
-                        // TODO add toast
+                        showToast("@T["Failed to delete entity"]", "danger");
                         console.error('Failed to delete entity:', result.Message);
                     }
                 }).catch(error => {
@@ -864,8 +867,7 @@
                   "attributes": attributes,
                   "datapoints": datapoints
                 }];
-                console.log(data);
-                // TODO add throbber to indicate loading
+                showToast("@T["Updating entity"]", "primary");
                 fetch(`/Entity/Index`, {
                     method: 'POST',
                     headers: {
@@ -875,15 +877,16 @@
                 }).then(async response => {
                     result = await response.json();
                     if (response.ok && result.Success) {
-                        // TODO add toast
-                        console.log('Entity was created successfully');
+                        showToast("@T["Entity was updated successfully"]", "success");
+                        console.log('Entity was updated successfully');
                         selectDomain(getSelectedDomainKey());
                     } else {
-                        // TODO add toast
-                        console.error('Failed to create entity:', result.Message);
+                        showToast("@T["Failed to update entity"]", "danger");
+                        console.error('Failed to update entity:', result.Message);
                     }
                 }).catch(error => {
-                    console.error('Error creating entity:', error);
+                    showToast("@T["Failed to update entity"]", "danger");
+                    console.error('Error update entity:', error);
                 });
 
             });
@@ -900,15 +903,16 @@
                 }).then(async response => {
                     result = await response.json();
                     if (response.ok && result.Success) {
-                        // TODO add toast
+                        showToast("@T["Search query was deleted successfully"]", "success");
                         console.log('Search query was deleted successfully');
                         selectDomain(getSelectedDomainKey());
                     } else {
-                        // TODO add toast
-                        console.error('Failed to delete query:', result.Message);
+                        showToast("@T["Failed to delete search query"]", "danger");
+                        console.error('Failed to delete search query:', result.Message);
                     }
                 }).catch(error => {
-                    console.error('Error creating entity:', error);
+                    showToast("@T["Failed to delete search query"]", "danger");
+                    console.error('Failed to delete search query:', error);
                 });
             });
         document
@@ -927,15 +931,16 @@
                 }).then(async response => {
                     result = await response.json();
                     if (response.ok && result.Success) {
-                        // TODO add toast
-                        console.log('Search query was deleted successfully');
+                        showToast("@T["Searchdomain was created successfully"]", "success");
+                        console.log('Search query was updated successfully');
                         selectDomain(getSelectedDomainKey());
                     } else {
-                        // TODO add toast
-                        console.error('Failed to delete query:', result.Message);
+                        showToast("@T["Updating search query failed"]", "danger");
+                        console.error('Updating search query failed:', result.Message);
                     }
                 }).catch(error => {
-                    console.error('Error creating entity:', error);
+                    showToast("@T["Updating search query failed"]", "danger");
+                    console.error('Updating search query failed:', error);
                 });
             });
     });
@@ -944,18 +949,20 @@
         // Implement delete logic here
         fetch(`/Searchdomain/Delete?searchdomain=${encodeURI(domains[domainKey])}`, {
             method: 'GET'
-        }).then(response => {
-            if (response.ok) {
-                // TODO add toast
+        }).then(async response => {
+            var result = await response.json();;
+            if (response.ok && result.Success === true) {
+                showToast("@T["Searchdomain was deleted successfully"]", "success");
                 // Remove from sidebar
                 var domainItem = document.getElementById('sidebar_domain_' + domainKey);
                 domainItem.remove();
                 console.log('Searchdomain deleted successfully');
             } else {
-                // TODO add toast
-                console.error('Failed to delete searchdomain');
+                showToast("@T["Failed to delete searchdomain"]", "danger");
+                console.error('Failed to delete searchdomain:', result.Message);
             }
         }).catch(error => {
+            showToast("@T["Failed to delete searchdomain"]", "danger");
             console.error('Error deleting searchdomain:', error);
         });
     }
@@ -964,9 +971,10 @@
         // Implement rename logic here
         fetch(`/Searchdomain/Update?searchdomain=${encodeURI(domains[domainKey])}&newName=${newName}`, {
             method: 'GET'
-        }).then(response => {
-            if (response.ok) {
-                // TODO add toast
+        }).then(async response => {
+            var result = await response.json();
+            if (response.ok && result.Success === true) {
+                showToast("@T["Searchdomain was renamed successfully"]", "success");
                 // Update sidebar and header name
                 var domainItem = document.getElementById('sidebar_domain_' + domainKey);
                 domainItem.innerText = newName;
@@ -975,11 +983,12 @@
 
                 console.log('Searchdomain renamed successfully');
             } else {
-                // TODO add toast
-                console.error('Failed to rename searchdomain');
+                showToast("@T["Failed to rename searchdomain"]", "danger");
+                console.error('Failed to rename searchdomain:', result.Message);
             }
         }).catch(error => {
-            console.error('Error renaming searchdomain:', error);
+            showToast("@T["Failed to rename searchdomain"]", "danger");
+            console.error('Failed to rename searchdomain:', error);
         });
     }
 
@@ -991,15 +1000,17 @@
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(newSettings)
-        }).then(response => {
-            if (response.ok) {
-                // TODO add toast
+        }).then(async response => {
+            var result = await response.json();
+            if (response.ok && result.Success === true) {
+                showToast("@T["Searchdomain settings were updated successfully"]", "success");
                 console.log('Searchdomain settings updated successfully');
             } else {
-                // TODO add toast
+                showToast("@T["Updating searchdomain settings failed"]", "danger");
                 console.error('Failed to update searchdomain settings');
             }
         }).catch(error => {
+            showToast("@T["Updating searchdomain settings failed"]", "danger");
             console.error('Error updating searchdomain settings:', error);
         });
     }
@@ -1044,37 +1055,37 @@
         let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false&returnModels=true`;
         let entitiesCard = document.querySelector("#entitiesTable").parentElement;
         clearEntitiesTable();
-        showEntitiesLoading(entitiesCard);
+        showThrobber(entitiesCard);
 
         fetch(entitiesUrl)
             .then(r => r.json())
             .then(data => {
                 entities = data.Results;
                 populateEntitiesTable();
-                hideEntitiesLoading(entitiesCard);
+                hideThrobber(entitiesCard);
             })
             .catch(err => {
                 console.error(err);
                 flagSearchdomainAsErroneous(domainKey);
-                hideEntitiesLoading(entitiesCard);
+                hideThrobber(entitiesCard);
             });
 
         /* ---------- QUERIES ---------- */
         let queriesUrl = `/Searchdomain/GetSearches?searchdomain=${encodeURIComponent(domainName)}`;
         let queriesCard = document.querySelector("#queriesTable").parentElement;
         clearQueriesTable();
-        showQueriesLoading(queriesCard);
+        showThrobber(queriesCard);
 
         fetch(queriesUrl)
             .then(r => r.json())
             .then(data => {
                 queries = Object.entries(data.Searches).map(key => ({"Name": key[0], "AccessDateTimes": key[1].AccessDateTimes, "Results": key[1].Results}));
                 populateQueriesTable();
-                hideQueriesLoading(queriesCard);
+                hideThrobber(queriesCard);
             })
             .catch(err => {
                 console.error('Error fetching queries:', err);
-                hideQueriesLoading(queriesCard);
+                hideThrobber(queriesCard);
             });
 
         searchdomainConfigPromise.then(searchdomainConfig => {
@@ -1084,9 +1095,8 @@
                 configElementCachereconciliation.checked = searchdomainConfig.Settings.CacheReconciliation;
                 configElementCachereconciliation.disabled = false;
             } else {
-                //configElement.value = 'Error fetching searchdomain config';
                 configElementCachereconciliation.disabled = true;
-                // TODO add toast
+                showToast("@T["Unable to fetch searchdomain config"]", "danger");
                 console.error('Failed to fetch searchdomain config');
             }
         });
@@ -1096,7 +1106,7 @@
                 document.querySelector('#cacheUtilization').innerText =
                     `${NumberOfBytesAsHumanReadable(cacheUtilization.SearchCacheSizeBytes)}`;
             } else {
-                // TODO add toast
+                showToast("@T["Unable to fetch searchdomain cache utilization"]", "danger");
                 console.error('Failed to fetch searchdomain cache utilization');
             }
         });
@@ -1107,7 +1117,7 @@
                 document.querySelector('#databaseUtilization').innerText =
                     `${NumberOfBytesAsHumanReadable(databaseUtilization.SearchdomainDatabaseSizeBytes)}`;
             } else {
-                // TODO add toast
+                showToast("@T["Unable to fetch searchdomain database utilization"]", "danger");
                 console.error('Failed to fetch searchdomain database utilization');
             }
         });
@@ -1274,24 +1284,14 @@
       domainItem.classList.add('list-group-item-danger');
     }
 
-    function showEntitiesLoading(element = null) {
+    function showThrobber(element = null) {
       if (element == null) element = document;
       element.querySelector('.spinner').classList.remove('d-none');
     }
 
-    function hideEntitiesLoading(element = null) {
+    function hideThrobber(element = null) {
       if (element == null) element = document;
       element.querySelector('.spinner').classList.add('d-none');
-    }
-
-    function showQueriesLoading(element = null) {
-        if (!element) element = document;
-        element.querySelector('.spinner').classList.remove('d-none');
-    }
-
-    function hideQueriesLoading(element = null) {
-        if (!element) element = document;
-        element.querySelector('.spinner').classList.add('d-none');
     }
 
     function showEntityDetails(entity) {

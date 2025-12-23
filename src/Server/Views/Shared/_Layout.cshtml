@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿@using Server.Services
+@inject LocalizationService T
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -6,6 +9,11 @@
     <title>@ViewData["Title"] - embeddingsearch</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script>
+        window.appTranslations = {
+            closeAlert: '@T["Close alert"]'
+        };
+    </script>
 </head>
 <body>
     <header>
