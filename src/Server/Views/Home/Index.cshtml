@@ -831,10 +831,11 @@
                         console.log('Entity deleted successfully');
                         selectDomain(getSelectedDomainKey());
                     } else {
-                        showToast("@T["Failed to delete entity"]", "danger");
+                        showToast("@Html.Raw(T["Failed to delete entity"])", "danger");
                         console.error('Failed to delete entity:', result.Message);
                     }
                 }).catch(error => {
+                    showToast("@Html.Raw(T["Failed to delete entity"])", "danger");
                     console.error('Error deleting entity:', error);
                 });
           });
@@ -907,11 +908,11 @@
                         console.log('Search query was deleted successfully');
                         selectDomain(getSelectedDomainKey());
                     } else {
-                        showToast("@T["Failed to delete search query"]", "danger");
+                        showToast("@Html.Raw(T["Failed to delete search query"])", "danger");
                         console.error('Failed to delete search query:', result.Message);
                     }
                 }).catch(error => {
-                    showToast("@T["Failed to delete search query"]", "danger");
+                    showToast("@Html.Raw(T["Failed to delete search query"])", "danger");
                     console.error('Failed to delete search query:', error);
                 });
             });
@@ -958,11 +959,11 @@
                 domainItem.remove();
                 console.log('Searchdomain deleted successfully');
             } else {
-                showToast("@T["Failed to delete searchdomain"]", "danger");
+                showToast("@Html.Raw(T["Failed to delete searchdomain"])", "danger");
                 console.error('Failed to delete searchdomain:', result.Message);
             }
         }).catch(error => {
-            showToast("@T["Failed to delete searchdomain"]", "danger");
+            showToast("@Html.Raw(T["Failed to delete searchdomain"])", "danger");
             console.error('Error deleting searchdomain:', error);
         });
     }
@@ -1091,7 +1092,6 @@
         searchdomainConfigPromise.then(searchdomainConfig => {
             if (searchdomainConfig != null && searchdomainConfig.Settings != null)
             {
-                console.log(searchdomainConfig);
                 configElementCachereconciliation.checked = searchdomainConfig.Settings.CacheReconciliation;
                 configElementCachereconciliation.disabled = false;
             } else {
@@ -1197,7 +1197,7 @@
 
             var deleteButton = document.createElement('button');
             deleteButton.className = 'btn btn-danger btn-sm';
-            deleteButton.textContent = '@T["Delete"]';
+            deleteButton.textContent = '@Html.Raw(T["Delete"])';
             deleteButton.setAttribute("data-index", entities.findIndex(en => en == entity));
             deleteButton.addEventListener('click', () => {
               const modal = new bootstrap.Modal(
@@ -1255,7 +1255,7 @@
 
                 const btnDelete = document.createElement('button');
                 btnDelete.className = 'btn btn-sm btn-danger';
-                btnDelete.textContent = '@T["Delete"]';
+                btnDelete.textContent = '@Html.Raw(T["Delete"])';
                 btnDelete.addEventListener('click', () => {
                     const modal = new bootstrap.Modal(
                       document.getElementById('deleteQueryModal')
@@ -1296,7 +1296,7 @@
 
     function showEntityDetails(entity) {
       // Title
-      document.getElementById('entityDetailsTitle').innerText = entity.Name;
+      document.getElementById('entityDetailsTitle').innerText = '@T["Details"] - ' + entity.Name;
 
       // Attributes
       const attrBody = document.getElementById('entityAttributesBody');
@@ -1442,7 +1442,7 @@
                 const tdAction = document.createElement('td');
                 const deleteButton = document.createElement('button');
                 deleteButton.classList.add('btn', 'btn-danger', 'btn-sm');
-                deleteButton.innerText = '@T["Delete"]';
+                deleteButton.innerText = '@Html.Raw(T["Delete"])';
                 deleteButton.onclick = function() {
                     row.remove();
                 };
@@ -1541,7 +1541,7 @@
         var tdKey = document.createElement('td');
         var keyInput = document.createElement('input');
         keyInput.classList.add('form-control');
-        keyInput.ariaLabel = '@T["Key"]';
+        keyInput.ariaLabel = '@Html.Raw(T["Key"])';
         keyInput.value = key;
         tdKey.append(keyInput);
         var tdValue = document.createElement('td');
