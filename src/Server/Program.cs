@@ -8,12 +8,19 @@ using Server.HealthChecks;
 using Server.Helper;
 using Server.Models;
 using Server.Services;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
 
 // Add Localization
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");

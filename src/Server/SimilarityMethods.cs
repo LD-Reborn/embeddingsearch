@@ -1,16 +1,18 @@
 using System.Numerics.Tensors;
-using System.Text.Json;
+using Shared.Models;
 
 namespace Server;
 
 public class SimilarityMethod
 {
     public SimilarityMethods.similarityMethodDelegate method;
+    public SimilarityMethodEnum similarityMethodEnum;
     public string name;
 
-    public SimilarityMethod(string name, ILogger logger)
+    public SimilarityMethod(SimilarityMethodEnum similarityMethodEnum, ILogger logger)
     {
-        this.name = name;
+        this.similarityMethodEnum = similarityMethodEnum;
+        this.name = similarityMethodEnum.ToString();
         SimilarityMethods.similarityMethodDelegate? probMethod = SimilarityMethods.GetMethod(name);
         if (probMethod is null)
         {
@@ -19,14 +21,6 @@ public class SimilarityMethod
         }
         method = probMethod;
     }
-}
-
-public enum SimilarityMethodEnum
-{
-    Cosine,
-    Euclidian,
-    Manhattan,
-    Pearson
 }
 
 public static class SimilarityMethods

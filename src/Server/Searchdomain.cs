@@ -96,8 +96,16 @@ public class Searchdomain
             string probmethodString = datapointReader.GetString(3);
             string similarityMethodString = datapointReader.GetString(4);
             string hash = datapointReader.GetString(5);
-            ProbMethod probmethod = new(probmethodString, _logger);
-            SimilarityMethod similarityMethod = new(similarityMethodString, _logger);
+            ProbMethodEnum probmethodEnum = (ProbMethodEnum)Enum.Parse(
+                typeof(ProbMethodEnum),
+                probmethodString
+            );
+            SimilarityMethodEnum similairtyMethodEnum = (SimilarityMethodEnum)Enum.Parse(
+                typeof(SimilarityMethodEnum),
+                similarityMethodString
+            );
+            ProbMethod probmethod = new(probmethodEnum, _logger);
+            SimilarityMethod similarityMethod = new(similairtyMethodEnum, _logger);
             if (embedding_unassigned.TryGetValue(id, out Dictionary<string, float[]>? embeddings) && probmethod is not null)
             {
                 embedding_unassigned.Remove(id);

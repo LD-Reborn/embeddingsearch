@@ -179,13 +179,13 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                         preexistingEntity.datapoints.Add(newDatapoint);
 
                     }
-                    if (newEntityDatapoint is not null && (newEntityDatapoint.Probmethod_embedding != datapoint.probMethod.name || newEntityDatapoint.SimilarityMethod != datapoint.similarityMethod.name))
+                    if (newEntityDatapoint is not null && (newEntityDatapoint.Probmethod_embedding != datapoint.probMethod.probMethodEnum || newEntityDatapoint.SimilarityMethod != datapoint.similarityMethod.similarityMethodEnum))
                     {
                         // Datapoint - Updated (probmethod or similaritymethod)
                         Dictionary<string, dynamic> parameters = new()
                         {
-                            { "probmethod", newEntityDatapoint.Probmethod_embedding },
-                            { "similaritymethod", newEntityDatapoint.SimilarityMethod },
+                            { "probmethod", newEntityDatapoint.Probmethod_embedding.ToString() },
+                            { "similaritymethod", newEntityDatapoint.SimilarityMethod.ToString() },
                             { "datapointName", datapoint.name },
                             { "entityId", preexistingEntityID}
                         };
@@ -227,7 +227,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             }
 
             var probMethod = Probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new ProbMethodNotFoundException(jsonEntity.Probmethod);
-            Entity entity = new(jsonEntity.Attributes, probMethod, jsonEntity.Probmethod, datapoints, jsonEntity.Name)
+            Entity entity = new(jsonEntity.Attributes, probMethod, jsonEntity.Probmethod.ToString(), datapoints, jsonEntity.Name)
             {
                 id = id_entity
             };
