@@ -159,7 +159,6 @@ public class Searchdomain
         }
         entityReader.Close();
         modelsInUse = GetModels(entityCache);
-        embeddingCache = []; // TODO remove this and implement proper remediation to improve performance
     }
 
     public List<(float, string)> Search(string query, int? topN = null)
@@ -170,14 +169,29 @@ public class Searchdomain
             return [.. cachedResult.Results.Select(r => (r.Score, r.Name))];
         }
 
-        if (!embeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings))
+        bool hasQuery = embeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings);
+        bool allModelsInQuery = queryEmbeddings is not null && modelsInUse.All(model => queryEmbeddings.ContainsKey(model));
+        if (!(hasQuery && allModelsInQuery))
         {
-            queryEmbeddings = Datapoint.GenerateEmbeddings(query, modelsInUse, aIProvider);
+            queryEmbeddings = Datapoint.GenerateEmbeddings(query, modelsInUse, aIProvider, embeddingCache);
             if (embeddingCache.Count < embeddingCacheMaxSize) // TODO add better way of managing cache limit hits
             { // Idea: Add access count to each entry. On limit hit, sort the entries by access count and remove the bottom 10% of entries
-                embeddingCache.Add(query, queryEmbeddings);
+                if (!embeddingCache.ContainsKey(query))
+                {
+                    embeddingCache.Add(query, queryEmbeddings);
+                }
+                else
+                {
+                    foreach (KeyValuePair<string, float[]> kvp in queryEmbeddings)
+                    {
+                        if (!embeddingCache.ContainsKey(kvp.Key))
+                        {
+                            embeddingCache[query][kvp.Key] = kvp.Value;
+                        }
+                    }
+                }
             }
-        } // TODO implement proper cache remediation for embeddingCache here
+        }
 
         List<(float, string)> result = [];
 
