@@ -1,37 +1,29 @@
 using System.Text.Json;
 using Server.Exceptions;
+using Shared.Models;
 
 namespace Server;
 
 public class ProbMethod
 {
     public Probmethods.probMethodDelegate method;
+    public ProbMethodEnum probMethodEnum;
     public string name;
 
-    public ProbMethod(string name, ILogger logger)
+    public ProbMethod(ProbMethodEnum probMethodEnum, ILogger logger)
     {
-        this.name = name;
+        this.probMethodEnum = probMethodEnum;
+        this.name = probMethodEnum.ToString();
         Probmethods.probMethodDelegate? probMethod = Probmethods.GetMethod(name);
         if (probMethod is null)
         {
             logger.LogError("Unable to retrieve probMethod {name}", [name]);
-            throw new ProbMethodNotFoundException(name);
+            throw new ProbMethodNotFoundException(probMethodEnum);
         }
         method = probMethod;
     }
 }
 
-public enum ProbMethodEnum
-{
-    Mean,
-    HarmonicMean,
-    QuadraticMean,
-    GeometricMean,
-    EVEWAvg,
-    HVEWAvg,
-    LVEWAvg,
-    DictionaryWeightedAverage
-}
 
 public static class Probmethods
 {
@@ -52,6 +44,11 @@ public static class Probmethods
             [ProbMethodEnum.LVEWAvg] = LowValueEmphasisWeightedAverage,
             [ProbMethodEnum.DictionaryWeightedAverage] = DictionaryWeightedAverage
         };
+    }
+
+    public static probMethodDelegate? GetMethod(ProbMethodEnum probMethodEnum)
+    {
+        return GetMethod(probMethodEnum.ToString());
     }
 
     public static probMethodDelegate? GetMethod(string name)

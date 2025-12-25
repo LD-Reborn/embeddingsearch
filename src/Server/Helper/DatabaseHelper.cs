@@ -38,12 +38,12 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
     }
 
-    public static int DatabaseInsertEntity(SQLHelper helper, string name, string probmethod, int id_searchdomain)
+    public static int DatabaseInsertEntity(SQLHelper helper, string name, ProbMethodEnum probmethod, int id_searchdomain)
     {
         Dictionary<string, dynamic> parameters = new()
         {
             { "name", name },
-            { "probmethod", probmethod },
+            { "probmethod", probmethod.ToString() },
             { "id_searchdomain", id_searchdomain }
         };
         return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO entity (name, probmethod, id_searchdomain) VALUES (@name, @probmethod, @id_searchdomain)", parameters);
@@ -60,13 +60,13 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO attribute (attribute, value, id_entity) VALUES (@attribute, @value, @id_entity)", parameters);
     }
 
-    public static int DatabaseInsertDatapoint(SQLHelper helper, string name, string probmethod_embedding, string similarityMethod, string hash, int id_entity)
+    public static int DatabaseInsertDatapoint(SQLHelper helper, string name, ProbMethodEnum probmethod_embedding, SimilarityMethodEnum similarityMethod, string hash, int id_entity)
     {
         Dictionary<string, dynamic> parameters = new()
         {
             { "name", name },
-            { "probmethod_embedding", probmethod_embedding },
-            { "similaritymethod", similarityMethod },
+            { "probmethod_embedding", probmethod_embedding.ToString() },
+            { "similaritymethod", similarityMethod.ToString() },
             { "hash", hash },
             { "id_entity", id_entity }
         };
