@@ -19,6 +19,9 @@ public class EntityQueryResult
     public required string Name { get; set; }
     [JsonPropertyName("Value")]
     public float Value { get; set; }
+    [JsonPropertyName("Attributes")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Attributes { get; set; }
 }
 
 public class EntityIndexResult
