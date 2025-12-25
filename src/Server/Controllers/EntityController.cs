@@ -25,7 +25,7 @@ public class EntityController : ControllerBase
     }
 
     [HttpGet("Query")]
-    public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN)
+    public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN, bool returnAttributes = false)
     {
         Searchdomain searchdomain_;
         try
@@ -44,7 +44,8 @@ public class EntityController : ControllerBase
         List<EntityQueryResult> queryResults = [.. results.Select(r => new EntityQueryResult
         {
             Name = r.Item2,
-            Value = r.Item1
+            Value = r.Item1,
+            Attributes = returnAttributes ? (searchdomain_.entityCache.FirstOrDefault(x => x.name == r.Item2)?.attributes ?? null) : null
         })];
         return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
     }
