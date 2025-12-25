@@ -30,50 +30,6 @@ public class Datapoint
         return GenerateEmbeddings(content, models, aIProvider, []);
     }
 
-    public static Dictionary<string, float[]> GenerateEmbeddings(List<string> contents, string model, OllamaApiClient ollama, Dictionary<string, Dictionary<string, float[]>> embeddingCache)
-    {
-        Dictionary<string, float[]> retVal = [];
-
-        List<string> remainingContents = new List<string>(contents);
-        for (int i = contents.Count - 1; i >= 0; i--) // Compare against cache and remove accordingly
-        {
-            string content = contents[i];
-            if (embeddingCache.ContainsKey(model) && embeddingCache[model].ContainsKey(content))
-            {
-                retVal[content] = embeddingCache[model][content];
-                remainingContents.RemoveAt(i);
-            }
-        }
-        if (remainingContents.Count == 0)
-        {
-            return retVal;
-        } 
-
-        EmbedRequest request = new()
-        {
-            Model = model,
-            Input = remainingContents
-        };
-
-        EmbedResponse response = ollama.EmbedAsync(request).Result;
-        for (int i = 0; i < response.Embeddings.Count; i++)
-        {
-            string content = remainingContents.ElementAt(i);
-            float[] embeddings = response.Embeddings.ElementAt(i);
-            retVal[content] = embeddings;
-            if (!embeddingCache.ContainsKey(model))
-            {
-                embeddingCache[model] = [];
-            }
-            if (!embeddingCache[model].ContainsKey(content))
-            {
-                embeddingCache[model][content] = embeddings;
-            }
-        }
-
-        return retVal;
-    }
-
     public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache)
     {
         Dictionary<string, float[]> retVal = [];
