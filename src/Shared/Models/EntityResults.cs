@@ -3,14 +3,10 @@ using System.Text.Json.Serialization;
 namespace Shared.Models;
 
 
-public class EntityQueryResults
+public class EntityQueryResults : SuccesMessageBaseModel
 {
     [JsonPropertyName("Results")]
     public required List<EntityQueryResult> Results { get; set; }
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
 }
 
 public class EntityQueryResult
@@ -24,18 +20,14 @@ public class EntityQueryResult
     public Dictionary<string, string>? Attributes { get; set; }
 }
 
-public class EntityIndexResult
-{
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-}
+public class EntityIndexResult : SuccesMessageBaseModel {}
 
 public class EntityListResults
 {
     [JsonPropertyName("Results")]
     public required List<EntityListResult> Results { get; set; }
+    [JsonPropertyName("Message")]
+    public string? Message { get; set; }
     [JsonPropertyName("Success")]
     public required bool Success { get; set; }
 }
@@ -80,11 +72,5 @@ public class EmbeddingResult
     public required float[] Embeddings { get; set; }
 }
 
-public class EntityDeleteResults
-{
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-}
+public class EntityDeleteResults : SuccesMessageBaseModel {}
 

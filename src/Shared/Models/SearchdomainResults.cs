@@ -11,109 +11,46 @@ public class SearchdomainListResults
     public string? Message { get; set; }
 }
 
-public class SearchdomainCreateResults
+public class SearchdomainCreateResults : SuccesMessageBaseModel
 {
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-
     [JsonPropertyName("Id")]
     public int? Id { get; set; }
 }
 
-public class SearchdomainUpdateResults
+public class SearchdomainUpdateResults : SuccesMessageBaseModel {}
+
+public class SearchdomainDeleteResults : SuccesMessageBaseModel
 {
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-}
-
-public class SearchdomainDeleteResults
-{
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-
     [JsonPropertyName("DeletedEntities")]
     public required int DeletedEntities { get; set; }
 }
 
-public class SearchdomainSearchesResults
+public class SearchdomainSearchesResults : SuccesMessageBaseModel
 {
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
     [JsonPropertyName("Searches")]
     public required Dictionary<string, DateTimedSearchResult> Searches { get; set; }
 }
 
-public class SearchdomainDeleteSearchResult
+public class SearchdomainDeleteSearchResult : SuccesMessageBaseModel {}
+
+public class SearchdomainUpdateSearchResult : SuccesMessageBaseModel {}
+
+public class SearchdomainSettingsResults : SuccesMessageBaseModel
 {
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }    
-}
-
-public class SearchdomainUpdateSearchResult
-{
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }    
-}
-
-public class SearchdomainSettingsResults
-{
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-
     [JsonPropertyName("Settings")]
     public required SearchdomainSettings? Settings { get; set; }
 }
 
-public class SearchdomainSearchCacheSizeResults
+public class SearchdomainSearchCacheSizeResults : SuccesMessageBaseModel
 {
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-
     [JsonPropertyName("SearchCacheSizeBytes")]
     public required long? SearchCacheSizeBytes { get; set; }
 }
 
-public class SearchdomainInvalidateCacheResults
+public class SearchdomainInvalidateCacheResults : SuccesMessageBaseModel {}
+
+public class SearchdomainGetDatabaseSizeResult : SuccesMessageBaseModel
 {
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-}
-
-public class SearchdomainGetDatabaseSizeResult
-{
-    [JsonPropertyName("Success")]
-    public required bool Success { get; set; }
-
-    [JsonPropertyName("Message")]
-    public string? Message { get; set; }
-
     [JsonPropertyName("SearchdomainDatabaseSizeBytes")]
     public required long? SearchdomainDatabaseSizeBytes { get; set; }    
 }
