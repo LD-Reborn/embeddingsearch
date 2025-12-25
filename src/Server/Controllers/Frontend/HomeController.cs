@@ -7,7 +7,7 @@ using Server.Exceptions;
 using Server.Models;
 namespace Server.Controllers;
 
-[ApiController]
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("/")]
 public class HomeController : Controller
 {

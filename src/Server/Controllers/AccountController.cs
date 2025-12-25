@@ -6,6 +6,7 @@ using Server.Models;
 
 namespace Server.Controllers;
 
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("[Controller]")]
 public class AccountController : Controller
 {
