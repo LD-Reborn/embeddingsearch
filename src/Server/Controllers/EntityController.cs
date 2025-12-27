@@ -24,32 +24,6 @@ public class EntityController : ControllerBase
         _databaseHelper = databaseHelper;
     }
 
-    [HttpGet("Query")]
-    public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN, bool returnAttributes = false)
-    {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Searchdomain not found" });
-        } catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
-        }
-        List<(float, string)> results = searchdomain_.Search(query, topN);
-        List<EntityQueryResult> queryResults = [.. results.Select(r => new EntityQueryResult
-        {
-            Name = r.Item2,
-            Value = r.Item1,
-            Attributes = returnAttributes ? (searchdomain_.entityCache.FirstOrDefault(x => x.name == r.Item2)?.attributes ?? null) : null
-        })];
-        return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
-    }
-
     [HttpPost("Index")]
     public ActionResult<EntityIndexResult> Index([FromBody] List<JSONEntity>? jsonEntities)
     {
@@ -95,21 +69,10 @@ public class EntityController : ControllerBase
         if (returnEmbeddings && !returnModels)
         {
             _logger.LogError("Invalid request for {searchdomain} - embeddings return requested but without models - not possible!", [searchdomain]);
-            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Invalid request" });            
+            return BadRequest(new EntityListResults() {Results = [], Success = false, Message = "Invalid request" });            
         }
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Searchdomain not found" });
-        } catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         EntityListResults entityListResults = new() {Results = [], Success = true};
         foreach (Entity entity in searchdomain_.entityCache)
         {
@@ -150,19 +113,8 @@ public class EntityController : ControllerBase
     [HttpGet("Delete")]
     public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName)
     {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        } catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Searchdomain not found" });
-        } catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new EntityQueryResults() {Results = [], Success = false, Message = "Unable to retrieve the searchdomain - it likely exists, but some other error happened." });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         
         Entity? entity_ = SearchdomainHelper.CacheGetEntity(searchdomain_.entityCache, entityName);
         if (entity_ is null)

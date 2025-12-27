@@ -269,4 +269,21 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         var similarityMethod = new SimilarityMethod(jsonDatapoint.SimilarityMethod, logger) ?? throw new SimilarityMethodNotFoundException(jsonDatapoint.SimilarityMethod);
         return new Datapoint(jsonDatapoint.Name, probMethod_embedding, similarityMethod, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
     }
+
+    public static (Searchdomain?, int?, string?) TryGetSearchdomain(SearchdomainManager searchdomainManager, string searchdomain, ILogger logger)
+    {
+        try
+        {
+            Searchdomain searchdomain_ = searchdomainManager.GetSearchdomain(searchdomain);
+            return (searchdomain_, null, null);
+        } catch (SearchdomainNotFoundException)
+        {
+            logger.LogError("Unable to update searchdomain {searchdomain} - not found", [searchdomain]);
+            return (null, 500, $"Unable to update searchdomain {searchdomain} - not found");
+        } catch (Exception ex)
+        {
+            logger.LogError("Unable to update searchdomain {searchdomain} - Exception: {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
+            return (null, 404, $"Unable to update searchdomain {searchdomain}");
+        }
+    }
 }

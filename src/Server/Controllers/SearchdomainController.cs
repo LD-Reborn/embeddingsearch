@@ -87,71 +87,53 @@ public class SearchdomainController : ControllerBase
     [HttpGet("Update")]
     public ActionResult<SearchdomainUpdateResults> Update(string searchdomain, string newName, string settings = "{}")
     {
-        try
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
+        Dictionary<string, dynamic> parameters = new()
         {
-            Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-            Dictionary<string, dynamic> parameters = new()
-            {
-                {"name", newName},
-                {"settings", settings},
-                {"id", searchdomain_.id}
-            };
-            searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);
-        } catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to update searchdomain {searchdomain} - not found", [searchdomain]);
-            return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update searchdomain {searchdomain} - not found" });
-        } catch (Exception ex)
-        {
-            _logger.LogError("Unable to update searchdomain {searchdomain} - Exception: {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update searchdomain {searchdomain}" });
-        }
+            {"name", newName},
+            {"settings", settings},
+            {"id", searchdomain_.id}
+        };
+        searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);
         return Ok(new SearchdomainUpdateResults(){Success = true});
+    }
+
+    [HttpGet("Query")]
+    public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN, bool returnAttributes = false)
+    {
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
+        List<(float, string)> results = searchdomain_.Search(query, topN);
+        List<EntityQueryResult> queryResults = [.. results.Select(r => new EntityQueryResult
+        {
+            Name = r.Item2,
+            Value = r.Item1,
+            Attributes = returnAttributes ? (searchdomain_.entityCache.FirstOrDefault(x => x.name == r.Item2)?.attributes ?? null) : null
+        })];
+        return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
     }
 
     [HttpPost("UpdateSettings")]
     public ActionResult<SearchdomainUpdateResults> UpdateSettings(string searchdomain, [FromBody] SearchdomainSettings request)
     {
-        try
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
+        Dictionary<string, dynamic> parameters = new()
         {
-            Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-            Dictionary<string, dynamic> parameters = new()
-            {
-                {"settings", JsonSerializer.Serialize(request)},
-                {"id", searchdomain_.id}
-            };
-            searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
-            searchdomain_.settings = request;
-        } catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to update settings for searchdomain {searchdomain} - not found", [searchdomain]);
-            return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update settings for searchdomain {searchdomain} - not found" });
-        } catch (Exception ex)
-        {
-            _logger.LogError("Unable to update settings for searchdomain {searchdomain} - Exception: {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainUpdateResults() { Success = false, Message = $"Unable to update settings for searchdomain {searchdomain}" });
-        }
+            {"settings", JsonSerializer.Serialize(request)},
+            {"id", searchdomain_.id}
+        };
+        searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
+        searchdomain_.settings = request;
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
 
     [HttpGet("GetSearches")]
     public ActionResult<SearchdomainSearchesResults> GetSearches(string searchdomain)
     {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        }
-        catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new SearchdomainSearchesResults() { Searches = [], Success = false, Message = "Searchdomain not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainSearchesResults() { Searches = [], Success = false, Message = ex.Message });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
         
         return Ok(new SearchdomainSearchesResults() { Searches = searchCache, Success = true });
@@ -160,21 +142,8 @@ public class SearchdomainController : ControllerBase
     [HttpDelete("Searches")]
     public ActionResult<SearchdomainDeleteSearchResult> DeleteSearch(string searchdomain, string query)
     {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        }
-        catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new SearchdomainDeleteSearchResult() { Success = false, Message = "Searchdomain not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainDeleteSearchResult() { Success = false, Message = ex.Message });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
         bool containsKey = searchCache.ContainsKey(query);
         if (containsKey)
@@ -188,21 +157,8 @@ public class SearchdomainController : ControllerBase
     [HttpPatch("Searches")]
     public ActionResult<SearchdomainUpdateSearchResult> UpdateSearch(string searchdomain, string query, [FromBody]List<ResultItem> results)
     {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        }
-        catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new SearchdomainUpdateSearchResult() { Success = false, Message = "Searchdomain not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainUpdateSearchResult() { Success = false, Message = ex.Message });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
         bool containsKey = searchCache.ContainsKey(query);
         if (containsKey)
@@ -218,21 +174,8 @@ public class SearchdomainController : ControllerBase
     [HttpGet("GetSettings")]
     public ActionResult<SearchdomainSettingsResults> GetSettings(string searchdomain)
     {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        }
-        catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new SearchdomainSettingsResults() { Settings = null, Success = false, Message = "Searchdomain not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainSettingsResults() { Settings = null, Success = false, Message = ex.Message });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         SearchdomainSettings settings = searchdomain_.settings;
         return Ok(new SearchdomainSettingsResults() { Settings = settings, Success = true });
     }
@@ -240,21 +183,8 @@ public class SearchdomainController : ControllerBase
     [HttpGet("GetSearchCacheSize")]
     public ActionResult<SearchdomainSearchCacheSizeResults> GetSearchCacheSize(string searchdomain)
     {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        }
-        catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new SearchdomainSearchCacheSizeResults() { SearchCacheSizeBytes = null, Success = false, Message = "Searchdomain not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainSearchCacheSizeResults() { SearchCacheSizeBytes = null, Success = false, Message = ex.Message });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
         long sizeInBytes = 0;
         foreach (var entry in searchCache)
@@ -269,40 +199,17 @@ public class SearchdomainController : ControllerBase
     [HttpGet("ClearSearchCache")]
     public ActionResult<SearchdomainInvalidateCacheResults> InvalidateSearchCache(string searchdomain)
     {
-        try
-        {
-            Searchdomain searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-            searchdomain_.InvalidateSearchCache();
-        } catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to invalidate search cache for searchdomain {searchdomain} - not found", [searchdomain]);
-            return Ok(new SearchdomainInvalidateCacheResults() { Success = false, Message = $"Unable to invalidate search cache for searchdomain {searchdomain} - not found" });
-        } catch (Exception ex)
-        {
-            _logger.LogError("Unable to invalidate search cache for searchdomain {searchdomain} - Exception: {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainInvalidateCacheResults() { Success = false, Message = $"Unable to invalidate search cache for searchdomain {searchdomain}" });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
+        searchdomain_.InvalidateSearchCache();
         return Ok(new SearchdomainInvalidateCacheResults(){Success = true});
     }
 
     [HttpGet("GetDatabaseSize")]
     public ActionResult<SearchdomainGetDatabaseSizeResult> GetDatabaseSize(string searchdomain)
     {
-        Searchdomain searchdomain_;
-        try
-        {
-            searchdomain_ = _domainManager.GetSearchdomain(searchdomain);
-        }
-        catch (SearchdomainNotFoundException)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - it likely does not exist yet", [searchdomain]);
-            return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = null, Success = false, Message = "Searchdomain not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError("Unable to retrieve the searchdomain {searchdomain} - {ex.Message} - {ex.StackTrace}", [searchdomain, ex.Message, ex.StackTrace]);
-            return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = null, Success = false, Message = ex.Message });
-        }
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         long sizeInBytes = DatabaseHelper.GetSearchdomainDatabaseSize(searchdomain_.helper, searchdomain);
         return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = sizeInBytes, Success = true });        
     } 
