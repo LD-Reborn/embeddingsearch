@@ -149,8 +149,9 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             }
 
             // Datapoint
-            foreach (Datapoint datapoint in preexistingEntity.datapoints.ToList())
+            foreach (Datapoint datapoint_ in preexistingEntity.datapoints.ToList())
             {
+                Datapoint datapoint = datapoint_; // To enable replacing the datapoint reference as foreach iterators cannot be overwritten
                 bool newEntityHasDatapoint = jsonEntity.Datapoints.Any(x => x.Name == datapoint.name);
                 if (!newEntityHasDatapoint)
                 {
@@ -180,6 +181,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                         preexistingEntity.datapoints.Remove(datapoint);
                         Datapoint newDatapoint = DatabaseInsertDatapointWithEmbeddings(helper, searchdomain, newEntityDatapoint, (int)preexistingEntityID);
                         preexistingEntity.datapoints.Add(newDatapoint);
+                        datapoint = newDatapoint;
                         invalidateSearchCache = true;
                     }
                     if (newEntityDatapoint is not null && (newEntityDatapoint.Probmethod_embedding != datapoint.probMethod.probMethodEnum || newEntityDatapoint.SimilarityMethod != datapoint.similarityMethod.similarityMethodEnum))
@@ -194,8 +196,8 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                         };
                         helper.ExecuteSQLNonQuery("UPDATE datapoint SET probmethod_embedding=@probmethod, similaritymethod=@similaritymethod WHERE id_entity=@entityId AND name=@datapointName", parameters);
                         Datapoint preexistingDatapoint = preexistingEntity.datapoints.First(x => x == datapoint); // The for loop is a copy. This retrieves the original such that it can be updated.
-                        preexistingDatapoint.probMethod = datapoint.probMethod;
-                        preexistingDatapoint.similarityMethod = datapoint.similarityMethod;
+                        preexistingDatapoint.probMethod = new(newEntityDatapoint.Probmethod_embedding, _logger);
+                        preexistingDatapoint.similarityMethod = new(newEntityDatapoint.SimilarityMethod, _logger);
                         invalidateSearchCache = true;
                     }
                 }
