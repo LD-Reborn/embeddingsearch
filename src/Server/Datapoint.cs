@@ -1,3 +1,4 @@
+using AdaptiveExpressions;
 using OllamaSharp;
 using OllamaSharp.Models;
 
@@ -27,30 +28,31 @@ public class Datapoint
 
     public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, AIProvider aIProvider)
     {
-        return GenerateEmbeddings(content, models, aIProvider, []);
+        return GenerateEmbeddings(content, models, aIProvider, new());
     }
 
-    public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache)
+    public static Dictionary<string, float[]> GenerateEmbeddings(string content, List<string> models, AIProvider aIProvider, LRUCache<string, Dictionary<string, float[]>> embeddingCache)
     {
         Dictionary<string, float[]> retVal = [];
         foreach (string model in models)
         {
-            if (embeddingCache.ContainsKey(model) && embeddingCache[model].ContainsKey(content))
+            bool embeddingCacheHasModel = embeddingCache.TryGet(model, out var embeddingCacheForModel);
+            if (embeddingCacheHasModel && embeddingCacheForModel.ContainsKey(content))
             {
-                retVal[model] = embeddingCache[model][content];
+                retVal[model] = embeddingCacheForModel[content];
                 continue;
             }
             var response = aIProvider.GenerateEmbeddings(model, [content]);
             if (response is not null)
             {
                 retVal[model] = response;
-                if (!embeddingCache.ContainsKey(model))
+                if (!embeddingCacheHasModel)
                 {
-                    embeddingCache[model] = [];
+                    embeddingCacheForModel = [];
                 }
-                if (!embeddingCache[model].ContainsKey(content))
+                if (!embeddingCacheForModel.ContainsKey(content))
                 {
-                    embeddingCache[model][content] = response;
+                    embeddingCacheForModel[content] = response;
                 }
             }
         }

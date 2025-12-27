@@ -5,6 +5,7 @@ using ElmahCore.Mvc.Logger;
 using MySql.Data.MySqlClient;
 using Server.Helper;
 using Shared.Models;
+using AdaptiveExpressions;
 
 namespace Server;
 
@@ -19,13 +20,12 @@ public class Searchdomain
     public Dictionary<string, DateTimedSearchResult> searchCache; // Key: query, Value: Search results for that query (with timestamp)
     public List<Entity> entityCache;
     public List<string> modelsInUse;
-    public Dictionary<string, Dictionary<string, float[]>> embeddingCache;
-    public int embeddingCacheMaxSize = 10000000;
+    public LRUCache<string, Dictionary<string, float[]>> embeddingCache;
     private readonly MySqlConnection connection;
     public SQLHelper helper;
     private readonly ILogger _logger;
 
-    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, Dictionary<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
+    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, LRUCache<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
@@ -169,25 +169,22 @@ public class Searchdomain
             return [.. cachedResult.Results.Select(r => (r.Score, r.Name))];
         }
 
-        bool hasQuery = embeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings);
+        bool hasQuery = embeddingCache.TryGet(query, out Dictionary<string, float[]>? queryEmbeddings);
         bool allModelsInQuery = queryEmbeddings is not null && modelsInUse.All(model => queryEmbeddings.ContainsKey(model));
         if (!(hasQuery && allModelsInQuery))
         {
             queryEmbeddings = Datapoint.GenerateEmbeddings(query, modelsInUse, aIProvider, embeddingCache);
-            if (embeddingCache.Count < embeddingCacheMaxSize) // TODO add better way of managing cache limit hits
-            { // Idea: Add access count to each entry. On limit hit, sort the entries by access count and remove the bottom 10% of entries
-                if (!embeddingCache.ContainsKey(query))
+            if (!embeddingCache.TryGet(query, out var embeddingCacheForCurrentQuery))
+            {
+                embeddingCache.Set(query, queryEmbeddings);
+            }
+            else // embeddingCache already has an entry for this query, so the missing model-embedding pairs have to be filled in
+            {
+                foreach (KeyValuePair<string, float[]> kvp in queryEmbeddings) // kvp.Key = model, kvp.Value = embedding
                 {
-                    embeddingCache.Add(query, queryEmbeddings);
-                }
-                else
-                {
-                    foreach (KeyValuePair<string, float[]> kvp in queryEmbeddings)
+                    if (!embeddingCache.TryGet(kvp.Key, out var _))
                     {
-                        if (!embeddingCache.ContainsKey(kvp.Key))
-                        {
-                            embeddingCache[query][kvp.Key] = kvp.Value;
-                        }
+                        embeddingCacheForCurrentQuery[kvp.Key] = kvp.Value;
                     }
                 }
             }
