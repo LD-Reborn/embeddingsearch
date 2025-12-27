@@ -89,7 +89,7 @@ public class Client
 
         public async Task<EntityQueryResults> EntityQueryAsync(string searchdomain, string query)
         {
-            return await GetUrlAndProcessJson<EntityQueryResults>(GetUrl($"{baseUri}/Entity", "Query", apiKey, new Dictionary<string, string>()
+            return await GetUrlAndProcessJson<EntityQueryResults>(GetUrl($"{baseUri}/Searchdomain", "Query", apiKey, new Dictionary<string, string>()
             {
                 {"searchdomain", searchdomain},
                 {"query", query}
