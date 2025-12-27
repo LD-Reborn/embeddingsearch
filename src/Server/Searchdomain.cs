@@ -169,9 +169,33 @@ public class Searchdomain
             return [.. cachedResult.Results.Select(r => (r.Score, r.Name))];
         }
 
-        bool hasQuery = embeddingCache.TryGet(query, out Dictionary<string, float[]>? queryEmbeddings);
+        Dictionary<string, float[]> queryEmbeddings = GetQueryEmbeddings(query);
+
+        List<(float, string)> result = [];
+
+        foreach (Entity entity in entityCache)
+        {
+            result.Add((EvaluateEntityAgainstQueryEmbeddings(entity, queryEmbeddings), entity.name));
+        }
+        IEnumerable<(float, string)> sortedResults = result.OrderByDescending(s => s.Item1);
+        if (topN is not null)
+        {
+            sortedResults = sortedResults.Take(topN ?? 0);
+        }
+        List<(float, string)> results = [.. sortedResults];
+        List<ResultItem> searchResult = new(
+            [.. sortedResults.Select(r =>
+                new ResultItem(r.Item1, r.Item2 ))]
+        );
+        searchCache[query] = new DateTimedSearchResult(DateTime.Now, searchResult);
+        return results;
+    }
+
+    public Dictionary<string, float[]> GetQueryEmbeddings(string query)
+    {
+        bool hasQuery = embeddingCache.TryGet(query, out Dictionary<string, float[]> queryEmbeddings);
         bool allModelsInQuery = queryEmbeddings is not null && modelsInUse.All(model => queryEmbeddings.ContainsKey(model));
-        if (!(hasQuery && allModelsInQuery))
+        if (!(hasQuery && allModelsInQuery) || queryEmbeddings is null)
         {
             queryEmbeddings = Datapoint.GenerateEmbeddings(query, modelsInUse, aIProvider, embeddingCache);
             if (!embeddingCache.TryGet(query, out var embeddingCacheForCurrentQuery))
@@ -189,38 +213,25 @@ public class Searchdomain
                 }
             }
         }
+        return queryEmbeddings;
+    }
 
-        List<(float, string)> result = [];
-
-        foreach (Entity entity in entityCache)
+    private static float EvaluateEntityAgainstQueryEmbeddings(Entity entity, Dictionary<string, float[]> queryEmbeddings)
+    {
+        List<(string, float)> datapointProbs = [];
+        foreach (Datapoint datapoint in entity.datapoints)
         {
-            List<(string, float)> datapointProbs = [];
-            foreach (Datapoint datapoint in entity.datapoints)
+            SimilarityMethod similarityMethod = datapoint.similarityMethod;
+            List<(string, float)> list = [];
+            foreach ((string, float[]) embedding in datapoint.embeddings)
             {
-                SimilarityMethod similarityMethod = datapoint.similarityMethod;
-                List<(string, float)> list = [];
-                foreach ((string, float[]) embedding in datapoint.embeddings)
-                {
-                    string key = embedding.Item1;
-                    float value = similarityMethod.method(queryEmbeddings[embedding.Item1], embedding.Item2);
-                    list.Add((key, value));
-                }
-                datapointProbs.Add((datapoint.name, datapoint.probMethod.method(list)));
+                string key = embedding.Item1;
+                float value = similarityMethod.method(queryEmbeddings[embedding.Item1], embedding.Item2);
+                list.Add((key, value));
             }
-            result.Add((entity.probMethod(datapointProbs), entity.name));
+            datapointProbs.Add((datapoint.name, datapoint.probMethod.method(list)));
         }
-        IEnumerable<(float, string)> sortedResults = result.OrderByDescending(s => s.Item1);
-        if (topN is not null)
-        {
-            sortedResults = sortedResults.Take(topN ?? 0);
-        }
-        List<(float, string)> results = [.. sortedResults];
-        List<ResultItem> searchResult = new(
-            [.. sortedResults.Select(r =>
-                new ResultItem(r.Item1, r.Item2 ))]
-        );
-        searchCache[query] = new DateTimedSearchResult(DateTime.Now, searchResult);
-        return results;
+        return entity.probMethod(datapointProbs);
     }
 
     public static List<string> GetModels(List<Entity> entities)
@@ -267,6 +278,53 @@ public class Searchdomain
         string settingsString = reader.GetString(0);
         reader.Close();
         return JsonSerializer.Deserialize<SearchdomainSettings>(settingsString);
+    }
+
+    public void ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(Entity entity)
+    {
+        if (settings.CacheReconciliation)
+        {
+            foreach (KeyValuePair<string, DateTimedSearchResult> element in searchCache)
+            {
+                string query = element.Key;
+                DateTimedSearchResult searchResult = element.Value;
+
+                Dictionary<string, float[]> queryEmbeddings = GetQueryEmbeddings(query);
+                float evaluationResult = EvaluateEntityAgainstQueryEmbeddings(entity, queryEmbeddings);
+
+                searchResult.Results.RemoveAll(x => x.Name == entity.name); // If entity already exists in that results list: remove it.
+
+                ResultItem newItem = new(evaluationResult, entity.name);
+                int index = searchResult.Results.BinarySearch(
+                    newItem,
+                    Comparer<ResultItem>.Create((a, b) => b.Score.CompareTo(a.Score)) // Invert searching order
+                );
+                if (index < 0) // If not found, BinarySearch gives the bitwise complement
+                    index = ~index;
+                searchResult.Results.Insert(index, newItem);
+            }
+        }
+        else
+        {
+            InvalidateSearchCache();
+        }
+    }
+
+    public void ReconciliateOrInvalidateCacheForDeletedEntity(Entity entity)
+    {
+        if (settings.CacheReconciliation)
+        {
+            foreach (KeyValuePair<string, DateTimedSearchResult> element in searchCache)
+            {
+                string query = element.Key;
+                DateTimedSearchResult searchResult = element.Value;
+                searchResult.Results.RemoveAll(x => x.Name == entity.name);
+            }
+        }
+        else
+        {
+            InvalidateSearchCache();
+        }
     }
 
     public void InvalidateSearchCache()

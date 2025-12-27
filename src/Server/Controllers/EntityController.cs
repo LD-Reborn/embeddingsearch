@@ -44,7 +44,6 @@ public class EntityController : ControllerBase
                         && !invalidatedSearchdomains.Contains(jsonEntitySearchdomainName))
                     {
                         invalidatedSearchdomains.Add(jsonEntitySearchdomainName);
-                        _domainManager.InvalidateSearchdomainCache(jsonEntitySearchdomainName);
                     }
                 }
                 return Ok(new EntityIndexResult() { Success = true });
@@ -122,6 +121,7 @@ public class EntityController : ControllerBase
             _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
             return Ok(new EntityDeleteResults() {Success = false, Message = "Entity not found"});
         }
+        searchdomain_.ReconciliateOrInvalidateCacheForDeletedEntity(entity_);
         _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
         searchdomain_.entityCache.RemoveAll(entity => entity.name == entityName);
         return Ok(new EntityDeleteResults() {Success = true});
