@@ -99,6 +99,21 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
 
+    [HttpGet("Query")]
+    public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN, bool returnAttributes = false)
+    {
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
+        List<(float, string)> results = searchdomain_.Search(query, topN);
+        List<EntityQueryResult> queryResults = [.. results.Select(r => new EntityQueryResult
+        {
+            Name = r.Item2,
+            Value = r.Item1,
+            Attributes = returnAttributes ? (searchdomain_.entityCache.FirstOrDefault(x => x.name == r.Item2)?.attributes ?? null) : null
+        })];
+        return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
+    }
+
     [HttpPost("UpdateSettings")]
     public ActionResult<SearchdomainUpdateResults> UpdateSettings(string searchdomain, [FromBody] SearchdomainSettings request)
     {
