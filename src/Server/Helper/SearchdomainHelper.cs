@@ -94,7 +94,8 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         AIProvider aIProvider = searchdomain.aIProvider;
         LRUCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
         Entity? preexistingEntity = entityCache.FirstOrDefault(entity => entity.name == jsonEntity.Name);
-        
+        bool invalidateSearchCache = false;
+
         if (preexistingEntity is not null)
         {
             int? preexistingEntityID = _databaseHelper.GetEntityID(helper, jsonEntity.Name, jsonEntity.Searchdomain);
@@ -162,6 +163,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     helper.ExecuteSQLNonQuery("DELETE e FROM embedding e JOIN datapoint d ON e.id_datapoint=d.id WHERE d.name=@datapointName AND d.id_entity=@entityId", parameters);
                     helper.ExecuteSQLNonQuery("DELETE FROM datapoint WHERE id_entity=@entityId AND name=@datapointName", parameters);
                     preexistingEntity.datapoints.Remove(datapoint);
+                    invalidateSearchCache = true;
                 } else
                 {
                     JSONDatapoint? newEntityDatapoint = jsonEntity.Datapoints.FirstOrDefault(x => x.Name == datapoint.name);
@@ -178,7 +180,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                         preexistingEntity.datapoints.Remove(datapoint);
                         Datapoint newDatapoint = DatabaseInsertDatapointWithEmbeddings(helper, searchdomain, newEntityDatapoint, (int)preexistingEntityID);
                         preexistingEntity.datapoints.Add(newDatapoint);
-
+                        invalidateSearchCache = true;
                     }
                     if (newEntityDatapoint is not null && (newEntityDatapoint.Probmethod_embedding != datapoint.probMethod.probMethodEnum || newEntityDatapoint.SimilarityMethod != datapoint.similarityMethod.similarityMethodEnum))
                     {
@@ -194,6 +196,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                         Datapoint preexistingDatapoint = preexistingEntity.datapoints.First(x => x == datapoint); // The for loop is a copy. This retrieves the original such that it can be updated.
                         preexistingDatapoint.probMethod = datapoint.probMethod;
                         preexistingDatapoint.similarityMethod = datapoint.similarityMethod;
+                        invalidateSearchCache = true;
                     }
                 }
             }
@@ -205,10 +208,14 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     // Datapoint - New
                     Datapoint datapoint = DatabaseInsertDatapointWithEmbeddings(helper, searchdomain, jsonDatapoint, (int)preexistingEntityID);
                     preexistingEntity.datapoints.Add(datapoint);
+                    invalidateSearchCache = true;
                 }
             }
 
-
+            if (invalidateSearchCache)
+            {
+                searchdomain.ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(preexistingEntity);
+            }
             return preexistingEntity;
         }
         else
@@ -233,6 +240,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                 id = id_entity
             };
             entityCache.Add(entity);
+            searchdomain.ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(entity);
             return entity;
         }
     }
