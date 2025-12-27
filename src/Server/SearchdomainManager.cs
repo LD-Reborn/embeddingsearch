@@ -3,6 +3,7 @@ using System.Data.Common;
 using Server.Migrations;
 using Server.Helper;
 using Server.Exceptions;
+using AdaptiveExpressions;
 
 namespace Server;
 
@@ -16,7 +17,8 @@ public class SearchdomainManager
     private readonly string connectionString;
     private MySqlConnection connection;
     public SQLHelper helper;
-    public Dictionary<string, Dictionary<string, float[]>> embeddingCache;
+    public LRUCache<string, Dictionary<string, float[]>> embeddingCache;
+    public int EmbeddingCacheMaxCount;
 
     public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config, AIProvider aIProvider, DatabaseHelper databaseHelper)
     {
@@ -24,7 +26,8 @@ public class SearchdomainManager
         _config = config;
         this.aIProvider = aIProvider;
         _databaseHelper = databaseHelper;
-        embeddingCache = [];
+        EmbeddingCacheMaxCount = config.GetValue<int?>("Embeddingsearch:EmbeddingCacheMaxCount") ?? 1000000;
+        embeddingCache = new(EmbeddingCacheMaxCount);
         connectionString = _config.GetSection("Embeddingsearch").GetConnectionString("SQL") ?? "";
         connection = new MySqlConnection(connectionString);
         connection.Open();

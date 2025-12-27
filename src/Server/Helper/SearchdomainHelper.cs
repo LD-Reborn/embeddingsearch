@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using AdaptiveExpressions;
 using Server.Exceptions;
 using Shared.Models;
 
@@ -46,7 +47,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
 
     public List<Entity>? EntitiesFromJSON(SearchdomainManager searchdomainManager, ILogger logger, string json)
     {
-        Dictionary<string, Dictionary<string, float[]>> embeddingCache = searchdomainManager.embeddingCache;
+        LRUCache<string, Dictionary<string, float[]>> embeddingCache = searchdomainManager.embeddingCache;
         AIProvider aIProvider = searchdomainManager.aIProvider;
         SQLHelper helper = searchdomainManager.helper;
 
@@ -91,7 +92,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         Searchdomain searchdomain = searchdomainManager.GetSearchdomain(jsonEntity.Searchdomain);
         List<Entity> entityCache = searchdomain.entityCache;
         AIProvider aIProvider = searchdomain.aIProvider;
-        Dictionary<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
+        LRUCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
         Entity? preexistingEntity = entityCache.FirstOrDefault(entity => entity.name == jsonEntity.Name);
         
         if (preexistingEntity is not null)
@@ -261,7 +262,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             throw new Exception("jsonDatapoint.Text must not be null at this point");
         }
         using SQLHelper helper = searchdomain.helper.DuplicateConnection();
-        Dictionary<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
+        LRUCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
         hash ??= Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(jsonDatapoint.Text)));
         DatabaseHelper.DatabaseInsertDatapoint(helper, jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, jsonDatapoint.SimilarityMethod, hash, entityId);
         Dictionary<string, float[]> embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], searchdomain.aIProvider, embeddingCache);
