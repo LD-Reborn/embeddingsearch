@@ -23,7 +23,7 @@ public class SearchdomainController : ControllerBase
         _domainManager = domainManager;
     }
 
-    [HttpGet("List")]
+    [HttpGet("/Searchdomains")]
     public ActionResult<SearchdomainListResults> List()
     {
         List<string> results;
@@ -40,8 +40,8 @@ public class SearchdomainController : ControllerBase
         return Ok(searchdomainListResults);
     }
 
-    [HttpGet("Create")]
-    public ActionResult<SearchdomainCreateResults> Create(string searchdomain, string settings = "{}")
+    [HttpPost]
+    public ActionResult<SearchdomainCreateResults> Create(string searchdomain, [FromBody]SearchdomainSettings settings = new())
     {
         try
         {
@@ -54,7 +54,7 @@ public class SearchdomainController : ControllerBase
         }
     }
 
-    [HttpGet("Delete")]
+    [HttpDelete]
     public ActionResult<SearchdomainDeleteResults> Delete(string searchdomain)
     {
         bool success;
@@ -84,22 +84,33 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainDeleteResults(){Success = success, DeletedEntities = deletedEntries, Message = message});
     }
 
-    [HttpGet("Update")]
-    public ActionResult<SearchdomainUpdateResults> Update(string searchdomain, string newName, string settings = "{}")
+    [HttpPut]
+    public ActionResult<SearchdomainUpdateResults> Update(string searchdomain, string newName, [FromBody]string? settings = "{}")
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        Dictionary<string, dynamic> parameters = new()
+        if (settings is null)
         {
-            {"name", newName},
-            {"settings", settings},
-            {"id", searchdomain_.id}
-        };
-        searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);
+            Dictionary<string, dynamic> parameters = new()
+            {
+                {"name", newName},
+                {"id", searchdomain_.id}
+            };
+            searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name WHERE id = @id", parameters);
+        } else
+        {
+            Dictionary<string, dynamic> parameters = new()
+            {
+                {"name", newName},
+                {"settings", settings},
+                {"id", searchdomain_.id}
+            };
+            searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);            
+        }
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
 
-    [HttpGet("Query")]
+    [HttpPost("Query")]
     public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN, bool returnAttributes = false)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
@@ -114,7 +125,7 @@ public class SearchdomainController : ControllerBase
         return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
     }
 
-    [HttpPost("UpdateSettings")]
+    [HttpPut("Settings")]
     public ActionResult<SearchdomainUpdateResults> UpdateSettings(string searchdomain, [FromBody] SearchdomainSettings request)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
@@ -129,8 +140,8 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
 
-    [HttpGet("GetSearches")]
-    public ActionResult<SearchdomainSearchesResults> GetSearches(string searchdomain)
+    [HttpGet("Queries")]
+    public ActionResult<SearchdomainSearchesResults> GetQueries(string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -139,8 +150,8 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainSearchesResults() { Searches = searchCache, Success = true });
     }
 
-    [HttpDelete("Searches")]
-    public ActionResult<SearchdomainDeleteSearchResult> DeleteSearch(string searchdomain, string query)
+    [HttpDelete("Query")]
+    public ActionResult<SearchdomainDeleteSearchResult> DeleteQuery(string searchdomain, string query)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -154,8 +165,8 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainDeleteSearchResult() {Success = false, Message = "Query not found in search cache"});
     }
 
-    [HttpPatch("Searches")]
-    public ActionResult<SearchdomainUpdateSearchResult> UpdateSearch(string searchdomain, string query, [FromBody]List<ResultItem> results)
+    [HttpPatch("Query")]
+    public ActionResult<SearchdomainUpdateSearchResult> UpdateQuery(string searchdomain, string query, [FromBody]List<ResultItem> results)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -171,7 +182,7 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainUpdateSearchResult() {Success = false, Message = "Query not found in search cache"});
     }
 
-    [HttpGet("GetSettings")]
+    [HttpGet("Settings")]
     public ActionResult<SearchdomainSettingsResults> GetSettings(string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
@@ -180,7 +191,7 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainSettingsResults() { Settings = settings, Success = true });
     }
 
-    [HttpGet("GetSearchCacheSize")]
+    [HttpGet("SearchCache/Size")]
     public ActionResult<SearchdomainSearchCacheSizeResults> GetSearchCacheSize(string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
@@ -196,7 +207,7 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainSearchCacheSizeResults() { SearchCacheSizeBytes = sizeInBytes, Success = true });
     }
 
-    [HttpGet("ClearSearchCache")]
+    [HttpPost("SearchCache/Clear")]
     public ActionResult<SearchdomainInvalidateCacheResults> InvalidateSearchCache(string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
@@ -205,7 +216,7 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainInvalidateCacheResults(){Success = true});
     }
 
-    [HttpGet("GetDatabaseSize")]
+    [HttpGet("Database/Size")]
     public ActionResult<SearchdomainGetDatabaseSizeResult> GetDatabaseSize(string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);

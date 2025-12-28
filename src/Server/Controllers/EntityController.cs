@@ -24,7 +24,7 @@ public class EntityController : ControllerBase
         _databaseHelper = databaseHelper;
     }
 
-    [HttpPost("Index")]
+    [HttpPut]
     public ActionResult<EntityIndexResult> Index([FromBody] List<JSONEntity>? jsonEntities)
     {
         try
@@ -62,7 +62,7 @@ public class EntityController : ControllerBase
 
     }
 
-    [HttpGet("List")]
+    [HttpGet("/Entities")]
     public ActionResult<EntityListResults> List(string searchdomain, bool returnModels = false, bool returnEmbeddings = false)
     {
         if (returnEmbeddings && !returnModels)
@@ -109,7 +109,7 @@ public class EntityController : ControllerBase
         return Ok(entityListResults);
     }
 
-    [HttpGet("Delete")]
+    [HttpDelete]
     public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);

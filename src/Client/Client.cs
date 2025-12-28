@@ -36,7 +36,7 @@ public class Client
 
         public async Task<SearchdomainListResults> SearchdomainListAsync()
         {
-            return await GetUrlAndProcessJson<SearchdomainListResults>(GetUrl($"{baseUri}/Searchdomain", "List", apiKey, []));
+            return await GetUrlAndProcessJson<SearchdomainListResults>(GetUrl($"{baseUri}", "Searchdomains", apiKey, []));
         }
 
         public async Task<SearchdomainDeleteResults> SearchdomainDeleteAsync()
@@ -46,7 +46,7 @@ public class Client
 
         public async Task<SearchdomainDeleteResults> SearchdomainDeleteAsync(string searchdomain)
         {
-            return await GetUrlAndProcessJson<SearchdomainDeleteResults>(GetUrl($"{baseUri}/Searchdomain", "Delete", apiKey, new Dictionary<string, string>()
+            return await DeleteUrlAndProcessJson<SearchdomainDeleteResults>(GetUrl($"{baseUri}", "Searchdomain", apiKey, new Dictionary<string, string>()
             {
                 {"searchdomain", searchdomain}
             }));
@@ -57,12 +57,12 @@ public class Client
             return await SearchdomainCreateAsync(searchdomain);
         }
 
-        public async Task<SearchdomainCreateResults> SearchdomainCreateAsync(string searchdomain)
+        public async Task<SearchdomainCreateResults> SearchdomainCreateAsync(string searchdomain, SearchdomainSettings searchdomainSettings = new())
         {
-            return await GetUrlAndProcessJson<SearchdomainCreateResults>(GetUrl($"{baseUri}/Searchdomain", "Create", apiKey, new Dictionary<string, string>()
+            return await PostUrlAndProcessJson<SearchdomainCreateResults>(GetUrl($"{baseUri}", "Searchdomain", apiKey, new Dictionary<string, string>()
             {
                 {"searchdomain", searchdomain}
-            }));
+            }), new StringContent(JsonSerializer.Serialize(searchdomainSettings), Encoding.UTF8, "application/json"));
         }
 
         public async Task<SearchdomainUpdateResults> SearchdomainUpdateAsync(string newName, string settings = "{}")
@@ -72,14 +72,18 @@ public class Client
             return updateResults;
         }
 
+        public async Task<SearchdomainUpdateResults> SearchdomainUpdateAsync(string searchdomain, string newName, SearchdomainSettings settings = new())
+        {
+             return await SearchdomainUpdateAsync(searchdomain, newName, JsonSerializer.Serialize(settings));
+        }
+
         public async Task<SearchdomainUpdateResults> SearchdomainUpdateAsync(string searchdomain, string newName, string settings = "{}")
         {
-            return await GetUrlAndProcessJson<SearchdomainUpdateResults>(GetUrl($"{baseUri}/Searchdomain", "Update", apiKey, new Dictionary<string, string>()
+            return await PutUrlAndProcessJson<SearchdomainUpdateResults>(GetUrl($"{baseUri}", "Searchdomain", apiKey, new Dictionary<string, string>()
             {
                 {"searchdomain", searchdomain},
-                {"newName", newName},
-                {"settings", settings}
-            }));
+                {"newName", newName}
+            }), new StringContent(settings, Encoding.UTF8, "application/json"));
         }
 
         public async Task<EntityQueryResults> EntityQueryAsync(string query)
@@ -89,11 +93,11 @@ public class Client
 
         public async Task<EntityQueryResults> EntityQueryAsync(string searchdomain, string query)
         {
-            return await GetUrlAndProcessJson<EntityQueryResults>(GetUrl($"{baseUri}/Searchdomain", "Query", apiKey, new Dictionary<string, string>()
+            return await PostUrlAndProcessJson<EntityQueryResults>(GetUrl($"{baseUri}/Searchdomain", "Query", apiKey, new Dictionary<string, string>()
             {
                 {"searchdomain", searchdomain},
                 {"query", query}
-            }));
+            }), null);
         }
 
         public async Task<EntityIndexResult> EntityIndexAsync(List<JSONEntity> jsonEntity)
@@ -104,7 +108,7 @@ public class Client
         public async Task<EntityIndexResult> EntityIndexAsync(string jsonEntity)
         {
             var content = new StringContent(jsonEntity, Encoding.UTF8, "application/json");
-            return await PostUrlAndProcessJson<EntityIndexResult>(GetUrl($"{baseUri}/Entity", "Index", apiKey, []), content);//new FormUrlEncodedContent(values));
+            return await PutUrlAndProcessJson<EntityIndexResult>(GetUrl($"{baseUri}", "Entity", apiKey, []), content);
         }
 
         public async Task<EntityListResults> EntityListAsync(bool returnEmbeddings = false)
@@ -114,7 +118,7 @@ public class Client
 
         public async Task<EntityListResults> EntityListAsync(string searchdomain, bool returnEmbeddings = false)
         {
-            var url = $"{baseUri}/Entity/List?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&returnEmbeddings={HttpUtility.UrlEncode(returnEmbeddings.ToString())}";
+            var url = $"{baseUri}/Entities?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&returnEmbeddings={HttpUtility.UrlEncode(returnEmbeddings.ToString())}";
             return await GetUrlAndProcessJson<EntityListResults>(url);
         }
 
@@ -125,8 +129,8 @@ public class Client
 
         public async Task<EntityDeleteResults> EntityDeleteAsync(string searchdomain, string entityName)
         {
-            var url = $"{baseUri}/Entity/Delete?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&entity={HttpUtility.UrlEncode(entityName)}";
-            return await GetUrlAndProcessJson<EntityDeleteResults>(url);
+            var url = $"{baseUri}/Entity?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&entity={HttpUtility.UrlEncode(entityName)}";
+            return await DeleteUrlAndProcessJson<EntityDeleteResults>(url);
         }
 
         private static async Task<T> GetUrlAndProcessJson<T>(string url)
@@ -138,10 +142,31 @@ public class Client
                 ?? throw new Exception($"Failed to deserialize JSON to type {typeof(T).Name}");
             return result;
         }
-        private static async Task<T> PostUrlAndProcessJson<T>(string url, HttpContent content)
+
+        private static async Task<T> PostUrlAndProcessJson<T>(string url, HttpContent? content)
         {
             using var client = new HttpClient();
             var response = await client.PostAsync(url, content);
+            string responseContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<T>(responseContent)
+                ?? throw new Exception($"Failed to deserialize JSON to type {typeof(T).Name}");
+            return result;
+        }
+
+        private static async Task<T> PutUrlAndProcessJson<T>(string url, HttpContent content)
+        {
+            using var client = new HttpClient();
+            var response = await client.PutAsync(url, content);
+            string responseContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<T>(responseContent)
+                ?? throw new Exception($"Failed to deserialize JSON to type {typeof(T).Name}");
+            return result;
+        }
+
+        private static async Task<T> DeleteUrlAndProcessJson<T>(string url)
+        {
+            using var client = new HttpClient();
+            var response = await client.DeleteAsync(url);
             string responseContent = await response.Content.ReadAsStringAsync();
             var result = JsonSerializer.Deserialize<T>(responseContent)
                 ?? throw new Exception($"Failed to deserialize JSON to type {typeof(T).Name}");
