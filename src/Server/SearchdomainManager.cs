@@ -4,6 +4,8 @@ using Server.Migrations;
 using Server.Helper;
 using Server.Exceptions;
 using AdaptiveExpressions;
+using Shared.Models;
+using System.Text.Json;
 
 namespace Server;
 
@@ -87,6 +89,10 @@ public class SearchdomainManager
         }
     }
 
+    public int CreateSearchdomain(string searchdomain, SearchdomainSettings settings)
+    {
+        return CreateSearchdomain(searchdomain, JsonSerializer.Serialize(settings));
+    }
     public int CreateSearchdomain(string searchdomain, string settings = "{}")
     {
         if (searchdomains.TryGetValue(searchdomain, out Searchdomain? value))

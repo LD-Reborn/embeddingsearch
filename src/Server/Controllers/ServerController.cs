@@ -22,7 +22,7 @@ public class ServerController : ControllerBase
         _aIProvider = aIProvider;
     }
 
-    [HttpGet("GetModels")]
+    [HttpGet("Models")]
     public ActionResult<ServerGetModelsResult> GetModels()
     {
         try

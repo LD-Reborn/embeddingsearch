@@ -745,8 +745,8 @@
                   "datapoints": datapoints
                 }];
                 showToast("@T["Creating entity"]", "primary");
-                fetch(`/Entity/Index`, {
-                    method: 'POST',
+                fetch(`/Entity`, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -778,8 +778,12 @@
                 const cacheReconciliation = document.getElementById('createSearchdomainWithCacheReconciliation').checked;
                 const settings = { CacheReconciliation: cacheReconciliation };
                 // Implement create logic here
-                fetch(`/Searchdomain/Create?searchdomain=${encodeURIComponent(name)}&settings=${JSON.stringify(settings)}`, {
-                    method: 'GET'
+                fetch(`/Searchdomain?searchdomain=${encodeURIComponent(name)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
                 }).then(response => {
                     if (response.ok) {
                         showToast("@T["Searchdomain was created successfully"]", "success");
@@ -800,8 +804,8 @@
             .getElementById('cacheClear')
             .addEventListener('click', () => {
                 const domainKey = getSelectedDomainKey();
-                fetch(`/Searchdomain/ClearSearchCache?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
-                    method: 'GET'
+                fetch(`/Searchdomain/SearchCache/Clear?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
+                    method: 'POST'
                 }).then(response => {
                     if (response.ok) {
                         showToast("@T["Searchdomain cache was cleared successfully"]", "success");
@@ -823,8 +827,8 @@
           .addEventListener('click', () => {
                 const domainKey = getSelectedDomainKey();
                 const entityName = document.getElementById('EntityConfirmDelete').getAttribute('data-name');
-                fetch(`/Entity/Delete?searchdomain=${encodeURIComponent(domains[domainKey])}&entityName=${entityName}`, {
-                    method: 'GET'
+                fetch(`/Entity?searchdomain=${encodeURIComponent(domains[domainKey])}&entityName=${entityName}`, {
+                    method: 'DELETE'
                 }).then(async response => {
                     let result = await response.json();
                     if (response.ok && result.Success) {
@@ -870,8 +874,8 @@
                   "datapoints": datapoints
                 }];
                 showToast("@T["Updating entity"]", "primary");
-                fetch(`/Entity/Index`, {
-                    method: 'POST',
+                fetch(`/Entity`, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -897,7 +901,7 @@
             .addEventListener('click', () => {
                 let searchdomain = domains[getSelectedDomainKey()];
                 let query = document.getElementById('deleteQueryConfirmationModalName').textContent;
-                fetch(`/Searchdomain/Searches?searchdomain=${searchdomain}&query=${query}`, {
+                fetch(`/Searchdomain/Query?searchdomain=${searchdomain}&query=${query}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
@@ -924,7 +928,7 @@
                 let query = document.getElementById('queryUpdateQueryName').textContent;
                 let data = getQueryUpdateTableData();
                 console.log()
-                fetch(`/Searchdomain/Searches?searchdomain=${searchdomain}&query=${query}`, {
+                fetch(`/Searchdomain/Query?searchdomain=${searchdomain}&query=${query}`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json'
@@ -949,8 +953,8 @@
 
     function deleteSearchdomain(domainKey) {
         // Implement delete logic here
-        fetch(`/Searchdomain/Delete?searchdomain=${encodeURI(domains[domainKey])}`, {
-            method: 'GET'
+        fetch(`/Searchdomain?searchdomain=${encodeURI(domains[domainKey])}`, {
+            method: 'DELETE'
         }).then(async response => {
             var result = await response.json();;
             if (response.ok && result.Success === true) {
@@ -971,8 +975,8 @@
 
     function renameSearchdomain(domainKey, newName) {
         // Implement rename logic here
-        fetch(`/Searchdomain/Update?searchdomain=${encodeURI(domains[domainKey])}&newName=${newName}`, {
-            method: 'GET'
+        fetch(`/Searchdomain?searchdomain=${encodeURI(domains[domainKey])}&newName=${newName}`, {
+            method: 'PUT'
         }).then(async response => {
             var result = await response.json();
             if (response.ok && result.Success === true) {
@@ -996,8 +1000,8 @@
 
     function updateSearchdomainConfig(domainKey, newSettings) {
         // Implement update logic here
-        fetch(`/Searchdomain/UpdateSettings?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
-            method: 'POST',
+        fetch(`/Searchdomain/Settings?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -1022,17 +1026,17 @@
     }
 
     function getSearchdomainConfig(domainKey) {
-        return fetch(`/Searchdomain/GetSettings?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+        return fetch(`/Searchdomain/Settings?searchdomain=${encodeURIComponent(domains[domainKey])}`)
             .then(r => r.json());
     }
 
     function getSearchdomainCacheUtilization(domainKey) {
-        return fetch(`/Searchdomain/GetSearchCacheSize?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+        return fetch(`/Searchdomain/SearchCache/Size?searchdomain=${encodeURIComponent(domains[domainKey])}`)
             .then(r => r.json());
     }
 
     function getSearchdomainDatabaseUtilization(domainKey) {
-        return fetch(`/Searchdomain/GetDatabaseSize?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+        return fetch(`/Searchdomain/Database/Size?searchdomain=${encodeURIComponent(domains[domainKey])}`)
             .then(r => r.json());
     }
 
@@ -1054,7 +1058,7 @@
         let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
 
         /* ---------- ENTITIES ---------- */
-        let entitiesUrl = `/Entity/List?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false&returnModels=true`;
+        let entitiesUrl = `/Entities?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false&returnModels=true`;
         let entitiesCard = document.querySelector("#entitiesTable").parentElement;
         clearEntitiesTable();
         showThrobber(entitiesCard);
@@ -1073,7 +1077,7 @@
             });
 
         /* ---------- QUERIES ---------- */
-        let queriesUrl = `/Searchdomain/GetSearches?searchdomain=${encodeURIComponent(domainName)}`;
+        let queriesUrl = `/Searchdomain/Queries?searchdomain=${encodeURIComponent(domainName)}`;
         let queriesCard = document.querySelector("#queriesTable").parentElement;
         clearQueriesTable();
         showThrobber(queriesCard);
