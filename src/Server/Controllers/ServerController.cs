@@ -22,6 +22,12 @@ public class ServerController : ControllerBase
         _aIProvider = aIProvider;
     }
 
+    /// <summary>
+    /// Lists the models available to the server
+    /// </summary>
+    /// <remarks>
+    /// Returns ALL models available to the server - not only the embedding models.
+    /// </remarks>
     [HttpGet("Models")]
     public ActionResult<ServerGetModelsResult> GetModels()
     {

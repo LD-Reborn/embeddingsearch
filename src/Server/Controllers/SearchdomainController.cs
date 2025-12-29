@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using ElmahCore;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -23,6 +24,9 @@ public class SearchdomainController : ControllerBase
         _domainManager = domainManager;
     }
 
+    /// <summary>
+    /// Lists all searchdomains
+    /// </summary>
     [HttpGet("/Searchdomains")]
     public ActionResult<SearchdomainListResults> List()
     {
@@ -40,8 +44,13 @@ public class SearchdomainController : ControllerBase
         return Ok(searchdomainListResults);
     }
 
+    /// <summary>
+    /// Creates a new searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="settings">Optional initial settings</param>
     [HttpPost]
-    public ActionResult<SearchdomainCreateResults> Create(string searchdomain, [FromBody]SearchdomainSettings settings = new())
+    public ActionResult<SearchdomainCreateResults> Create([Required]string searchdomain, [FromBody]SearchdomainSettings settings = new())
     {
         try
         {
@@ -54,8 +63,12 @@ public class SearchdomainController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Deletes a searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
     [HttpDelete]
-    public ActionResult<SearchdomainDeleteResults> Delete(string searchdomain)
+    public ActionResult<SearchdomainDeleteResults> Delete([Required]string searchdomain)
     {
         bool success;
         int deletedEntries;
@@ -84,8 +97,14 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainDeleteResults(){Success = success, DeletedEntities = deletedEntries, Message = message});
     }
 
+    /// <summary>
+    /// Updates name and settings of a searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="newName">Updated name of the searchdomain</param>
+    /// <param name="settings">Updated settings of searchdomain</param>
     [HttpPut]
-    public ActionResult<SearchdomainUpdateResults> Update(string searchdomain, string newName, [FromBody]string? settings = "{}")
+    public ActionResult<SearchdomainUpdateResults> Update([Required]string searchdomain, string newName, [FromBody]SearchdomainSettings? settings)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -110,8 +129,29 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
 
+    /// <summary>
+    /// Gets the query cache of a searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    [HttpGet("Queries")]
+    public ActionResult<SearchdomainSearchesResults> GetQueries([Required]string searchdomain)
+    {
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
+        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
+        
+        return Ok(new SearchdomainSearchesResults() { Searches = searchCache, Success = true });
+    }
+
+    /// <summary>
+    /// Executes a query in the searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="query">Query to execute</param>
+    /// <param name="topN">Return only the top N results</param>
+    /// <param name="returnAttributes">Return the attributes of the object</param>
     [HttpPost("Query")]
-    public ActionResult<EntityQueryResults> Query(string searchdomain, string query, int? topN, bool returnAttributes = false)
+    public ActionResult<EntityQueryResults> Query([Required]string searchdomain, [Required]string query, int? topN, bool returnAttributes = false)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -125,33 +165,13 @@ public class SearchdomainController : ControllerBase
         return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
     }
 
-    [HttpPut("Settings")]
-    public ActionResult<SearchdomainUpdateResults> UpdateSettings(string searchdomain, [FromBody] SearchdomainSettings request)
-    {
-        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
-        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        Dictionary<string, dynamic> parameters = new()
-        {
-            {"settings", JsonSerializer.Serialize(request)},
-            {"id", searchdomain_.id}
-        };
-        searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
-        searchdomain_.settings = request;
-        return Ok(new SearchdomainUpdateResults(){Success = true});
-    }
-
-    [HttpGet("Queries")]
-    public ActionResult<SearchdomainSearchesResults> GetQueries(string searchdomain)
-    {
-        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
-        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
-        
-        return Ok(new SearchdomainSearchesResults() { Searches = searchCache, Success = true });
-    }
-
+    /// <summary>
+    /// Deletes a query from the query cache
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="query">Query to delete</param>
     [HttpDelete("Query")]
-    public ActionResult<SearchdomainDeleteSearchResult> DeleteQuery(string searchdomain, string query)
+    public ActionResult<SearchdomainDeleteSearchResult> DeleteQuery([Required]string searchdomain, [Required]string query)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -165,8 +185,14 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainDeleteSearchResult() {Success = false, Message = "Query not found in search cache"});
     }
 
+    /// <summary>
+    /// Updates a query from the query cache
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="query">Query to update</param>
+    /// <param name="results">List of results to apply to the query</param>
     [HttpPatch("Query")]
-    public ActionResult<SearchdomainUpdateSearchResult> UpdateQuery(string searchdomain, string query, [FromBody]List<ResultItem> results)
+    public ActionResult<SearchdomainUpdateSearchResult> UpdateQuery([Required]string searchdomain, [Required]string query, [Required][FromBody]List<ResultItem> results)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -182,8 +208,12 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainUpdateSearchResult() {Success = false, Message = "Query not found in search cache"});
     }
 
+    /// <summary>
+    /// Get the settings of a searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
     [HttpGet("Settings")]
-    public ActionResult<SearchdomainSettingsResults> GetSettings(string searchdomain)
+    public ActionResult<SearchdomainSettingsResults> GetSettings([Required]string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -191,8 +221,31 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainSettingsResults() { Settings = settings, Success = true });
     }
 
-    [HttpGet("SearchCache/Size")]
-    public ActionResult<SearchdomainSearchCacheSizeResults> GetSearchCacheSize(string searchdomain)
+    /// <summary>
+    /// Update the settings of a searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    [HttpPut("Settings")]
+    public ActionResult<SearchdomainUpdateResults> UpdateSettings([Required]string searchdomain, [Required][FromBody] SearchdomainSettings request)
+    {
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
+        Dictionary<string, dynamic> parameters = new()
+        {
+            {"settings", JsonSerializer.Serialize(request)},
+            {"id", searchdomain_.id}
+        };
+        searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
+        searchdomain_.settings = request;
+        return Ok(new SearchdomainUpdateResults(){Success = true});
+    }
+
+    /// <summary>
+    /// Get the query cache size of a searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    [HttpGet("QueryCache/Size")]
+    public ActionResult<SearchdomainSearchCacheSizeResults> GetSearchCacheSize([Required]string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -204,11 +257,15 @@ public class SearchdomainController : ControllerBase
             sizeInBytes += entry.Key.Length * sizeof(char); // string characters
             sizeInBytes += entry.Value.EstimateSize();
         }
-        return Ok(new SearchdomainSearchCacheSizeResults() { SearchCacheSizeBytes = sizeInBytes, Success = true });
+        return Ok(new SearchdomainSearchCacheSizeResults() { QueryCacheSizeBytes = sizeInBytes, Success = true });
     }
 
-    [HttpPost("SearchCache/Clear")]
-    public ActionResult<SearchdomainInvalidateCacheResults> InvalidateSearchCache(string searchdomain)
+    /// <summary>
+    /// Clear the query cache of a searchdomain
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    [HttpPost("QueryCache/Clear")]
+    public ActionResult<SearchdomainInvalidateCacheResults> InvalidateSearchCache([Required]string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -216,8 +273,12 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainInvalidateCacheResults(){Success = true});
     }
 
+    /// <summary>
+    /// Get the disk size of a searchdomain in bytes
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
     [HttpGet("Database/Size")]
-    public ActionResult<SearchdomainGetDatabaseSizeResult> GetDatabaseSize(string searchdomain)
+    public ActionResult<SearchdomainGetDatabaseSizeResult> GetDatabaseSize([Required]string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});

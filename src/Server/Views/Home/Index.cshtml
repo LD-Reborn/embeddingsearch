@@ -745,7 +745,7 @@
                   "datapoints": datapoints
                 }];
                 showToast("@T["Creating entity"]", "primary");
-                fetch(`/Entity`, {
+                fetch(`/Entities`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -804,7 +804,7 @@
             .getElementById('cacheClear')
             .addEventListener('click', () => {
                 const domainKey = getSelectedDomainKey();
-                fetch(`/Searchdomain/SearchCache/Clear?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
+                fetch(`/Searchdomain/QueryCache/Clear?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
                     method: 'POST'
                 }).then(response => {
                     if (response.ok) {
@@ -874,7 +874,7 @@
                   "datapoints": datapoints
                 }];
                 showToast("@T["Updating entity"]", "primary");
-                fetch(`/Entity`, {
+                fetch(`/Entities`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1031,7 +1031,7 @@
     }
 
     function getSearchdomainCacheUtilization(domainKey) {
-        return fetch(`/Searchdomain/SearchCache/Size?searchdomain=${encodeURIComponent(domains[domainKey])}`)
+        return fetch(`/Searchdomain/QueryCache/Size?searchdomain=${encodeURIComponent(domains[domainKey])}`)
             .then(r => r.json());
     }
 
@@ -1106,10 +1106,10 @@
             }
         });
         cacheUtilizationPromise.then(cacheUtilization => {
-            if (cacheUtilization != null && cacheUtilization.SearchCacheSizeBytes != null)
+            if (cacheUtilization != null && cacheUtilization.QueryCacheSizeBytes != null)
             {
                 document.querySelector('#cacheUtilization').innerText =
-                    `${NumberOfBytesAsHumanReadable(cacheUtilization.SearchCacheSizeBytes)}`;
+                    `${NumberOfBytesAsHumanReadable(cacheUtilization.QueryCacheSizeBytes)}`;
             } else {
                 showToast("@T["Unable to fetch searchdomain cache utilization"]", "danger");
                 console.error('Failed to fetch searchdomain cache utilization');

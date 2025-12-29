@@ -43,8 +43,8 @@ public class SearchdomainSettingsResults : SuccesMessageBaseModel
 
 public class SearchdomainSearchCacheSizeResults : SuccesMessageBaseModel
 {
-    [JsonPropertyName("SearchCacheSizeBytes")]
-    public required long? SearchCacheSizeBytes { get; set; }
+    [JsonPropertyName("QueryCacheSizeBytes")]
+    public required long? QueryCacheSizeBytes { get; set; }
 }
 
 public class SearchdomainInvalidateCacheResults : SuccesMessageBaseModel {}

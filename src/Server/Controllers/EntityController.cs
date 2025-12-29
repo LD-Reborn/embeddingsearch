@@ -24,44 +24,17 @@ public class EntityController : ControllerBase
         _databaseHelper = databaseHelper;
     }
 
-    [HttpPut]
-    public ActionResult<EntityIndexResult> Index([FromBody] List<JSONEntity>? jsonEntities)
-    {
-        try
-        {
-            List<Entity>? entities = _searchdomainHelper.EntitiesFromJSON(
-                _domainManager,
-                _logger,
-                JsonSerializer.Serialize(jsonEntities));
-            if (entities is not null && jsonEntities is not null)
-            {
-                List<string> invalidatedSearchdomains = [];
-                foreach (var jsonEntity in jsonEntities)
-                {
-                    string jsonEntityName = jsonEntity.Name;
-                    string jsonEntitySearchdomainName = jsonEntity.Searchdomain;
-                    if (entities.Select(x => x.name == jsonEntityName).Any()
-                        && !invalidatedSearchdomains.Contains(jsonEntitySearchdomainName))
-                    {
-                        invalidatedSearchdomains.Add(jsonEntitySearchdomainName);
-                    }
-                }
-                return Ok(new EntityIndexResult() { Success = true });
-            }
-            else
-            {
-                _logger.LogError("Unable to deserialize an entity");
-                return Ok(new EntityIndexResult() { Success = false, Message = "Unable to deserialize an entity"});
-            }
-        } catch (Exception ex)
-        {
-            if (ex.InnerException is not null) ex = ex.InnerException;
-            _logger.LogError("Unable to index the provided entities. {ex.Message} - {ex.StackTrace}", [ex.Message, ex.StackTrace]);
-            return Ok(new EntityIndexResult() { Success = false, Message = ex.Message });
-        }
-
-    }
-
+    /// <summary>
+    /// List the entities in a searchdomain
+    /// </summary>
+    /// <remarks>
+    /// With returnModels = false expect: "Datapoints": [..., "Embeddings": null]<br/>
+    /// With returnModels = true expect: "Datapoints": [..., "Embeddings": [{"Model": "...", "Embeddings": []}, ...]]<br/>
+    /// With returnEmbeddings = true expect: "Datapoints": [..., "Embeddings": [{"Model": "...", "Embeddings": [0.007384672,0.01309805,0.0012528514,...]}, ...]]
+    /// </remarks>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="returnModels">Include the models in the response</param>
+    /// <param name="returnEmbeddings">Include the embeddings in the response (requires returnModels)</param>
     [HttpGet("/Entities")]
     public ActionResult<EntityListResults> List(string searchdomain, bool returnModels = false, bool returnEmbeddings = false)
     {
@@ -109,6 +82,56 @@ public class EntityController : ControllerBase
         return Ok(entityListResults);
     }
 
+    /// <summary>
+    /// Index entities
+    /// </summary>
+    /// <remarks>
+    /// Behavior: Creates new entities, but overwrites existing entities that have the same name
+    /// </remarks>
+    /// <param name="jsonEntities">Entities to index</param>
+    [HttpPut("/Entities")]
+    public ActionResult<EntityIndexResult> Index([FromBody] List<JSONEntity>? jsonEntities)
+    {
+        try
+        {
+            List<Entity>? entities = _searchdomainHelper.EntitiesFromJSON(
+                _domainManager,
+                _logger,
+                JsonSerializer.Serialize(jsonEntities));
+            if (entities is not null && jsonEntities is not null)
+            {
+                List<string> invalidatedSearchdomains = [];
+                foreach (var jsonEntity in jsonEntities)
+                {
+                    string jsonEntityName = jsonEntity.Name;
+                    string jsonEntitySearchdomainName = jsonEntity.Searchdomain;
+                    if (entities.Select(x => x.name == jsonEntityName).Any()
+                        && !invalidatedSearchdomains.Contains(jsonEntitySearchdomainName))
+                    {
+                        invalidatedSearchdomains.Add(jsonEntitySearchdomainName);
+                    }
+                }
+                return Ok(new EntityIndexResult() { Success = true });
+            }
+            else
+            {
+                _logger.LogError("Unable to deserialize an entity");
+                return Ok(new EntityIndexResult() { Success = false, Message = "Unable to deserialize an entity"});
+            }
+        } catch (Exception ex)
+        {
+            if (ex.InnerException is not null) ex = ex.InnerException;
+            _logger.LogError("Unable to index the provided entities. {ex.Message} - {ex.StackTrace}", [ex.Message, ex.StackTrace]);
+            return Ok(new EntityIndexResult() { Success = false, Message = ex.Message });
+        }
+
+    }
+
+    /// <summary>
+    /// Deletes an entity
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="entityName">Name of the entity</param>
     [HttpDelete]
     public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName)
     {
