@@ -34,22 +34,42 @@ public class Client
             this.searchdomain = searchdomain ?? "";
         }
 
+        public async Task<EntityListResults> EntityListAsync(bool returnEmbeddings = false)
+        {
+            return await EntityListAsync(searchdomain, returnEmbeddings);
+        }
+
+        public async Task<EntityListResults> EntityListAsync(string searchdomain, bool returnEmbeddings = false)
+        {
+            var url = $"{baseUri}/Entities?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&returnEmbeddings={HttpUtility.UrlEncode(returnEmbeddings.ToString())}";
+            return await GetUrlAndProcessJson<EntityListResults>(url);
+        }
+
+        public async Task<EntityIndexResult> EntityIndexAsync(List<JSONEntity> jsonEntity)
+        {
+            return await EntityIndexAsync(JsonSerializer.Serialize(jsonEntity));
+        }
+
+        public async Task<EntityIndexResult> EntityIndexAsync(string jsonEntity)
+        {
+            var content = new StringContent(jsonEntity, Encoding.UTF8, "application/json");
+            return await PutUrlAndProcessJson<EntityIndexResult>(GetUrl($"{baseUri}", "Entities", apiKey, []), content);
+        }
+
+        public async Task<EntityDeleteResults> EntityDeleteAsync(string entityName)
+        {
+            return await EntityDeleteAsync(searchdomain, entityName);
+        }
+
+        public async Task<EntityDeleteResults> EntityDeleteAsync(string searchdomain, string entityName)
+        {
+            var url = $"{baseUri}/Entity?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&entity={HttpUtility.UrlEncode(entityName)}";
+            return await DeleteUrlAndProcessJson<EntityDeleteResults>(url);
+        }
+
         public async Task<SearchdomainListResults> SearchdomainListAsync()
         {
             return await GetUrlAndProcessJson<SearchdomainListResults>(GetUrl($"{baseUri}", "Searchdomains", apiKey, []));
-        }
-
-        public async Task<SearchdomainDeleteResults> SearchdomainDeleteAsync()
-        {
-            return await SearchdomainDeleteAsync(searchdomain);
-        }
-
-        public async Task<SearchdomainDeleteResults> SearchdomainDeleteAsync(string searchdomain)
-        {
-            return await DeleteUrlAndProcessJson<SearchdomainDeleteResults>(GetUrl($"{baseUri}", "Searchdomain", apiKey, new Dictionary<string, string>()
-            {
-                {"searchdomain", searchdomain}
-            }));
         }
 
         public async Task<SearchdomainCreateResults> SearchdomainCreateAsync()
@@ -63,6 +83,19 @@ public class Client
             {
                 {"searchdomain", searchdomain}
             }), new StringContent(JsonSerializer.Serialize(searchdomainSettings), Encoding.UTF8, "application/json"));
+        }
+
+        public async Task<SearchdomainDeleteResults> SearchdomainDeleteAsync()
+        {
+            return await SearchdomainDeleteAsync(searchdomain);
+        }
+
+        public async Task<SearchdomainDeleteResults> SearchdomainDeleteAsync(string searchdomain)
+        {
+            return await DeleteUrlAndProcessJson<SearchdomainDeleteResults>(GetUrl($"{baseUri}", "Searchdomain", apiKey, new Dictionary<string, string>()
+            {
+                {"searchdomain", searchdomain}
+            }));
         }
 
         public async Task<SearchdomainUpdateResults> SearchdomainUpdateAsync(string newName, string settings = "{}")
@@ -95,6 +128,24 @@ public class Client
             return await GetUrlAndProcessJson<SearchdomainSearchesResults>(GetUrl($"{baseUri}/Searchdomain", "Queries", apiKey, parameters));
         }
 
+        public async Task<EntityQueryResults> SearchdomainQueryAsync(string query)
+        {
+            return await SearchdomainQueryAsync(searchdomain, query);
+        }
+
+        public async Task<EntityQueryResults> SearchdomainQueryAsync(string searchdomain, string query, int? topN = null, bool returnAttributes = false)
+        {
+            Dictionary<string, string> parameters = new()
+            {
+                {"searchdomain", searchdomain},
+                {"query", query}
+            };
+            if (topN is not null) parameters.Add("topN", ((int)topN).ToString());
+            if (returnAttributes) parameters.Add("returnAttributes", returnAttributes.ToString());
+
+            return await PostUrlAndProcessJson<EntityQueryResults>(GetUrl($"{baseUri}/Searchdomain", "Query", apiKey, parameters), null);
+        }
+
         public async Task<SearchdomainDeleteSearchResult> SearchdomainDeleteQueryAsync(string searchdomain, string query)
         {
             Dictionary<string, string> parameters = new()
@@ -115,24 +166,6 @@ public class Client
             return await PatchUrlAndProcessJson<SearchdomainUpdateSearchResult>(
                 GetUrl($"{baseUri}/Searchdomain", "Query", apiKey, parameters),
                 new StringContent(JsonSerializer.Serialize(results), Encoding.UTF8, "application/json"));
-        }
-
-        public async Task<EntityQueryResults> SearchdomainQueryAsync(string query)
-        {
-            return await SearchdomainQueryAsync(searchdomain, query);
-        }
-
-        public async Task<EntityQueryResults> SearchdomainQueryAsync(string searchdomain, string query, int? topN = null, bool returnAttributes = false)
-        {
-            Dictionary<string, string> parameters = new()
-            {
-                {"searchdomain", searchdomain},
-                {"query", query}
-            };
-            if (topN is not null) parameters.Add("topN", ((int)topN).ToString());
-            if (returnAttributes) parameters.Add("returnAttributes", returnAttributes.ToString());
-
-            return await PostUrlAndProcessJson<EntityQueryResults>(GetUrl($"{baseUri}/Searchdomain", "Query", apiKey, parameters), null);
         }
 
         public async Task<SearchdomainSettingsResults> SearchdomainGetSettingsAsync(string searchdomain)
@@ -184,39 +217,6 @@ public class Client
         public async Task<ServerGetModelsResult> ServerGetModelsAsync()
         {
             return await GetUrlAndProcessJson<ServerGetModelsResult>(GetUrl($"{baseUri}/Server", "Models", apiKey, []));
-        }
-
-        public async Task<EntityIndexResult> EntityIndexAsync(List<JSONEntity> jsonEntity)
-        {
-            return await EntityIndexAsync(JsonSerializer.Serialize(jsonEntity));
-        }
-
-        public async Task<EntityIndexResult> EntityIndexAsync(string jsonEntity)
-        {
-            var content = new StringContent(jsonEntity, Encoding.UTF8, "application/json");
-            return await PutUrlAndProcessJson<EntityIndexResult>(GetUrl($"{baseUri}", "Entities", apiKey, []), content);
-        }
-
-        public async Task<EntityListResults> EntityListAsync(bool returnEmbeddings = false)
-        {
-            return await EntityListAsync(searchdomain, returnEmbeddings);
-        }
-
-        public async Task<EntityListResults> EntityListAsync(string searchdomain, bool returnEmbeddings = false)
-        {
-            var url = $"{baseUri}/Entities?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&returnEmbeddings={HttpUtility.UrlEncode(returnEmbeddings.ToString())}";
-            return await GetUrlAndProcessJson<EntityListResults>(url);
-        }
-
-        public async Task<EntityDeleteResults> EntityDeleteAsync(string entityName)
-        {
-            return await EntityDeleteAsync(searchdomain, entityName);
-        }
-
-        public async Task<EntityDeleteResults> EntityDeleteAsync(string searchdomain, string entityName)
-        {
-            var url = $"{baseUri}/Entity?apiKey={HttpUtility.UrlEncode(apiKey)}&searchdomain={HttpUtility.UrlEncode(searchdomain)}&entity={HttpUtility.UrlEncode(entityName)}";
-            return await DeleteUrlAndProcessJson<EntityDeleteResults>(url);
         }
 
         private static async Task<T> GetUrlAndProcessJson<T>(string url)
