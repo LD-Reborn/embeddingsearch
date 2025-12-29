@@ -108,7 +108,7 @@ public class Client
         public async Task<EntityIndexResult> EntityIndexAsync(string jsonEntity)
         {
             var content = new StringContent(jsonEntity, Encoding.UTF8, "application/json");
-            return await PutUrlAndProcessJson<EntityIndexResult>(GetUrl($"{baseUri}", "Entity", apiKey, []), content);
+            return await PutUrlAndProcessJson<EntityIndexResult>(GetUrl($"{baseUri}", "Entities", apiKey, []), content);
         }
 
         public async Task<EntityListResults> EntityListAsync(bool returnEmbeddings = false)

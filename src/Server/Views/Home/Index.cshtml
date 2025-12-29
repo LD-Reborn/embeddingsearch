@@ -745,7 +745,7 @@
                   "datapoints": datapoints
                 }];
                 showToast("@T["Creating entity"]", "primary");
-                fetch(`/Entity`, {
+                fetch(`/Entities`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -874,7 +874,7 @@
                   "datapoints": datapoints
                 }];
                 showToast("@T["Updating entity"]", "primary");
-                fetch(`/Entity`, {
+                fetch(`/Entities`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
