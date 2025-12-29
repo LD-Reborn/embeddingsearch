@@ -244,7 +244,7 @@ public class SearchdomainController : ControllerBase
     /// Get the query cache size of a searchdomain
     /// </summary>
     /// <param name="searchdomain">Name of the searchdomain</param>
-    [HttpGet("SearchCache/Size")]
+    [HttpGet("QueryCache/Size")]
     public ActionResult<SearchdomainSearchCacheSizeResults> GetSearchCacheSize([Required]string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
@@ -257,14 +257,14 @@ public class SearchdomainController : ControllerBase
             sizeInBytes += entry.Key.Length * sizeof(char); // string characters
             sizeInBytes += entry.Value.EstimateSize();
         }
-        return Ok(new SearchdomainSearchCacheSizeResults() { SearchCacheSizeBytes = sizeInBytes, Success = true });
+        return Ok(new SearchdomainSearchCacheSizeResults() { QueryCacheSizeBytes = sizeInBytes, Success = true });
     }
 
     /// <summary>
     /// Clear the query cache of a searchdomain
     /// </summary>
     /// <param name="searchdomain">Name of the searchdomain</param>
-    [HttpPost("SearchCache/Clear")]
+    [HttpPost("QueryCache/Clear")]
     public ActionResult<SearchdomainInvalidateCacheResults> InvalidateSearchCache([Required]string searchdomain)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
