@@ -219,6 +219,11 @@ public class Client
             return await GetUrlAndProcessJson<ServerGetModelsResult>(GetUrl($"{baseUri}/Server", "Models", apiKey, []));
         }
 
+        public async Task<ServerGetEmbeddingCacheSizeResult> ServerGetEmbeddingCacheSizeAsync()
+        {
+            return await GetUrlAndProcessJson<ServerGetEmbeddingCacheSizeResult>(GetUrl($"{baseUri}/Server/EmbeddingCache", "Size", apiKey, []));
+        }
+
         private static async Task<T> GetUrlAndProcessJson<T>(string url)
         {
             using var client = new HttpClient();

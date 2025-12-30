@@ -8,7 +8,7 @@ using Server.Models;
 namespace Server.Controllers;
 
 [ApiExplorerSettings(IgnoreApi = true)]
-[Route("/")]
+[Route("[Controller]")]
 public class HomeController : Controller
 {
     private readonly ILogger<EntityController> _logger;
@@ -23,6 +23,13 @@ public class HomeController : Controller
     [Authorize]
     [HttpGet("/")]
     public IActionResult Index()
+    {
+        return View();
+    }
+
+    [Authorize]
+    [HttpGet("Searchdomains")]
+    public IActionResult Searchdomains()
     {
         HomeIndexViewModel viewModel = new()
         {

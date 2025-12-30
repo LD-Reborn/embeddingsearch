@@ -1,4 +1,4 @@
-﻿@using Server.Models
+@using Server.Models
 @using System.Web
 @using Shared.Models
 @using Server.Services
@@ -9,1467 +9,222 @@
 @model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
-    int i = 0;
-    string[] probMethods = [.. Enum.GetValues(typeof(ProbMethodEnum)).Cast<ProbMethodEnum>().Select(e => e.ToString())];
-    string[] similarityMethods = [.. Enum.GetValues(typeof(SimilarityMethodEnum)).Cast<SimilarityMethodEnum>().Select(e => e.ToString())];
-    string[] models = AIProvider.GetModels();
-    Dictionary<int, string> domains = [];
-    Model.Searchdomains.ForEach(domain =>
+    bool hasName = User.Identity?.Name is not null;
+    string name = "";
+    if (hasName && User.Identity is not null && User.Identity.Name is not null)
     {
-        domains[i++] = domain;
-    });
+        name = User.Identity.Name;
+    }
 }
 
-<div class="container-fluid mt-4">
-  <h1 class="visually-hidden">embeddingsearch</h1>
-  <div class="row">
+<div class="container py-4">
+    <h3 class="mb-4">
+        @(hasName ? T["Hi, {0}!", name] : T["Hi!"])
+    </h3>
 
-    <!-- Sidebar -->
-    <div class="col-md-4 sidebar" role="complementary">
-      <div class="card">
-        <div class="card-body p-2">
-          <h2 class="visually-hidden">@T["Searchdomain selection"]</h2>
-          <ul class="list-group list-group-flush mb-2" style="max-height: 60vh; overflow-y: auto;">
-            @foreach (var domain in domains)
-            {
-                <li id="sidebar_domain_@(domain.Key)" class="domain-item list-group-item list-group-item-action text-nowrap" style="width: max-content" title="@domain.Value" onclick="selectDomain(@(domain.Key))">
-                    @domain.Value
-                </li>
+    <div class="row g-4">
+
+        <!-- Embedding Cache -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">@T["Embedding Cache"]</h5>
+
+                    <div class="d-flex justify-content-between">
+                        <span>@T["Size"]</span>
+                        <strong id="embeddingcacheSize"></strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>
+                            @T["Strings"]
+                            <i class="bi bi-info-circle-fill text-info" 
+                            data-bs-toggle="tooltip" 
+                            title="The number of strings for which there are embeddings. I.e. If you use two models, the amount of embeddings will be twice this number."></i>
+                        </span>
+                        <strong id="embeddingcacheElementCount"></strong>
+                    </div>
+
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div id="embeddingcacheElementCountProgressBar" class="progress-bar"
+                             style="width: 0.00%"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>@T["Embeddings"]</span>
+                        <strong id="embeddingcacheEmbeddingCount"></strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Checks -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">@T["Health Checks"]</h5>
+
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>@T["Server"]</span>
+                            <span id="healthchecksServer"
+                                  class="badge bg-warning">
+                                ???????
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>@T["AI Providers"]</span>
+                            <span id="healthchecksAiProvider"
+                                  class="badge bg-warning">
+                                ???????
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Searchdomains -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">@T["Searchdomains"]</h5>
+
+                    <div class="d-flex justify-content-between">
+                        <span>@T["Count"]</span>
+                        <strong id="searchdomainCount"></strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>@T["Total Entities"]</span>
+                        <strong id="searchdomainEntityCount"></strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>@T["Total query cache utilization"]</span>
+                        <strong id="totalQuerycacheUtilization"></strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script defer>
+    var searchdomains = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize all tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+
+
+        let searchdomainCount = document.getElementById("searchdomainCount");
+        showThrobber(searchdomainCount);
+        let searchdomainEntityCount = document.getElementById("searchdomainEntityCount");
+        showThrobber(searchdomainEntityCount);
+        let totalQuerycacheUtilization = document.getElementById("totalQuerycacheUtilization");
+        showThrobber(totalQuerycacheUtilization);
+        let embeddingcacheSize = document.getElementById("embeddingcacheSize");
+        showThrobber(embeddingcacheSize);
+        let embeddingcacheElementCount = document.getElementById("embeddingcacheElementCount");
+        showThrobber(embeddingcacheElementCount);
+        let embeddingcacheEmbeddingCount = document.getElementById("embeddingcacheEmbeddingCount");
+        showThrobber(embeddingcacheEmbeddingCount);
+        let embeddingcacheElementCountProgressBar = document.getElementById("embeddingcacheElementCountProgressBar");
+        let healthchecksServer = document.getElementById("healthchecksServer");
+        let healthchecksAiProvider = document.getElementById("healthchecksAiProvider");
+
+        listSearchdomains().then(async result => {
+            searchdomains = result.Searchdomains;
+            hideThrobber(searchdomainCount);
+            searchdomainCount.textContent = searchdomains.length;
+
+            var entityCount = 0;
+            var totalUtilization = 0;
+            for (var name in searchdomains){
+                let entityListResult = await listEntities(searchdomains[name]);
+                let entities = entityListResult.Results;
+                entityCount += entities.length;
+                let querycacheUtilizationResult = await getQuerycacheUtilization(searchdomains[name]);
+                let utilization = querycacheUtilizationResult.QueryCacheSizeBytes;
+                totalUtilization += utilization;
             }
-          </ul>
-          <button id="searchdomainCreate" class="btn btn-primary w-100">@T["Create"]</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="col col-md-8" role="main">
-
-      <div class="card section-card">
-        <div class="card-body">
-          <h2 class="visually-hidden">@T["Searchdomain information and settings"]</h2>
-
-          <h3 class="visually-hidden">@T["Actions"]</h3>
-          <!-- Header -->
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <p id="searchdomainName" class="mb-0 text-nowrap overflow-auto fs-3">Searchdomain</p>
-            <div class="col-md-3 text-end w-auto">
-              <button id="searchdomainRename" class="btn btn-warning btn-sm me-2">@T["Rename"]</button>
-              <button id="searchdomainDelete" class="btn btn-danger btn-sm">@T["Delete"]</button>
-            </div>
-          </div>
-
-          <!-- Settings -->
-          <div class="row align-items-center mb-3">
-            <h3>@T["Settings"]</h3>
-            <div class="col-md-6">
-              <input type="checkbox" class="form-check-input" id="searchdomainConfigCacheReconciliation" />
-              <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconciliation"]</label>
-            </div>
-            <div class="col-md-2 mt-3 mt-md-0">
-              <button class="btn btn-warning w-100" id="searchdomainConfigUpdate">@T["Update"]</button>
-            </div>
-          </div>
-
-          <h3 class="visually-hidden">@T["Search cache"]</h3>
-          <!-- Cache -->
-          <div class="d-flex align-items-center mb-4">
-            <div class="me-3">
-              <strong>@T["Search cache utilization"]:</strong> <span id="cacheUtilization">0.00MiB</span>
-            </div>
-            <button id="cacheClear" class="btn btn-warning btn-sm">@T["Clear"]</button>
-          </div>
-
-          <h3 class="visually-hidden">@T["Database size"]</h3>
-          <!-- Database size -->
-          <div class="d-flex align-items-center mb-4">
-            <div class="me-3">
-              <strong>@T["Database size"]:</strong> <span id="databaseUtilization">0.00MiB</span>
-            </div>
-          </div>
-
-          <!-- Recent Queries -->
-          <div class="card section-card mb-4">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h3>Recent queries</h3>
-                <input
-                  type="text"
-                  class="form-control form-control-sm w-25"
-                  placeholder="filter"
-                />
-              </div>
-              <div class="spinner d-none"></div>
-              <table id="queriesTable" class="table table-striped" style="max-height: 60vh; overflow-y: auto; display: block;">
-                <thead>
-                  <tr>
-                    <th class="visually-hidden">Name</th>
-                    <th class="visually-hidden">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Entities -->
-          <div class="card section-card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <h3>Entities</h3>
-                <input
-                  id="entitiesFilter"
-                  type="text"
-                  class="form-control form-control-sm w-25"
-                  placeholder="filter"
-                />
-              </div>
-              <div class="spinner d-none"></div>
-              <table id="entitiesTable" class="table table-striped" style="max-height: 60vh; overflow-y: auto; display: block;">
-                <thead>
-                  <tr>
-                    <th class="visually-hidden">Name</th>
-                    <th class="visually-hidden">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                </tbody>
-              </table>
-              <buttton class="btn btn-primary" id="entityCreate">@T["Add new entity"]</buttton>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Entity Details Modal -->
-<div class="modal fade" id="entityDetailsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-info">
-        <h2 class="modal-title" id="entityDetailsTitle">@T["Entity Details"]</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <!-- Attributes -->
-        <h3 class="fs-4">@T["Attributes"]</h3>
-        <table class="table table-sm table-bordered mb-4">
-          <thead>
-            <tr>
-              <th>@T["Key"]</th>
-              <th>@T["Value"]</th>
-            </tr>
-          </thead>
-          <tbody id="entityAttributesBody">
-          </tbody>
-        </table>
-
-        <!-- Datapoints -->
-        <h3 class="fs-4">@T["Datapoints"]</h3>
-        <table class="table table-sm table-striped">
-          <thead>
-            <tr>
-              <th>@T["Name"]</th>
-              <th>@T["ProbMethod"]</th>
-              <th>@T["SimilarityMethod"]</th>
-            </tr>
-          </thead>
-          <tbody id="entityDatapointsBody">
-          </tbody>
-        </table>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Query Details Modal -->
-<div class="modal fade" id="queryDetailsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-info">
-        <h2 class="modal-title" id="queryDetailsTitle">@T["Query Details"] - <span id="queryDetailsQueryName"></span></h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-
-        <!-- Access times -->
-        <h3>@T["Access times"]</h3>
-        <ul id="queryDetailsAccessTimes" class="list-group mb-4"></ul>
-
-        <!-- Results -->
-        <h3>@T["Results"]</h3>
-        <table class="table table-sm table-striped">
-          <thead>
-            <tr>
-              <th>@T["Score"]</th>
-              <th>@T["Name"]</th>
-            </tr>
-          </thead>
-          <tbody id="queryDetailsResultsBody"></tbody>
-        </table>
-
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Query Update Modal -->
-<div class="modal fade" id="queryUpdateModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-warning">
-        <h2 class="modal-title" id="queryUpdateTitle">@T["Query Update"] - <span id="queryUpdateQueryName"></span></h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-
-        <!-- Access times -->
-        <h3>@T["Access times"]</h3>
-        <ul id="queryUpdateAccessTimes" class="list-group mb-4"></ul>
-
-        <!-- Results -->
-        <h3>@T["Results"]</h3>
-        <table class="table table-sm table-striped">
-          <thead>
-            <tr>
-              <th style="width: 85px;">@T["Score"]</th>
-              <th>@T["Name"]</th>
-              <th>@T["Action"]</th>
-            </tr>
-          </thead>
-          <tbody id="queryUpdateResultsBody"></tbody>
-        </table>
-
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-warning" id="queryUpdateConfirm" data-bs-dismiss="modal">
-          @T["Update"]
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Rename searchdomain Modal -->
-<div class="modal fade" id="renameSearchdomainModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-m modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-warning">
-        <h2 class="modal-title" id="renameSearchdomainTitle">@T["Rename searchdomain"]</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <!-- New name -->
-        <div class="mb-3">
-          <label for="renameSearchdomainNewName" class="form-label">New name</label>
-          <input type="text" class="form-control" id="renameSearchdomainNewName" />
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-warning" onclick="renameSearchdomain(getSelectedDomainKey(), document.getElementById('renameSearchdomainNewName').value)" data-bs-dismiss="modal">
-          Rename
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Delete searchdomain Modal -->
-<div class="modal fade" id="deleteSearchdomainModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-m modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-danger text-white">
-        <h2 class="modal-title" id="deleteSearchdomainTitle">@T["Delete searchdomain"]</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteSearchdomainConfirmationModalName"])</p>
-        <p>@T["IrreversibleActionWarning"]</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" id="searchdomainConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
-          @T["Delete"]
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Create searchdomain Modal -->
-<div class="modal fade" id="createSearchdomainModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-m modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-primary text-white">
-        <h2 class="modal-title" id="createSearchdomainTitle">@T["Create searchdomain"]</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <label for="createSearchdomainName" class="form-label">@T["Searchdomain name"]</label>
-        <input type="text" class="form-control mb-3" id="createSearchdomainName" placeholder="@T["Searchdomain name"]" />
-        <input type="checkbox" class="form-check-input" id="createSearchdomainWithCacheReconciliation" />
-        <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconciliation"]</label>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" id="searchdomainConfirmCreate" class="btn btn-primary" data-bs-dismiss="modal">
-          @T["Create"]
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Create entity Modal -->
-<div class="modal fade" id="createEntityModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-primary text-white">
-        <h2 class="modal-title" id="createEntityTitle">@T["Create entity"]</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <!-- Entity base -->
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label for="createEntityName" class="form-label">@T["Entity name"]</label>
-            <input type="text" class="form-control mb-3" id="createEntityName" placeholder="@T["Entity name"]" />
-          </div>
-          <div class="col-md-6">
-            <label for="createEntityProbMethod" class="form-label">@T["Probmethod"]</label>
-            <input list="probMethods" id="createEntityProbMethod" class="form-control" aria-label="@T["Probmethod"]">
-            <datalist id="probMethods">
-              @foreach (string probMethod in probMethods)
-              {
-                <option value=@probMethod>@probMethod</option>
-              }
-            </datalist>
-          </div>
-        </div>
-        <!-- Attributes -->
-        <div class="row g-3">
-          <h3 class="fs-5">@T["Attributes"]</h3>
-          <table>
-            <thead>
-              <tr>
-                <td>@T["Name"]</td>
-                <td>@T["Value"]</td>
-                <td class="visually-hidden">@T["Action"]</td>
-              </tr>
-            </thead>
-            <tbody id="createEntityAttributesContainer"></tbody>
-          </table>
-          <button type="button" id="createEntityAttributesAdd" class="btn btn-primary">@T["Add attribute"]</button>
-        </div>
-        <!-- Datapoints -->
-        <div class="row g-3 mt-3">
-          <h3 class="fs-5">@T["Datapoints"]</h3>
-          <table>
-            <thead>
-              <tr>
-                <td>@T["Name"]</td>
-                <td>@T["Value"]</td>
-                <td>@T["Probmethod_embedding"]</td>
-                <td>@T["Similarity method"]</td>
-                <td>@T["Model"]</td>
-                <td class="visually-hidden">@T["Action"]</td>
-              </tr>
-            </thead>
-            <tbody id="createEntityDatapointsContainer"></tbody>
-          </table>
-          <button type="button" id="createEntityDatapointsAdd" class="btn btn-primary">@T["Add datapoint"]</button>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" id="EntityConfirmCreate" class="btn btn-primary" data-bs-dismiss="modal">
-          @T["Create"]
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Delete entity Modal -->
-<div class="modal fade" id="deleteEntityModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-m modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-danger text-white">
-        <h2 class="modal-title" id="deleteEntityTitle">@T["Delete entity"]</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteEntityConfirmationModalName"])</p>
-        <p>@T["IrreversibleActionWarning"]</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" id="EntityConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
-          @T["Delete"]
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Update entity Modal -->
-<div class="modal fade" id="updateEntityModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-warning text">
-        <h2 class="modal-title" id="updateEntityTitle">@T["Update entity"]</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <!-- Entity base -->
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label for="updateEntityName" class="form-label">@T["Entity name"]</label>
-            <input type="text" class="form-control mb-3" id="updateEntityName" placeholder="@T["Entity name"]" />
-          </div>
-          <div class="col-md-6">
-            <label for="updateEntityProbMethod" class="form-label">@T["Probmethod"]</label>
-            <input list="probMethods" id="updateEntityProbMethod" class="form-control" aria-label="@T["Probmethod"]">
-            <datalist id="probMethods">
-              @foreach (string probMethod in probMethods)
-              {
-                <option value=@probMethod>@probMethod</option>
-              }
-            </datalist>
-          </div>
-        </div>
-        <!-- Attributes -->
-        <div class="row g-3">
-          <h3 class="fs-5">@T["Attributes"]</h3>
-          <table>
-            <thead>
-              <tr>
-                <td>@T["Name"]</td>
-                <td>@T["Value"]</td>
-                <td class="visually-hidden">@T["Action"]</td>
-              </tr>
-            </thead>
-            <tbody id="updateEntityAttributesContainer"></tbody>
-          </table>
-          <button type="button" id="updateEntityAttributesAdd" class="btn btn-primary">@T["Add attribute"]</button>
-        </div>
-        <!-- Datapoints -->
-        <div class="row g-3 mt-3">
-          <h3 class="fs-5">@T["Datapoints"]</h3>
-          <table>
-            <thead>
-              <tr>
-                <td>@T["Name"]</td>
-                <td>@T["Value"]</td>
-                <td>@T["Probmethod_embedding"]</td>
-                <td>@T["Similarity method"]</td>
-                <td>@T["Model"]</td>
-                <td class="visually-hidden">@T["Action"]</td>
-              </tr>
-            </thead>
-            <tbody id="updateEntityDatapointsContainer"></tbody>
-          </table>
-          <button type="button" id="updateEntityDatapointsAdd" class="btn btn-primary">@T["Add datapoint"]</button>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" id="EntityConfirmUpdate" class="btn btn-warning" data-bs-dismiss="modal">
-          @T["Update"]
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- Delete query Modal -->
-<div class="modal fade" id="deleteQueryModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-m modal-dialog-scrollable">
-    <div class="modal-content">
-
-      <div class="modal-header bg-danger text-white">
-        <h2 class="modal-title" id="deleteQueryTitle">@T["Delete query"]</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <p>@Html.Raw(T["GenericDeleteConfirmation", "deleteQueryConfirmationModalName"])</p>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" id="queryConfirmDelete" class="btn btn-danger" data-bs-dismiss="modal">
-          @T["Delete"]
-        </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          @T["Close"]
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<script>
-    var domains = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(domains))');
-    var probMethods = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(probMethods))');
-    var similarityMethods = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(similarityMethods))');
-    var entities = null;
-    var queries = null;
-    var models = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(models))');
-
-    let draggedRow = null;
-    document.addEventListener("dragstart", e => {
-      if (e.target.tagName === "TR") {
-        draggedRow = e.target;
-        e.target.classList.add("table-warning");
-      }
+            hideThrobber(searchdomainEntityCount);
+            hideThrobber(totalQuerycacheUtilization);
+            searchdomainEntityCount.textContent = entityCount;
+            totalQuerycacheUtilization.textContent = NumberOfBytesAsHumanReadable(totalUtilization);
+        });
+        getEmbeddingcacheUtilization().then(result => {
+            let utilization = result.SizeInBytes;
+            let maxElementCount = result.MaxElementCount;
+            let elementCount = result.ElementCount;
+            let embeddingCount = result.EmbeddingsCount;
+            hideThrobber(embeddingcacheSize);
+            embeddingcacheSize.textContent = NumberOfBytesAsHumanReadable(utilization);
+            hideThrobber(embeddingcacheElementCount);
+            embeddingcacheElementCount.textContent = `${elementCount.toLocaleString()} / ${maxElementCount.toLocaleString()}`;
+            hideThrobber(embeddingcacheEmbeddingCount);
+            embeddingcacheEmbeddingCount.textContent = embeddingCount;
+            embeddingcacheElementCountProgressBar.style.width = `${elementCount / maxElementCount * 100}%`;
+        });
+        getHealthCheckStatusAndApply(healthchecksServer, "/healthz/Database");
+        getHealthCheckStatusAndApply(healthchecksAiProvider, "/healthz/AIProvider");
     });
 
-    document.addEventListener("dragend", e => {
-      if (e.target.tagName === "TR") {
-        e.target.classList.remove("table-warning");
-      }
-      document.querySelectorAll(".table-warning").forEach(x => x.classList.remove("table-warning"));
-    });
 
-    document.addEventListener("dragenter", e => {
-      if (e.target.tagName === "TR") {
-        e.target.classList.add("table-warning");
-      } else if (e.target.tagName == "TD") {
-        e.target.parentElement.classList.add("table-warning");
-      }
-    });
+    async function listSearchdomains() {
+        return await fetch(`/Searchdomains`)
+            .then(r => r.json());
+    }
 
-    document.addEventListener("dragleave", e => {
-      if (e.target.tagName === "TR") {
-        e.target.classList.remove("table-warning");
-      } else if (e.target.tagName == "TD") {
-        e.target.parentElement.classList.remove("table-warning");
-      }
-    });
-    document.addEventListener("dragover", e => {
-      if (e.target.closest("tr")) {
-        e.preventDefault();
-      }
-    });
+    async function listEntities(searchdomain) {
+        return await fetch(`/Entities?searchdomain=${searchdomain}`)
+            .then(r => r.json());
+    }
 
-    document.addEventListener("drop", e => {
-      const targetRow = e.target.closest("tr");
-      if (draggedRow && targetRow && draggedRow !== targetRow && targetRow.parentElement.tagName !== "THEAD") {        
-        if (!draggedRow || !targetRow || draggedRow === targetRow) return;
+    async function getQuerycacheUtilization(searchdomain) {
+        return await fetch(`/Searchdomain/QueryCache/Size?searchdomain=${searchdomain}`)
+            .then(r => r.json());
+    }
 
-        const rect = targetRow.getBoundingClientRect();
-        const isAfter = e.clientY > rect.top + rect.height / 2;
+    async function getEmbeddingcacheUtilization() {
+        return await fetch(`/Server/EmbeddingCache/Size`)
+            .then(r => r.json());
+    }
 
-        const parent = targetRow.parentNode;
-
-        if (isAfter) {
-          parent.insertBefore(draggedRow, targetRow.nextSibling);
-        } else {
-          parent.insertBefore(draggedRow, targetRow);
+    async function getHealthCheckStatusAndApply(element, url) {
+        let text = await fetch(url)
+            .then(r => r.text());
+        let states = {"Healthy": "bg-success", "Degraded": "bg-warning", "Unhealthy": "bg-danger"};
+        for (let state in states) {
+            element.classList.remove(states[state]);
         }
-      }
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const filterInput = document.getElementById('entitiesFilter');
-
-        filterInput.addEventListener('input', () => {
-            populateEntitiesTable(filterInput.value);
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const entitiesFilter = document.getElementById('entitiesFilter');
-        entitiesFilter.addEventListener('input', () => {
-            populateEntitiesTable(entitiesFilter.value);
-        });
-
-        const queriesFilter = document.querySelector(
-            '#queriesTable'
-        ).closest('.card-body').querySelector('input');
-
-        queriesFilter.addEventListener('input', () => {
-            populateQueriesTable(queriesFilter.value);
-        });
-        selectDomain(0);
-
-        document
-            .getElementById('searchdomainRename')
-            .addEventListener('click', () => {
-                const modal = new bootstrap.Modal(
-                    document.getElementById('renameSearchdomainModal')
-                );
-                // Fill in searchdomain current name
-                const domainKey = getSelectedDomainKey();
-                document.getElementById(
-                    'renameSearchdomainNewName'
-                ).value = domains[domainKey];
-                modal.show();
-            });
-        document
-            .getElementById('searchdomainDelete')
-            .addEventListener('click', () => {
-                const modal = new bootstrap.Modal(
-                    document.getElementById('deleteSearchdomainModal')
-                );
-                modal.show();
-                let searchdomain = domains[getSelectedDomainKey()];
-                let deleteSearchdomainConfirmationModalName = document.getElementById('deleteSearchdomainConfirmationModalName');
-                deleteSearchdomainConfirmationModalName.textContent = searchdomain;
-            });
-        document
-            .getElementById('searchdomainConfirmDelete')
-            .addEventListener('click', () => {
-                const domainKey = getSelectedDomainKey();
-                deleteSearchdomain(domainKey);
-                selectDomain(0);
-            });
-        document
-            .getElementById('searchdomainConfigUpdate')
-            .addEventListener('click', () => {
-                const domainKey = getSelectedDomainKey();
-                const cacheReconciliation = document.getElementById('searchdomainConfigCacheReconciliation').checked;
-                updateSearchdomainConfig(domainKey, { CacheReconciliation: cacheReconciliation});
-            });
-
-        document
-            .getElementById('searchdomainCreate')
-            .addEventListener('click', () => {
-                const modal = new bootstrap.Modal(
-                    document.getElementById('createSearchdomainModal')
-                );
-                modal.show();
-            });
-        
-        document
-            .getElementById('entityCreate')
-            .addEventListener('click', () => {
-                const modal = new bootstrap.Modal(
-                    document.getElementById('createEntityModal')
-                );
-                modal.show();
-                document.getElementById('createEntityDatapointsAdd').click();
-            });
-
-        document
-            .getElementById('createEntityAttributesAdd')
-            .addEventListener('click', () => {
-                var uuid = crypto.randomUUID();
-                addEntityAttribute('createEntityAttributesContainer', uuid);
-            });
-
-        document
-            .getElementById('createEntityDatapointsAdd')
-            .addEventListener('click', () => {
-                var uuid = crypto.randomUUID();
-                addEntityDatapoint('createEntityDatapointsContainer', uuid, "", "");
-            });
-
-        document
-            .getElementById('EntityConfirmCreate')
-            .addEventListener('click', () => {
-                var name = document.getElementById('createEntityName').value;
-                var probMethod = document.getElementById('createEntityProbMethod').value;
-                var attributes = getEntityAttributes();
-                var datapoints = getEntityDatapoints();
-                var data = [{
-                  "name": name,
-                  "probmethod": probMethod,
-                  "searchdomain": encodeURIComponent(domains[getSelectedDomainKey()]),
-                  "attributes": attributes,
-                  "datapoints": datapoints
-                }];
-                showToast("@T["Creating entity"]", "primary");
-                fetch(`/Entities`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                }).then(async response => {
-                    result = await response.json();
-                    if (response.ok && result.Success) {
-                        showToast("@T["Entity was created successfully"]", "success");
-                        console.log('Entity was created successfully');
-                        selectDomain(getSelectedDomainKey());
-                    } else {
-                        showToast("@T["Failed to create entity"]", "danger");
-                        console.error('Failed to create entity:', result.Message);
-                    }
-                }).catch(error => {
-                    showToast("@T["Failed to create entity"]", "danger");
-                    console.error('Error creating entity:', error);
-                });
-
-            });
-
-        document
-            .getElementById('searchdomainConfirmCreate')
-            .addEventListener('click', () => {
-                const modal = new bootstrap.Modal(
-                    document.getElementById('createSearchdomainModal')
-                );
-                const name = document.getElementById('createSearchdomainName').value;
-                const cacheReconciliation = document.getElementById('createSearchdomainWithCacheReconciliation').checked;
-                const settings = { CacheReconciliation: cacheReconciliation };
-                // Implement create logic here
-                fetch(`/Searchdomain?searchdomain=${encodeURIComponent(name)}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(settings)
-                }).then(response => {
-                    if (response.ok) {
-                        showToast("@T["Searchdomain was created successfully"]", "success");
-                        console.log('Searchdomain created successfully');
-                        // Reload the page to show the new searchdomain
-                        location.reload();
-                    } else {
-                        showToast("@T["Failed to create searchdomain"]", "danger");
-                        console.error('Failed to create searchdomain');
-                    }
-                }).catch(error => {
-                    showToast("@T["Failed to create searchdomain"]", "danger");
-                    console.error('Error creating searchdomain:', error);
-                });
-            });
-
-        document
-            .getElementById('cacheClear')
-            .addEventListener('click', () => {
-                const domainKey = getSelectedDomainKey();
-                fetch(`/Searchdomain/QueryCache/Clear?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
-                    method: 'POST'
-                }).then(response => {
-                    if (response.ok) {
-                        showToast("@T["Searchdomain cache was cleared successfully"]", "success");
-                        console.log('Searchdomain cache cleared successfully');
-                        // Update cache utilization display
-                        document.querySelector('#cacheUtilization').innerText = '0.00MiB';
-                    } else {
-                        showToast("@T["Failed to clear searchdomain cache"]", "danger");
-                        console.error('Failed to clear searchdomain cache');
-                    }
-                }).catch(error => {
-                    showToast("@T["Failed to clear searchdomain cache"]", "danger");
-                    console.error('Error clearing searchdomain cache:', error);
-                });
-            });
-
-        document
-          .getElementById('EntityConfirmDelete')
-          .addEventListener('click', () => {
-                const domainKey = getSelectedDomainKey();
-                const entityName = document.getElementById('EntityConfirmDelete').getAttribute('data-name');
-                fetch(`/Entity?searchdomain=${encodeURIComponent(domains[domainKey])}&entityName=${entityName}`, {
-                    method: 'DELETE'
-                }).then(async response => {
-                    let result = await response.json();
-                    if (response.ok && result.Success) {
-                        showToast("@T["Entity was deleted successfully"]", "success");
-                        console.log('Entity deleted successfully');
-                        selectDomain(getSelectedDomainKey());
-                    } else {
-                        showToast("@Html.Raw(T["Failed to delete entity"])", "danger");
-                        console.error('Failed to delete entity:', result.Message);
-                    }
-                }).catch(error => {
-                    showToast("@Html.Raw(T["Failed to delete entity"])", "danger");
-                    console.error('Error deleting entity:', error);
-                });
-          });
-
-        document
-            .getElementById('updateEntityAttributesAdd')
-            .addEventListener('click', () => {
-                var uuid = crypto.randomUUID();
-                addEntityAttribute('updateEntityAttributesContainer', uuid);
-            });
-
-        document
-            .getElementById('updateEntityDatapointsAdd')
-            .addEventListener('click', () => {
-                var uuid = crypto.randomUUID();
-                addEntityDatapoint('updateEntityDatapointsContainer', uuid, "", "");
-            });
-
-        document
-            .getElementById('EntityConfirmUpdate')
-            .addEventListener('click', () => {
-                var name = document.getElementById('updateEntityName').value;
-                var probMethod = document.getElementById('updateEntityProbMethod').value;
-                var attributes = getEntityAttributes('updateEntityAttributesContainer');
-                var datapoints = getEntityDatapoints('updateEntityDatapointsContainer');
-                var data = [{
-                  "name": name,
-                  "probmethod": probMethod,
-                  "searchdomain": encodeURIComponent(domains[getSelectedDomainKey()]),
-                  "attributes": attributes,
-                  "datapoints": datapoints
-                }];
-                showToast("@T["Updating entity"]", "primary");
-                fetch(`/Entities`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                }).then(async response => {
-                    result = await response.json();
-                    if (response.ok && result.Success) {
-                        showToast("@T["Entity was updated successfully"]", "success");
-                        console.log('Entity was updated successfully');
-                        selectDomain(getSelectedDomainKey());
-                    } else {
-                        showToast("@T["Failed to update entity"]", "danger");
-                        console.error('Failed to update entity:', result.Message);
-                    }
-                }).catch(error => {
-                    showToast("@T["Failed to update entity"]", "danger");
-                    console.error('Error update entity:', error);
-                });
-
-            });
-        document
-            .getElementById('queryConfirmDelete')
-            .addEventListener('click', () => {
-                let searchdomain = domains[getSelectedDomainKey()];
-                let query = document.getElementById('deleteQueryConfirmationModalName').textContent;
-                fetch(`/Searchdomain/Query?searchdomain=${searchdomain}&query=${query}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }).then(async response => {
-                    result = await response.json();
-                    if (response.ok && result.Success) {
-                        showToast("@T["Search query was deleted successfully"]", "success");
-                        console.log('Search query was deleted successfully');
-                        selectDomain(getSelectedDomainKey());
-                    } else {
-                        showToast("@Html.Raw(T["Failed to delete search query"])", "danger");
-                        console.error('Failed to delete search query:', result.Message);
-                    }
-                }).catch(error => {
-                    showToast("@Html.Raw(T["Failed to delete search query"])", "danger");
-                    console.error('Failed to delete search query:', error);
-                });
-            });
-        document
-            .getElementById('queryUpdateConfirm')
-            .addEventListener('click', () => {
-                let searchdomain = domains[getSelectedDomainKey()];
-                let query = document.getElementById('queryUpdateQueryName').textContent;
-                let data = getQueryUpdateTableData();
-                console.log()
-                fetch(`/Searchdomain/Query?searchdomain=${searchdomain}&query=${query}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                }).then(async response => {
-                    result = await response.json();
-                    if (response.ok && result.Success) {
-                        showToast("@T["Searchdomain was created successfully"]", "success");
-                        console.log('Search query was updated successfully');
-                        selectDomain(getSelectedDomainKey());
-                    } else {
-                        showToast("@T["Updating search query failed"]", "danger");
-                        console.error('Updating search query failed:', result.Message);
-                    }
-                }).catch(error => {
-                    showToast("@T["Updating search query failed"]", "danger");
-                    console.error('Updating search query failed:', error);
-                });
-            });
-    });
-
-    function deleteSearchdomain(domainKey) {
-        // Implement delete logic here
-        fetch(`/Searchdomain?searchdomain=${encodeURI(domains[domainKey])}`, {
-            method: 'DELETE'
-        }).then(async response => {
-            var result = await response.json();;
-            if (response.ok && result.Success === true) {
-                showToast("@T["Searchdomain was deleted successfully"]", "success");
-                // Remove from sidebar
-                var domainItem = document.getElementById('sidebar_domain_' + domainKey);
-                domainItem.remove();
-                console.log('Searchdomain deleted successfully');
-            } else {
-                showToast("@Html.Raw(T["Failed to delete searchdomain"])", "danger");
-                console.error('Failed to delete searchdomain:', result.Message);
-            }
-        }).catch(error => {
-            showToast("@Html.Raw(T["Failed to delete searchdomain"])", "danger");
-            console.error('Error deleting searchdomain:', error);
-        });
-    }
-
-    function renameSearchdomain(domainKey, newName) {
-        // Implement rename logic here
-        fetch(`/Searchdomain?searchdomain=${encodeURI(domains[domainKey])}&newName=${newName}`, {
-            method: 'PUT'
-        }).then(async response => {
-            var result = await response.json();
-            if (response.ok && result.Success === true) {
-                showToast("@T["Searchdomain was renamed successfully"]", "success");
-                // Update sidebar and header name
-                var domainItem = document.getElementById('sidebar_domain_' + domainKey);
-                domainItem.innerText = newName;
-                document.querySelector('.section-card h3').innerText = newName;
-                domains[domainKey] = newName;
-
-                console.log('Searchdomain renamed successfully');
-            } else {
-                showToast("@T["Failed to rename searchdomain"]", "danger");
-                console.error('Failed to rename searchdomain:', result.Message);
-            }
-        }).catch(error => {
-            showToast("@T["Failed to rename searchdomain"]", "danger");
-            console.error('Failed to rename searchdomain:', error);
-        });
-    }
-
-    function updateSearchdomainConfig(domainKey, newSettings) {
-        // Implement update logic here
-        fetch(`/Searchdomain/Settings?searchdomain=${encodeURIComponent(domains[domainKey])}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(newSettings)
-        }).then(async response => {
-            var result = await response.json();
-            if (response.ok && result.Success === true) {
-                showToast("@T["Searchdomain settings were updated successfully"]", "success");
-                console.log('Searchdomain settings updated successfully');
-            } else {
-                showToast("@T["Updating searchdomain settings failed"]", "danger");
-                console.error('Failed to update searchdomain settings');
-            }
-        }).catch(error => {
-            showToast("@T["Updating searchdomain settings failed"]", "danger");
-            console.error('Error updating searchdomain settings:', error);
-        });
-    }
-
-    function getSelectedDomainKey() {
-        return document.querySelector('.domain-item.active').id.split("_")[2] - 0;
-    }
-
-    function getSearchdomainConfig(domainKey) {
-        return fetch(`/Searchdomain/Settings?searchdomain=${encodeURIComponent(domains[domainKey])}`)
-            .then(r => r.json());
-    }
-
-    function getSearchdomainCacheUtilization(domainKey) {
-        return fetch(`/Searchdomain/QueryCache/Size?searchdomain=${encodeURIComponent(domains[domainKey])}`)
-            .then(r => r.json());
-    }
-
-    function getSearchdomainDatabaseUtilization(domainKey) {
-        return fetch(`/Searchdomain/Database/Size?searchdomain=${encodeURIComponent(domains[domainKey])}`)
-            .then(r => r.json());
-    }
-
-    function selectDomain(domainKey) {
-        document.querySelectorAll('.domain-item').forEach(item => {
-            item.classList.remove('active');
-        });
-
-        var selectedItem = document.getElementById('sidebar_domain_' + domainKey);
-        selectedItem.classList.add('active');
-
-        var domainName = domains[domainKey];
-        document.querySelector('#searchdomainName').innerText = domainName;
-
-        let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
-        let configElementCachereconciliation = document.getElementById('searchdomainConfigCacheReconciliation');
-
-        let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
-        let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
-
-        /* ---------- ENTITIES ---------- */
-        let entitiesUrl = `/Entities?searchdomain=${encodeURIComponent(domainName)}&returnEmbeddings=false&returnModels=true`;
-        let entitiesCard = document.querySelector("#entitiesTable").parentElement;
-        clearEntitiesTable();
-        showThrobber(entitiesCard);
-
-        fetch(entitiesUrl)
-            .then(r => r.json())
-            .then(data => {
-                entities = data.Results;
-                populateEntitiesTable();
-                hideThrobber(entitiesCard);
-            })
-            .catch(err => {
-                console.error(err);
-                flagSearchdomainAsErroneous(domainKey);
-                hideThrobber(entitiesCard);
-            });
-
-        /* ---------- QUERIES ---------- */
-        let queriesUrl = `/Searchdomain/Queries?searchdomain=${encodeURIComponent(domainName)}`;
-        let queriesCard = document.querySelector("#queriesTable").parentElement;
-        clearQueriesTable();
-        showThrobber(queriesCard);
-
-        fetch(queriesUrl)
-            .then(r => r.json())
-            .then(data => {
-                queries = Object.entries(data.Searches).map(key => ({"Name": key[0], "AccessDateTimes": key[1].AccessDateTimes, "Results": key[1].Results}));
-                populateQueriesTable();
-                hideThrobber(queriesCard);
-            })
-            .catch(err => {
-                console.error('Error fetching queries:', err);
-                hideThrobber(queriesCard);
-            });
-
-        searchdomainConfigPromise.then(searchdomainConfig => {
-            if (searchdomainConfig != null && searchdomainConfig.Settings != null)
-            {
-                configElementCachereconciliation.checked = searchdomainConfig.Settings.CacheReconciliation;
-                configElementCachereconciliation.disabled = false;
-            } else {
-                configElementCachereconciliation.disabled = true;
-                showToast("@T["Unable to fetch searchdomain config"]", "danger");
-                console.error('Failed to fetch searchdomain config');
-            }
-        });
-        cacheUtilizationPromise.then(cacheUtilization => {
-            if (cacheUtilization != null && cacheUtilization.QueryCacheSizeBytes != null)
-            {
-                document.querySelector('#cacheUtilization').innerText =
-                    `${NumberOfBytesAsHumanReadable(cacheUtilization.QueryCacheSizeBytes)}`;
-            } else {
-                showToast("@T["Unable to fetch searchdomain cache utilization"]", "danger");
-                console.error('Failed to fetch searchdomain cache utilization');
-            }
-        });
-
-        databaseUtilizationPromise.then(databaseUtilization => {
-            if (databaseUtilization != null && databaseUtilization.SearchdomainDatabaseSizeBytes != null)
-            {
-                document.querySelector('#databaseUtilization').innerText =
-                    `${NumberOfBytesAsHumanReadable(databaseUtilization.SearchdomainDatabaseSizeBytes)}`;
-            } else {
-                showToast("@T["Unable to fetch searchdomain database utilization"]", "danger");
-                console.error('Failed to fetch searchdomain database utilization');
-            }
-        });
-    }
-
-    function clearEntitiesTable() {
-        var tableBody = document.querySelector('#entitiesTable tbody');
-        tableBody.innerHTML = '';
-    }
-
-    function clearQueriesTable() {
-        document.querySelector('#queriesTable tbody').innerHTML = '';
-    }
-
-    function populateEntitiesTable(filterText = '') {
-        if (!entities) return;
-
-        var tableBody = document.querySelector('#entitiesTable tbody');
-        tableBody.innerHTML = '';
-
-        const normalizedFilter = filterText.toLowerCase();
-
-        let isFirstEntity = true;
-        entities
-        .filter(e => e.Name.toLowerCase().includes(normalizedFilter))
-        .forEach(entity => {
-            var row = document.createElement('tr');
-
-            var nameCell = document.createElement('td');
-            nameCell.textContent = entity.Name;
-            if (isFirstEntity) {
-              nameCell.classList.add('w-100'); // Otherwise the table doesn't use the full width
-              isFirstEntity = false;
-            }
-            row.appendChild(nameCell);
-
-            var actionCell = document.createElement('td');
-            actionCell.classList.add('btn-group');
-            var detailsButton = document.createElement('button');
-            detailsButton.className = 'btn btn-info btn-sm';
-            detailsButton.textContent = '@T["Details"]';
-            detailsButton.setAttribute("data-index", entities.findIndex(en => en == entity));
-            detailsButton.addEventListener('click', () => {
-              showEntityDetails(entity);
-            });
-
-            var updateButton = document.createElement('button');
-            updateButton.className = 'btn btn-warning btn-sm';
-            updateButton.textContent = '@T["Update"]';
-            updateButton.setAttribute("data-index", entities.findIndex(en => en == entity));
-            updateButton.addEventListener('click', () => {
-              const modal = new bootstrap.Modal(
-                  document.getElementById('updateEntityModal')
-              );
-              modal.show();
-
-              let updateEntityName = document.getElementById('updateEntityName');
-              updateEntityName.value = entity.Name;
-              let updateEntityProbMethod = document.getElementById('updateEntityProbMethod');
-              updateEntityProbMethod.value = entity.ProbMethod;
-
-              let updateEntityAttributesContainer = document.getElementById('updateEntityAttributesContainer');
-              updateEntityAttributesContainer.textContent = "";
-              for (i in entity.Attributes)
-              {
-                  let attribute = entity.Attributes[i];
-                  addEntityAttribute('updateEntityAttributesContainer', attribute.Name, attribute.Name, attribute.Value);
-              }
-              let updateEntityDatapointsContainer = document.getElementById('updateEntityDatapointsContainer');
-              updateEntityDatapointsContainer.textContent = "";
-              for (i in entity.Datapoints)
-              {
-                  let datapoint = entity.Datapoints[i];
-                  addEntityDatapoint('updateEntityDatapointsContainer', datapoint.Name, datapoint.Name, null, datapoint.ProbMethod, datapoint.SimilarityMethod, Array.from(datapoint.Embeddings, x => x.Model));
-              } 
-            });
-
-            var deleteButton = document.createElement('button');
-            deleteButton.className = 'btn btn-danger btn-sm';
-            deleteButton.textContent = '@Html.Raw(T["Delete"])';
-            deleteButton.setAttribute("data-index", entities.findIndex(en => en == entity));
-            deleteButton.addEventListener('click', () => {
-              const modal = new bootstrap.Modal(
-                  document.getElementById('deleteEntityModal')
-              );
-              modal.show();
-              let entityConfirmDelete = document.getElementById('EntityConfirmDelete');
-              entityConfirmDelete.setAttribute('data-name', entity.Name);
-              let deleteEntityConfirmationModalName = document.getElementById('deleteEntityConfirmationModalName');
-              deleteEntityConfirmationModalName.textContent = entity.Name;
-            });
-
-            actionCell.appendChild(detailsButton);
-            actionCell.appendChild(updateButton);
-            actionCell.appendChild(deleteButton);
-            row.appendChild(actionCell);
-
-            tableBody.appendChild(row);
-        });
-    }
-
-    function populateQueriesTable(filterText = '') {
-        if (!queries) return;
-
-
-        const tbody = document.querySelector('#queriesTable tbody');
-        tbody.innerHTML = '';
-
-        const normalizedFilter = filterText.toLowerCase();
-
-        queries
-            .filter(q => q.Name?.toLowerCase().includes(normalizedFilter))
-            .forEach(query => {
-                const row = document.createElement('tr');
-
-                const nameCell = document.createElement('td');
-                nameCell.textContent = query.Name;
-                nameCell.classList.add('col-md-12');
-                row.appendChild(nameCell);
-
-                const actionCell = document.createElement('td');
-                actionCell.classList.add('btn-group');
-                const btnDetails = document.createElement('button');
-                btnDetails.className = 'btn btn-sm btn-info';
-                btnDetails.textContent = '@T["Details"]';
-                btnDetails.addEventListener('click', () => {
-                    showQueryDetails(query);
-                });
-                const btnUpdate = document.createElement('button');
-                btnUpdate.className = 'btn btn-sm btn-warning';
-                btnUpdate.textContent = '@T["Update"]';
-                btnUpdate.addEventListener('click', () => {
-                    showQueryUpdate(query);
-                });
-
-                const btnDelete = document.createElement('button');
-                btnDelete.className = 'btn btn-sm btn-danger';
-                btnDelete.textContent = '@Html.Raw(T["Delete"])';
-                btnDelete.addEventListener('click', () => {
-                    const modal = new bootstrap.Modal(
-                      document.getElementById('deleteQueryModal')
-                    );
-                    modal.show();
-                    let queryConfirmDelete = document.getElementById('queryConfirmDelete');
-                    queryConfirmDelete.setAttribute('data-name', query.Name);
-                    let deleteQueryConfirmationModalName = document.getElementById('deleteQueryConfirmationModalName');
-                    deleteQueryConfirmationModalName.textContent = query.Name;
-                });
-
-                actionCell.appendChild(btnDetails);
-                actionCell.appendChild(btnUpdate);
-                actionCell.appendChild(btnDelete);
-                row.appendChild(actionCell);
-
-                tbody.appendChild(row);
-            });
-
-
-
-    }
-
-    function flagSearchdomainAsErroneous(domainKey) {
-      var domainItem = document.getElementById('sidebar_domain_' + domainKey);
-      domainItem.classList.add('list-group-item-danger');
+        if (states[text]) {
+            element.classList.add(states[text]);
+        } else {
+            element.classList.add("bg-danger");
+        }
+        element.textContent = text;
     }
 
     function showThrobber(element = null) {
       if (element == null) element = document;
-      element.querySelector('.spinner').classList.remove('d-none');
+      element.classList.add('spinner');
     }
 
     function hideThrobber(element = null) {
       if (element == null) element = document;
-      element.querySelector('.spinner').classList.add('d-none');
-    }
-
-    function showEntityDetails(entity) {
-      // Title
-      document.getElementById('entityDetailsTitle').innerText = '@T["Details"] - ' + entity.Name;
-
-      // Attributes
-      const attrBody = document.getElementById('entityAttributesBody');
-      attrBody.innerHTML = '';
-
-      const attributes = entity.Attributes || {};
-      const attrKeys = Object.keys(attributes);
-
-      if (attrKeys.length === 0) {
-          attrBody.innerHTML = `
-              <tr>
-                <td colspan="2" class="text-muted text-center">No attributes</td>
-              </tr>`;
-      } else {
-          attrKeys.forEach(key => {
-              const row = document.createElement('tr');
-              attributeKV = attributes[key];
-              row.innerHTML = `
-                <td>${attributeKV["Name"]}</td>
-                <td>${attributeKV["Value"]}</td>
-              `;
-              attrBody.appendChild(row);
-          });
-      }
-
-      // Datapoints
-      const dpBody = document.getElementById('entityDatapointsBody');
-      dpBody.innerHTML = '';
-
-      (entity.Datapoints || []).forEach(dp => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${dp.Name}</td>
-            <td>${dp.ProbMethod}</td>
-            <td>${dp.SimilarityMethod}</td>
-          `;
-          dpBody.appendChild(row);
-      });
-
-      // Show modal
-      const modal = new bootstrap.Modal(
-          document.getElementById('entityDetailsModal')
-      );
-      modal.show();
-    }
-
-    function showQueryDetails(query) {
-        // Title
-        document.getElementById('queryDetailsQueryName').innerText = query.Name;
-
-        /* ---------- Access times ---------- */
-        const accessList = document.getElementById('queryDetailsAccessTimes');
-        accessList.innerHTML = '';
-
-        if (!query.AccessDateTimes || query.AccessDateTimes.length === 0) {
-            accessList.innerHTML = `
-                <li class="list-group-item text-muted text-center">
-                    No access times
-                </li>`;
-        } else {
-            query.AccessDateTimes.forEach(dt => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item';
-                li.textContent = new Date(dt).toLocaleString();
-                accessList.appendChild(li);
-            });
-        }
-
-        /* ---------- Results ---------- */
-        const resultsBody = document.getElementById('queryDetailsResultsBody');
-        resultsBody.innerHTML = '';
-
-        if (!query.Results || query.Results.length === 0) {
-            resultsBody.innerHTML = `
-                <tr>
-                  <td colspan="2" class="text-muted text-center">
-                    No results
-                  </td>
-                </tr>`;
-        } else {
-            query.Results.forEach(r => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${r.Score.toFixed(4)}</td>
-                    <td class="text-break">${r.Name}</td>
-                `;
-                resultsBody.appendChild(row);
-            });
-        }
-
-        // Show modal
-        const modal = new bootstrap.Modal(
-            document.getElementById('queryDetailsModal')
-        );
-        modal.show();
-    }
-
-    function showQueryUpdate(query) {
-        // Title
-        document.getElementById('queryUpdateQueryName').innerText = query.Name;
-
-        /* ---------- Access times ---------- */
-        const accessList = document.getElementById('queryUpdateAccessTimes');
-        accessList.innerHTML = '';
-
-        if (!query.AccessDateTimes || query.AccessDateTimes.length === 0) {
-            accessList.innerHTML = `
-                <li class="list-group-item text-muted text-center">
-                    No access times
-                </li>`;
-        } else {
-            query.AccessDateTimes.forEach(dt => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item';
-                li.textContent = new Date(dt).toLocaleString();
-                accessList.appendChild(li);
-            });
-        }
-
-        /* ---------- Results ---------- */
-        const resultsBody = document.getElementById('queryUpdateResultsBody');
-        resultsBody.innerHTML = '';
-
-        if (!query.Results || query.Results.length === 0) {
-            resultsBody.innerHTML = `
-                <tr>
-                  <td colspan="2" class="text-muted text-center">
-                    No results
-                  </td>
-                </tr>`;
-        } else {
-            query.Results.forEach(r => {
-                const row = document.createElement('tr');
-                row.setAttribute("draggable", true);
-                const tdScore = document.createElement('td');
-                const scoreInput = document.createElement('input');
-                scoreInput.classList.add('form-control');
-                scoreInput.value = r.Score.toFixed(4);
-                tdScore.append(scoreInput);
-                const tdName = document.createElement('td');
-                tdName.classList.add("text-break");
-                tdName.innerText = r.Name;
-                const tdAction = document.createElement('td');
-                const deleteButton = document.createElement('button');
-                deleteButton.classList.add('btn', 'btn-danger', 'btn-sm');
-                deleteButton.innerText = '@Html.Raw(T["Delete"])';
-                deleteButton.onclick = function() {
-                    row.remove();
-                };
-                tdAction.append(deleteButton);
-                row.append(tdScore);
-                row.append(tdName);
-                row.append(tdAction);
-                resultsBody.appendChild(row);
-            });
-        }
-
-        // Show modal
-        const modal = new bootstrap.Modal(
-          document.getElementById('queryUpdateModal')
-        );
-        modal.show();
+      element.classList.remove('spinner');
     }
 
     function NumberOfBytesAsHumanReadable(bytes, decimals = 2) {
         if (bytes === 0) return '0 B';
         if (bytes > 1.20892581961*(10**27)) return "∞ B";
-        const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']; // 
+        const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
         const unitIndex = Math.floor(Math.log2(bytes) / 10);
         const unit = units[Math.min(unitIndex, units.length - 1)];
         const value = bytes / Math.pow(1024, unitIndex);
@@ -1477,209 +232,4 @@
         return `${value.toFixed(decimals)} ${unit}`;
     }
 
-    function getEntityAttributes(containerName = 'createEntityAttributesContainer') {
-        const container = document.getElementById(containerName);
-        const rows = container.querySelectorAll('tr[data-uid]');
-        const attributes = {};
-        
-        rows.forEach(row => {
-            const keyInput = row.querySelector('input.form-control');
-            const valueTextarea = row.querySelector('textarea.form-control');
-            
-            if (keyInput && valueTextarea) {
-                const key = keyInput.value.trim();
-                const value = valueTextarea.value.trim();
-                
-                if (key) {
-                    attributes[key] = value;
-                }
-            }
-        });
-        
-        return attributes;
-    }
-
-    function getEntityDatapoints(containerName = 'createEntityDatapointsContainer') {
-        const container = document.getElementById(containerName);
-        const rows = container.querySelectorAll('tr[data-uid]');
-        const datapoints = [];
-        
-        rows.forEach(row => {
-            const keyInput = row.querySelector('input.form-control');
-            const valueTextarea = row.querySelector('textarea.form-control');
-            const probmethodSelect = row.querySelector('select.probmethod');
-            const similaritymethodSelect = row.querySelector('select.similarityMethod');
-            const modelSelect = row.querySelector('select.model');
-            
-            if (keyInput && valueTextarea && probmethodSelect && modelSelect) {
-                const key = keyInput.value.trim();
-                var value = valueTextarea.value.trim();
-                if (value != null && value.length == 0) {
-                    value = null;
-                }
-                const probMethod = probmethodSelect.selectedOptions[0].value;
-                const similarityMethod = similaritymethodSelect.selectedOptions[0].value;
-                const modelSelection = Array.from(modelSelect.selectedOptions)
-                    .map(option => option.value);
-                
-                if (key) {
-                    let datapoint = {
-                      "name": key,
-                      "text": value,
-                      "probmethod_embedding": probMethod,
-                      "similarityMethod": similarityMethod,
-                      "model": modelSelection
-                    };
-                    datapoints.push(datapoint);
-                }
-            }
-        });
-        
-        return datapoints;
-    }
-
-    function addEntityAttribute(containerName = 'createEntityAttributesContainer', uid, key = '', value = '')
-    {
-        var container = document.getElementById(containerName);
-        var tr = document.createElement('tr');
-        tr.setAttribute('data-uid', uid);
-        var tdKey = document.createElement('td');
-        var keyInput = document.createElement('input');
-        keyInput.classList.add('form-control');
-        keyInput.ariaLabel = '@Html.Raw(T["Key"])';
-        keyInput.value = key;
-        tdKey.append(keyInput);
-        var tdValue = document.createElement('td');
-        var ValueInput = document.createElement('textarea');
-        ValueInput.classList.add('form-control');
-        ValueInput.ariaLabel = '@T["Value"]';
-        ValueInput.value = value;
-        tdValue.append(ValueInput);
-        var tdAction = document.createElement('td');
-        var tdButton = document.createElement('button');
-        tdButton.classList.add('btn', 'btn-danger');
-        tdButton.textContent = '@T["Remove"]';
-        tdButton.ariaLabel = '@T["Remove attribute"]';
-        tdAction.append(tdButton);
-        tdButton.onclick = function() {
-          tr.remove();
-        };
-        tr.append(tdKey);
-        tr.append(tdValue);
-        tr.append(tdAction);
-        container.append(tr);
-    }
-
-    function addEntityDatapoint(containerName = 'createEntityDatapointsContainer', uid, name = null, value = null, probmethod_embedding = null, similarityMethod = null, selectedModels = [])
-    {
-        var entityDatapointsContainer = document.getElementById(containerName);
-        var tr = document.createElement('tr');
-        tr.setAttribute('data-uid', uid);
-        var tdName = document.createElement('td');
-        var nameInput = document.createElement('input');
-        nameInput.classList.add('form-control')
-        nameInput.ariaLabel = '@T["Name"]';
-        if (name != null) nameInput.value = name;
-        tdName.append(nameInput);
-        var tdValue = document.createElement('td');
-        var ValueInput = document.createElement('textarea');
-        ValueInput.classList.add('form-control')                
-        ValueInput.ariaLabel = '@T["Value"]';
-        if (value != null) {
-            ValueInput.value = value;
-        } else {
-            nameInput.readOnly = true;
-            ValueInput.readOnly = true;
-        }
-        tdValue.append(ValueInput);
-
-        var tdProbmethodEmbedding = document.createElement('td');
-        var probMethodSelect = document.createElement('select');
-        probMethodSelect.classList.add('probmethod');
-        for (i in probMethods)
-        {
-            let probMethodSelectElement = document.createElement('option');
-            probMethodSelectElement.value = probMethods[i];
-            probMethodSelectElement.text = probMethods[i];
-            probMethodSelect.append(probMethodSelectElement);
-        }
-        probMethodSelect.classList.add('form-control')                
-        probMethodSelect.ariaLabel = '@T["Probmethod_embedding"]';
-        if (probmethod_embedding != null) probMethodSelect.value = probmethod_embedding;
-        tdProbmethodEmbedding.append(probMethodSelect);
-
-        var tdSimilarityMethod = document.createElement('td');
-        var similarityMethodSelect = document.createElement('select');
-        similarityMethodSelect.classList.add('similarityMethod');
-        for (i in similarityMethods)
-        {
-            let similarityMethodSelectElement = document.createElement('option');
-            similarityMethodSelectElement.value = similarityMethods[i];
-            similarityMethodSelectElement.text = similarityMethods[i];
-            similarityMethodSelect.append(similarityMethodSelectElement);
-        }
-        similarityMethodSelect.classList.add('form-control')                
-        similarityMethodSelect.ariaLabel = '@T["Similarity method"]';
-        if (similarityMethod != null) similarityMethodSelect.value = similarityMethod;
-        tdSimilarityMethod.append(similarityMethodSelect);
-
-        var tdModel = document.createElement('td');
-        var modelSelect = document.createElement('select');
-        modelSelect.classList.add('model');
-        modelSelect.multiple = true;
-        for (i in models)
-        {
-            let modelSelectElement = document.createElement('option');
-            modelSelectElement.value = models[i];
-            modelSelectElement.text = models[i];
-            modelSelectElement.selected = selectedModels.findIndex(x => x === models[i] || (x + ":latest") === models[i]) >= 0;
-            modelSelect.append(modelSelectElement);
-        }
-        modelSelect.classList.add('form-control')
-        modelSelect.ariaLabel = '@T["Probmethod_embedding"]';
-        if (value == null) {
-            modelSelect.disabled = true;
-        }
-        tdModel.append(modelSelect);
-        
-        
-        var tdAction = document.createElement('td');
-        var tdButton = document.createElement('button');
-        tdButton.classList.add('btn', 'btn-danger');
-        tdButton.textContent = '@T["Remove"]';
-        tdButton.ariaLabel = '@T["Remove attribute"]';
-        tdAction.append(tdButton);
-        tdButton.onclick = function() {
-          tr.remove();
-        };
-        tr.append(tdName);
-        tr.append(tdValue);
-        tr.append(tdProbmethodEmbedding);
-        tr.append(tdSimilarityMethod);
-        tr.append(tdModel);
-        tr.append(tdAction);
-        entityDatapointsContainer.append(tr);
-    }
-
-    function getQueryUpdateTableData() {
-        const tbody = document.getElementById('queryUpdateResultsBody');
-        const rows = tbody.getElementsByTagName('tr');
-        const result = [];
-        
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
-            const cells = row.getElementsByTagName('td');
-            
-            // Get the text content from the second cell (index 1) which contains the path
-            const score = parseFloat(cells[0].firstChild.value);
-            const name = cells[1].textContent.trim();
-            
-            result.push({
-                "Score": score,
-                "Name": name
-            });
-        }
-        
-        return result;
-    }
 </script>
