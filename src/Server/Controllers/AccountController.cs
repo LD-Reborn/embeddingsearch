@@ -12,9 +12,9 @@ public class AccountController : Controller
 {
     private readonly SimpleAuthOptions _options;
 
-    public AccountController(IOptions<SimpleAuthOptions> options)
+    public AccountController(EmbeddingSearchOptions options)
     {
-        _options = options.Value;
+        _options = options.SimpleAuth;
     }
 
     [HttpGet("Login")]

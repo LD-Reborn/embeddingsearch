@@ -10,11 +10,12 @@ using Server.Models;
 using Server.Services;
 using System.Text.Json.Serialization;
 using System.Reflection;
+using System.Configuration;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// Add Controllers with views & string conversion for enums
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(options =>
     {
@@ -22,6 +23,12 @@ builder.Services.AddControllersWithViews()
             new JsonStringEnumConverter()
         );
     });
+
+// Add Configuration
+IConfigurationSection configurationSection = builder.Configuration.GetSection("Embeddingsearch");
+EmbeddingSearchOptions configuration = configurationSection.Get<EmbeddingSearchOptions>() ?? throw new ConfigurationErrorsException("Unable to start server due to an invalid configration");
+
+builder.Services.Configure<EmbeddingSearchOptions>(configurationSection);
 
 // Add Localization
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
@@ -43,6 +50,31 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+    if (configuration.ApiKeys is not null)
+    {
+        c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+        {
+            Description = "ApiKey must appear in header",
+            Type = SecuritySchemeType.ApiKey,
+            Name = "X-API-KEY",
+            In = ParameterLocation.Header,
+            Scheme = "ApiKeyScheme"
+        });
+        var key = new OpenApiSecurityScheme()
+        {
+            Reference = new OpenApiReference
+            {
+                Type = ReferenceType.SecurityScheme,
+                Id = "ApiKey"
+            },
+            In = ParameterLocation.Header
+        };
+        var requirement = new OpenApiSecurityRequirement
+        {
+            { key, []}
+        };
+        c.AddSecurityRequirement(requirement);
+    }
 });
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -58,7 +90,12 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
-    Options.LogPath = builder.Configuration.GetValue<string>("Embeddingsearch:Elmah:LogFolder") ?? "~/logs";
+    Options.OnPermissionCheck = context =>
+        context.User.Claims.Any(claim =>
+            claim.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+            || claim.Value.Equals("Elmah", StringComparison.OrdinalIgnoreCase)
+    );
+    Options.LogPath = configuration.Elmah?.LogPath ?? "~/logs";
 });
 
 builder.Services
@@ -76,35 +113,11 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireRole("Admin"));
 });
 
-IConfigurationSection simpleAuthSection = builder.Configuration.GetSection("Embeddingsearch:SimpleAuth");
-if (simpleAuthSection.Exists()) builder.Services.Configure<SimpleAuthOptions>(simpleAuthSection);
 
 var app = builder.Build();
 
-List<string>? allowedIps = builder.Configuration.GetSection("Embeddingsearch:Elmah:AllowedHosts")
-    .Get<List<string>>();
-
-app.Use(async (context, next) =>
-{
-    bool requestIsElmah = context.Request.Path.StartsWithSegments("/elmah");
-    bool requestIsSwagger = context.Request.Path.StartsWithSegments("/swagger");
-    
-    if (requestIsElmah || requestIsSwagger)
-    {
-        var remoteIp = context.Connection.RemoteIpAddress?.ToString();
-        bool blockRequest = allowedIps is null
-            || remoteIp is null
-            || !allowedIps.Contains(remoteIp);
-        if (blockRequest)
-        {
-            context.Response.StatusCode = 403;
-            await context.Response.WriteAsync("Forbidden");
-            return;
-        }
-    }
-
-    await next();
-});
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseElmah();
 
@@ -123,14 +136,14 @@ bool IsDevelopment = app.Environment.IsDevelopment();
 bool useSwagger = app.Configuration.GetValue<bool>("UseSwagger");
 bool? UseMiddleware = app.Configuration.GetValue<bool?>("UseMiddleware");
 
-// Configure the HTTP request pipeline.
-if (IsDevelopment || useSwagger)
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    //app.UseElmahExceptionPage(); // Messes with JSON response for API calls. Leaving this here so I don't accidentally put this in again later on.
-}
-if (UseMiddleware == true && !IsDevelopment)
+    options.EnablePersistAuthorization();
+});
+//app.UseElmahExceptionPage(); // Messes with JSON response for API calls. Leaving this here so I don't accidentally put this in again later on.
+
+if (configuration.ApiKeys is not null)
 {
     app.UseMiddleware<Shared.ApiKeyMiddleware>();
 }
@@ -142,9 +155,6 @@ var localizationOptions = new RequestLocalizationOptions()
     .AddSupportedCultures(supportedCultures)
     .AddSupportedUICultures(supportedCultures);
 app.UseRequestLocalization(localizationOptions);
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapControllers();
 app.UseStaticFiles();
