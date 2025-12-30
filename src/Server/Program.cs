@@ -53,8 +53,8 @@ builder.Services.AddSingleton<SearchdomainHelper>();
 builder.Services.AddSingleton<SearchdomainManager>();
 builder.Services.AddSingleton<AIProvider>();
 builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("DatabaseHealthCheck")
-    .AddCheck<AIProviderHealthCheck>("AIProviderHealthCheck");
+    .AddCheck<DatabaseHealthCheck>("DatabaseHealthCheck", tags: ["Database"])
+    .AddCheck<AIProviderHealthCheck>("AIProviderHealthCheck", tags: ["AIProvider"]);
 
 builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
@@ -109,6 +109,15 @@ app.Use(async (context, next) =>
 app.UseElmah();
 
 app.MapHealthChecks("/healthz");
+app.MapHealthChecks("/healthz/Database", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = c => c.Name.Contains("Database")
+});
+
+app.MapHealthChecks("/healthz/AIProvider", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = c => c.Name.Contains("AIProvider")
+});
 
 bool IsDevelopment = app.Environment.IsDevelopment();
 bool useSwagger = app.Configuration.GetValue<bool>("UseSwagger");

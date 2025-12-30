@@ -1,6 +1,8 @@
 namespace Server.Controllers;
 
+using System.Reflection;
 using System.Text.Json;
+using AdaptiveExpressions;
 using ElmahCore;
 using Microsoft.AspNetCore.Mvc;
 using Server.Exceptions;
@@ -14,12 +16,14 @@ public class ServerController : ControllerBase
     private readonly ILogger<ServerController> _logger;
     private readonly IConfiguration _config;
     private AIProvider _aIProvider;
+    private readonly SearchdomainManager _searchdomainManager;
 
-    public ServerController(ILogger<ServerController> logger, IConfiguration config, AIProvider aIProvider)
+    public ServerController(ILogger<ServerController> logger, IConfiguration config, AIProvider aIProvider, SearchdomainManager searchdomainManager)
     {
         _logger = logger;
         _config = config;
         _aIProvider = aIProvider;
+        _searchdomainManager = searchdomainManager;
     }
 
     /// <summary>
@@ -40,5 +44,52 @@ public class ServerController : ControllerBase
             _logger.LogError("Unable to get models due to exception {ex.Message} - {ex.StackTrace}", [ex.Message, ex.StackTrace]);
             return new ServerGetModelsResult() { Success = false, Message = ex.Message};
         }
+    }
+
+    /// <summary>
+    /// Gets the total memory size of the embedding cache
+    /// </summary>
+    [HttpGet("EmbeddingCache/Size")]
+    public ActionResult<ServerGetEmbeddingCacheSizeResult> GetEmbeddingCacheSize()
+    {
+        long size = 0;
+        long elementCount = 0;
+        long embeddingsCount = 0;
+        LRUCache<string, Dictionary<string, float[]>> embeddingCache = _searchdomainManager.embeddingCache;
+        var cacheListField = embeddingCache.GetType()
+            .GetField("_cacheList", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException("_cacheList field not found"); // TODO Remove this unsafe reflection atrocity
+        LinkedList<string> cacheListOriginal = (LinkedList<string>)cacheListField.GetValue(embeddingCache)!;
+        LinkedList<string> cacheList = new(cacheListOriginal);
+
+        foreach (string key in cacheList)
+        {
+            if (!embeddingCache.TryGet(key, out var entry))
+                continue;
+
+            // estimate size
+            size += EstimateEntrySize(key, entry);
+            elementCount++;
+            embeddingsCount += entry.Keys.Count;
+        }
+        return new ServerGetEmbeddingCacheSizeResult() { Success = true, SizeInBytes = size, MaxElementCount = _searchdomainManager.EmbeddingCacheMaxCount, ElementCount = elementCount, EmbeddingsCount = embeddingsCount};
+    }
+
+    private static long EstimateEntrySize(string key, Dictionary<string, float[]> value)
+    {
+        int stringOverhead = MemorySizes.Align(MemorySizes.ObjectHeader + sizeof(int));
+        int arrayOverhead = MemorySizes.ArrayHeader;
+        int dictionaryOverhead = MemorySizes.ObjectHeader;
+        long size = 0;
+
+        size += stringOverhead + key.Length * sizeof(char);
+        size += dictionaryOverhead;
+
+        foreach (var kv in value)
+        {
+            size += stringOverhead + kv.Key.Length * sizeof(char);
+            size += arrayOverhead + kv.Value.Length * sizeof(float);
+        }
+
+        return size;
     }
 }

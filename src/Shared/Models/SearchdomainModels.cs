@@ -101,7 +101,7 @@ public struct SearchdomainSettings(bool cacheReconciliation = false)
     public bool CacheReconciliation { get; set; } = cacheReconciliation;
 }
 
-internal static class MemorySizes
+public static class MemorySizes
 {
     public static readonly int PointerSize = IntPtr.Size;
     public static readonly int ObjectHeader = PointerSize * 2;
