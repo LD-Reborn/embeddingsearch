@@ -216,6 +216,11 @@ public class Searchdomain
         return queryEmbeddings;
     }
 
+    public void UpdateModelsInUse()
+    {
+        modelsInUse = GetModels([.. entityCache]);
+    }
+
     private static float EvaluateEntityAgainstQueryEmbeddings(Entity entity, Dictionary<string, float[]> queryEmbeddings)
     {
         List<(string, float)> datapointProbs = [];
@@ -237,16 +242,19 @@ public class Searchdomain
     public static List<string> GetModels(List<Entity> entities)
     {
         List<string> result = [];
-        foreach (Entity entity in entities)
+        lock (entities)
         {
-            foreach (Datapoint datapoint in entity.datapoints)
+            foreach (Entity entity in entities)
             {
-                foreach ((string, float[]) tuple in datapoint.embeddings)
+                foreach (Datapoint datapoint in entity.datapoints)
                 {
-                    string model = tuple.Item1;
-                    if (!result.Contains(model))
+                    foreach ((string, float[]) tuple in datapoint.embeddings)
                     {
-                        result.Add(model);
+                        string model = tuple.Item1;
+                        if (!result.Contains(model))
+                        {
+                            result.Add(model);
+                        }
                     }
                 }
             }

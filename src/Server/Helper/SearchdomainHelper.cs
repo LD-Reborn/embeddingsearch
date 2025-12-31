@@ -218,6 +218,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             {
                 searchdomain.ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(preexistingEntity);
             }
+            searchdomain.UpdateModelsInUse();
             return preexistingEntity;
         }
         else
@@ -243,6 +244,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             };
             entityCache.Add(entity);
             searchdomain.ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(entity);
+            searchdomain.UpdateModelsInUse();
             return entity;
         }
     }
