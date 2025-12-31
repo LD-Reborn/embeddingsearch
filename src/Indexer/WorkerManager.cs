@@ -1,21 +1,22 @@
 using Indexer.Exceptions;
 using Indexer.Models;
 using Indexer.ScriptContainers;
+using Microsoft.Extensions.Options;
 
 public class WorkerManager
 {
     public Dictionary<string, Worker> Workers;
     public List<Type> types;
     private readonly ILogger<WorkerManager> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly IndexerOptions _configuration;
     private readonly Client.Client client;
 
-    public WorkerManager(ILogger<WorkerManager> logger, IConfiguration configuration, Client.Client client)
+    public WorkerManager(ILogger<WorkerManager> logger, IOptions<IndexerOptions> configuration, Client.Client client)
     {
         Workers = [];
         types = [typeof(PythonScriptable), typeof(CSharpScriptable)];
         _logger = logger;
-        _configuration = configuration;
+        _configuration = configuration.Value;
         this.client = client;
     }
 
@@ -23,27 +24,12 @@ public class WorkerManager
     {
         _logger.LogInformation("Initializing workers");
         // Load and configure all workers
-        var sectionMain = _configuration.GetSection("EmbeddingsearchIndexer");
-        if (!sectionMain.Exists())
-        {
-            _logger.LogCritical("Unable to load section \"EmbeddingsearchIndexer\"");
-            throw new IndexerConfigurationException("Unable to load section \"EmbeddingsearchIndexer\"");
-        }
 
-        WorkerCollectionConfig? sectionWorker = (WorkerCollectionConfig?)sectionMain.Get(typeof(WorkerCollectionConfig)); //GetValue<WorkerCollectionConfig>("Worker");
-        if (sectionWorker is not null)
+        foreach (WorkerConfig workerConfig in _configuration.Workers)
         {
-            foreach (WorkerConfig workerConfig in sectionWorker.Worker)
-            {
-                CancellationTokenSource cancellationTokenSource = new();
-                ScriptToolSet toolSet = new(workerConfig.Script, client, _logger, _configuration, cancellationTokenSource.Token, workerConfig.Name);
-                InitializeWorker(toolSet, workerConfig, cancellationTokenSource);
-            }
-        }
-        else
-        {
-            _logger.LogCritical("Unable to load section \"Worker\"");
-            throw new IndexerConfigurationException("Unable to load section \"Worker\"");
+            CancellationTokenSource cancellationTokenSource = new();
+            ScriptToolSet toolSet = new(workerConfig.Script, client, _logger, _configuration, cancellationTokenSource.Token, workerConfig.Name);
+            InitializeWorker(toolSet, workerConfig, cancellationTokenSource);
         }
         _logger.LogInformation("Initialized workers");
     }

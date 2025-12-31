@@ -1,24 +1,25 @@
 
 using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Server.Exceptions;
+using Server.Models;
 
 namespace Server;
 
 public class AIProvider
 {
     private readonly ILogger<AIProvider> _logger;
-    private readonly IConfiguration _configuration;
-    public AIProvidersConfiguration aIProvidersConfiguration;
+    private readonly EmbeddingSearchOptions _configuration;
+    public Dictionary<string, AiProvider> aIProvidersConfiguration;
 
-    public AIProvider(ILogger<AIProvider> logger, IConfiguration configuration)
+    public AIProvider(ILogger<AIProvider> logger, IOptions<EmbeddingSearchOptions> configuration)
     {
         _logger = logger;
-        _configuration = configuration;
-        AIProvidersConfiguration? retrievedAiProvidersConfiguration = _configuration
-            .GetSection("Embeddingsearch")
-            .Get<AIProvidersConfiguration>();
+        _configuration = configuration.Value;
+        Dictionary<string, AiProvider>? retrievedAiProvidersConfiguration = _configuration.AiProviders;
         if (retrievedAiProvidersConfiguration is null)
         {
             _logger.LogCritical("Unable to build AIProvidersConfiguration. Please check your configuration.");
@@ -35,8 +36,8 @@ public class AIProvider
         Uri uri = new(modelUri);
         string provider = uri.Scheme;
         string model = uri.AbsolutePath;
-        AIProviderConfiguration? aIProvider = aIProvidersConfiguration.AiProviders
-            .FirstOrDefault(x => String.Equals(x.Key.ToLower(), provider.ToLower()))
+        AiProvider? aIProvider = aIProvidersConfiguration
+            .FirstOrDefault(x => string.Equals(x.Key.ToLower(), provider.ToLower()))
             .Value;
         if (aIProvider is null)
         {
@@ -119,12 +120,12 @@ public class AIProvider
 
     public string[] GetModels()
     {
-        var aIProviders = aIProvidersConfiguration.AiProviders;
+        var aIProviders = aIProvidersConfiguration;
         List<string> results = [];
-        foreach (KeyValuePair<string, AIProviderConfiguration> aIProviderKV in aIProviders)
+        foreach (KeyValuePair<string, AiProvider> aIProviderKV in aIProviders)
         {
             string aIProviderName = aIProviderKV.Key;
-            AIProviderConfiguration aIProvider = aIProviderKV.Value;
+            AiProvider aIProvider = aIProviderKV.Value;
 
             using var httpClient = new HttpClient();
 
@@ -178,7 +179,12 @@ public class AIProvider
                 foreach (string? result in aIProviderResult)
                 {
                     if (result is null) continue;
-                    results.Add(aIProviderName + ":" + result);
+                    bool isInAllowList = ElementMatchesAnyRegexInList(result, aIProvider.Allowlist);
+                    bool isInDenyList =  ElementMatchesAnyRegexInList(result, aIProvider.Denylist);
+                    if (isInAllowList && !isInDenyList)
+                    {
+                        results.Add(aIProviderName + ":" + result);
+                    }
                 }
             }
             catch (Exception ex)
@@ -188,6 +194,11 @@ public class AIProvider
             }
         }
         return [.. results];
+    }
+
+    private static bool ElementMatchesAnyRegexInList(string element, string[] list)
+    {
+        return list?.Any(pattern => pattern != null && Regex.IsMatch(element, pattern)) ?? false;
     }
 }
 

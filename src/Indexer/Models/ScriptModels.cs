@@ -15,11 +15,11 @@ public class ScriptToolSet
     public Client.Client Client;
     public LoggerWrapper Logger;
     public ICallbackInfos? CallbackInfos;
-    public IConfiguration Configuration;
+    public IndexerOptions Configuration;
     public CancellationToken CancellationToken;
     public string Name;
 
-    public ScriptToolSet(string filePath, Client.Client client, ILogger<WorkerManager> logger, IConfiguration configuration, CancellationToken cancellationToken, string name)
+    public ScriptToolSet(string filePath, Client.Client client, ILogger<WorkerManager> logger, IndexerOptions configuration, CancellationToken cancellationToken, string name)
     {
         Configuration = configuration;
         Name = name;

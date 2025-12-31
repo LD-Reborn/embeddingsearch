@@ -12,6 +12,7 @@ using System.Text.Json.Serialization;
 using System.Reflection;
 using System.Configuration;
 using Microsoft.OpenApi.Models;
+using Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ IConfigurationSection configurationSection = builder.Configuration.GetSection("E
 EmbeddingSearchOptions configuration = configurationSection.Get<EmbeddingSearchOptions>() ?? throw new ConfigurationErrorsException("Unable to start server due to an invalid configration");
 
 builder.Services.Configure<EmbeddingSearchOptions>(configurationSection);
+builder.Services.Configure<ApiKeyOptions>(configurationSection);
 
 // Add Localization
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
@@ -133,8 +135,6 @@ app.MapHealthChecks("/healthz/AIProvider", new Microsoft.AspNetCore.Diagnostics.
 });
 
 bool IsDevelopment = app.Environment.IsDevelopment();
-bool useSwagger = app.Configuration.GetValue<bool>("UseSwagger");
-bool? UseMiddleware = app.Configuration.GetValue<bool?>("UseMiddleware");
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
@@ -145,7 +145,19 @@ app.UseSwaggerUI(options =>
 
 if (configuration.ApiKeys is not null)
 {
-    app.UseMiddleware<Shared.ApiKeyMiddleware>();
+    app.UseWhen(context =>
+    {
+        RouteData routeData = context.GetRouteData();
+        string controllerName = routeData.Values["controller"]?.ToString() ?? "StaticFile";
+        if (controllerName == "Account" || controllerName == "Home" || controllerName == "StaticFile")
+        {
+            return false;
+        }
+        return true;
+    }, appBuilder =>
+    {
+        appBuilder.UseMiddleware<Shared.ApiKeyMiddleware>();    
+    });
 }
 
 // Add localization

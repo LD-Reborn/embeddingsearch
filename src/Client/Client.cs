@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using System.Reflection.Metadata.Ecma335;
 using Shared.Models;
 using System.Net;
+using Microsoft.Extensions.Options;
 
 namespace Client;
 
@@ -25,12 +26,12 @@ public class Client
             this.searchdomain = searchdomain;
         }
 
-        public Client(IConfiguration configuration)
+        public Client(IOptions<ServerOptions> configuration)
         {
-            string? baseUri = configuration.GetSection("Embeddingsearch").GetValue<string>("BaseUri");
-            string? apiKey = configuration.GetSection("Embeddingsearch").GetValue<string>("ApiKey");
-            string? searchdomain = configuration.GetSection("Embeddingsearch").GetValue<string>("Searchdomain");
-            this.baseUri = baseUri ?? "";
+            string baseUri = configuration.Value.BaseUri;
+            string? apiKey = configuration.Value.ApiKey;
+            string? searchdomain = configuration.Value.Searchdomain;
+            this.baseUri = baseUri;
             this.apiKey = apiKey ?? "";
             this.searchdomain = searchdomain ?? "";
         }
