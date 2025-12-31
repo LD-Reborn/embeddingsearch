@@ -15,11 +15,8 @@ public class PythonScriptable : IScriptContainer
     public ILogger _logger { get; set; }
     public PythonScriptable(ScriptToolSet toolSet, ILogger logger)
     {
-        string? runtime = toolSet.Configuration.GetValue<string>("EmbeddingsearchIndexer:PythonRuntime");
-        if (runtime is not null)
-        {
-            Runtime.PythonDLL ??= runtime;
-        }
+        string runtime = toolSet.Configuration.PythonRuntime;
+        Runtime.PythonDLL ??= runtime;
         _logger = logger;
         SourceLoaded = false;
         if (!PythonEngine.IsInitialized)

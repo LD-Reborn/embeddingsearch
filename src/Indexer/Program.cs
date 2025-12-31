@@ -6,6 +6,8 @@ using ElmahCore.Mvc;
 using ElmahCore.Mvc.Logger;
 using Serilog;
 using Quartz;
+using System.Configuration;
+using Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,12 @@ Log.Logger = new LoggerConfiguration()
 builder.Logging.AddSerilog();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IConfigurationRoot>(builder.Configuration);
+
+IConfigurationSection configurationSection = builder.Configuration.GetSection("Indexer");
+IndexerOptions configuration = configurationSection.Get<IndexerOptions>() ?? throw new ConfigurationErrorsException("Unable to start server due to an invalid configration");
+builder.Services.Configure<IndexerOptions>(configurationSection);
+builder.Services.Configure<ServerOptions>(configurationSection.GetSection("Server"));
+builder.Services.Configure<ApiKeyOptions>(configurationSection);
 builder.Services.AddSingleton<Client.Client>();
 builder.Services.AddSingleton<WorkerManager>();
 builder.Services.AddHostedService<IndexerService>();
