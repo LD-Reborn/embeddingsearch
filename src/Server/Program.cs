@@ -136,6 +136,26 @@ app.MapHealthChecks("/healthz/AIProvider", new Microsoft.AspNetCore.Diagnostics.
 
 bool IsDevelopment = app.Environment.IsDevelopment();
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/swagger"))
+    {
+        if (!context.User.Identity?.IsAuthenticated ?? true)
+        {
+            context.Response.Redirect("/Account/Login");
+            return;
+        }
+
+        if (!context.User.IsInRole("Admin"))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+    }
+
+    await next();
+});
+
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
