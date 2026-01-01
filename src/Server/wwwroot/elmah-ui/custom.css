@@ -41,6 +41,7 @@
 }
 
 /* expand on hover */
+.elmah-return-btn.show-label::before,
 .elmah-return-btn:hover::before {
     max-width: 220px;
     padding: 0.5rem;
@@ -48,6 +49,7 @@
 }
 
 /* hover colors */
+.elmah-return-btn.show-label, 
 .elmah-return-btn:hover {
     background: #0b5ed7;
     color: white;
