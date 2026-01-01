@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Configuration;
 using Microsoft.OpenApi.Models;
 using Shared.Models;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -115,6 +116,24 @@ builder.Services.AddAuthorization(options =>
         policy => policy.RequireRole("Admin"));
 });
 
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<GzipCompressionProvider>();
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.MimeTypes =
+    [
+        "text/plain",
+        "text/css",
+        "application/javascript",
+        "text/javascript",
+        "text/html",
+        "application/xml",
+        "text/xml",
+        "application/json",
+        "image/svg+xml"
+    ];
+});
 
 var app = builder.Build();
 
@@ -180,6 +199,8 @@ if (configuration.ApiKeys is not null)
     });
 }
 
+app.UseResponseCompression();
+
 // Add localization
 var supportedCultures = new[] { "de", "de-DE", "en-US" };
 var localizationOptions = new RequestLocalizationOptions()
@@ -189,6 +210,22 @@ var localizationOptions = new RequestLocalizationOptions()
 app.UseRequestLocalization(localizationOptions);
 
 app.MapControllers();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        string requestPath = ctx.Context.Request.Path.ToString();
+        string[] cachedSuffixes = [".css", ".js", ".png", ".ico", ".woff2"];
+        if (cachedSuffixes.Any(suffix => requestPath.EndsWith(suffix)))
+        {
+            ctx.Context.Response.GetTypedHeaders().CacheControl =
+                new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
+                {
+                    Public = true,
+                    MaxAge = TimeSpan.FromDays(365)
+                };
+        }
+    }
+});
 
 app.Run();

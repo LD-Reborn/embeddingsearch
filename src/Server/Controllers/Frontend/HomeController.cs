@@ -20,8 +20,14 @@ public class HomeController : Controller
         _domainManager = domainManager;
     }
 
-    [Authorize]
     [HttpGet("/")]
+    public IActionResult Root()
+    {
+        return Redirect("/Home/Index");
+    }
+
+    [Authorize]
+    [HttpGet("Index")]
     public IActionResult Index()
     {
         return View();

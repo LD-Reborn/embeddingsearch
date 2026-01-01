@@ -18,9 +18,10 @@
 }
 
 <div class="container py-4">
-    <h3 class="mb-4">
+    <h1 class="visually-hidden">Searchdomains</h1>
+    <p class="mb-4 fs-3">
         @(hasName ? T["Hi, {0}!", name] : T["Hi!"])
-    </h3>
+    </p>
 
     <div class="row g-4">
 
@@ -28,7 +29,7 @@
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title">@T["Embedding Cache"]</h5>
+                    <h2 class="card-title fs-5">@T["Embedding Cache"]</h2>
 
                     <div class="d-flex justify-content-between">
                         <span>@T["Size"]</span>
@@ -62,7 +63,7 @@
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title">@T["Health Checks"]</h5>
+                    <h2 class="card-title fs-5">@T["Health Checks"]</h2>
 
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between">
@@ -88,7 +89,7 @@
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title">@T["Searchdomains"]</h5>
+                    <h2 class="card-title fs-5">@T["Searchdomains"]</h2>
 
                     <div class="d-flex justify-content-between">
                         <span>@T["Count"]</span>
@@ -111,7 +112,7 @@
     </div>
 </div>
 
-<script defer>
+<script>
     var searchdomains = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -138,41 +139,55 @@
         let healthchecksServer = document.getElementById("healthchecksServer");
         let healthchecksAiProvider = document.getElementById("healthchecksAiProvider");
 
-        listSearchdomains().then(async result => {
-            searchdomains = result.Searchdomains;
-            hideThrobber(searchdomainCount);
-            searchdomainCount.textContent = searchdomains.length;
+        (async() => {
+            listSearchdomains().then(async result => {
+                searchdomains = result.Searchdomains;
+                hideThrobber(searchdomainCount);
+                searchdomainCount.textContent = searchdomains.length;
 
-            var entityCount = 0;
-            var totalUtilization = 0;
-            for (var name in searchdomains){
-                let entityListResult = await listEntities(searchdomains[name]);
-                let entities = entityListResult.Results;
-                entityCount += entities.length;
-                let querycacheUtilizationResult = await getQuerycacheUtilization(searchdomains[name]);
-                let utilization = querycacheUtilizationResult.QueryCacheSizeBytes;
-                totalUtilization += utilization;
-            }
-            hideThrobber(searchdomainEntityCount);
-            hideThrobber(totalQuerycacheUtilization);
-            searchdomainEntityCount.textContent = entityCount;
-            totalQuerycacheUtilization.textContent = NumberOfBytesAsHumanReadable(totalUtilization);
-        });
-        getEmbeddingcacheUtilization().then(result => {
-            let utilization = result.SizeInBytes;
-            let maxElementCount = result.MaxElementCount;
-            let elementCount = result.ElementCount;
-            let embeddingCount = result.EmbeddingsCount;
-            hideThrobber(embeddingcacheSize);
-            embeddingcacheSize.textContent = NumberOfBytesAsHumanReadable(utilization);
-            hideThrobber(embeddingcacheElementCount);
-            embeddingcacheElementCount.textContent = `${elementCount.toLocaleString()} / ${maxElementCount.toLocaleString()}`;
-            hideThrobber(embeddingcacheEmbeddingCount);
-            embeddingcacheEmbeddingCount.textContent = embeddingCount;
-            embeddingcacheElementCountProgressBar.style.width = `${elementCount / maxElementCount * 100}%`;
-        });
-        getHealthCheckStatusAndApply(healthchecksServer, "/healthz/Database");
-        getHealthCheckStatusAndApply(healthchecksAiProvider, "/healthz/AIProvider");
+                const perDomainPromises = searchdomains.map(async domain => {
+                    const [entityListResult, querycacheUtilizationResult] = await Promise.all([
+                        listEntities(domain),
+                        getQuerycacheUtilization(domain)
+                    ]);
+
+                    return {
+                        entityCount: entityListResult.Results.length,
+                        utilization: querycacheUtilizationResult.QueryCacheSizeBytes
+                    };
+                });
+
+                const results = await Promise.all(perDomainPromises);
+
+                let entityCount = 0;
+                let totalUtilization = 0;
+
+                for (const r of results) {
+                    entityCount += r.entityCount;
+                    totalUtilization += r.utilization;
+                }
+
+                hideThrobber(searchdomainEntityCount);
+                hideThrobber(totalQuerycacheUtilization);
+                searchdomainEntityCount.textContent = entityCount;
+                totalQuerycacheUtilization.textContent = NumberOfBytesAsHumanReadable(totalUtilization);
+            });
+            getEmbeddingcacheUtilization().then(result => {
+                let utilization = result.SizeInBytes;
+                let maxElementCount = result.MaxElementCount;
+                let elementCount = result.ElementCount;
+                let embeddingCount = result.EmbeddingsCount;
+                hideThrobber(embeddingcacheSize);
+                embeddingcacheSize.textContent = NumberOfBytesAsHumanReadable(utilization);
+                hideThrobber(embeddingcacheElementCount);
+                embeddingcacheElementCount.textContent = `${elementCount.toLocaleString()} / ${maxElementCount.toLocaleString()}`;
+                hideThrobber(embeddingcacheEmbeddingCount);
+                embeddingcacheEmbeddingCount.textContent = embeddingCount;
+                embeddingcacheElementCountProgressBar.style.width = `${elementCount / maxElementCount * 100}%`;
+            });
+            getHealthCheckStatusAndApply(healthchecksServer, "/healthz/Database");
+            getHealthCheckStatusAndApply(healthchecksAiProvider, "/healthz/AIProvider");
+        })();
     });
 
 
