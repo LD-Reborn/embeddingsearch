@@ -18,3 +18,5 @@ src/Server/logs
 src/Shared/bin
 src/Shared/obj
 src/Server/wwwroot/logs/*
+src/Server/CriticalCSS/node_modules
+src/Server/CriticalCSS/package*.json
