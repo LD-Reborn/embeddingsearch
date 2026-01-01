@@ -14,6 +14,7 @@ using System.Configuration;
 using Microsoft.OpenApi.Models;
 using Shared.Models;
 using Microsoft.AspNetCore.ResponseCompression;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -161,7 +162,7 @@ app.Use(async (context, next) =>
     {
         if (!context.User.Identity?.IsAuthenticated ?? true)
         {
-            context.Response.Redirect("/Account/Login");
+            context.Response.Redirect($"/Account/Login?ReturnUrl={WebUtility.UrlEncode("/swagger")}");
             return;
         }
 
