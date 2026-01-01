@@ -7,4 +7,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.className = "elmah-return-btn";
 
     document.body.appendChild(btn);
+
+    const showLabelBriefly = () => {
+        btn.classList.add("show-label");
+        setTimeout(() => btn.classList.remove("show-label"), 2000);
+    };
+
+    setTimeout(showLabelBriefly, 1000);
 });

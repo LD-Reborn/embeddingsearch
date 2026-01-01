@@ -243,4 +243,61 @@
   <data name="Close alert" xml:space="preserve">
     <value>Close alert</value>
   </data>
+  <data name="Recent queries" xml:space="preserve">
+    <value>Recent queries</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="Searchdomains" xml:space="preserve">
+    <value>Searchdomains</value>
+  </data>
+  <data name="Swagger" xml:space="preserve">
+    <value>Swagger</value>
+  </data>
+  <data name="Elmah" xml:space="preserve">
+    <value>Elmah</value>
+  </data>
+  <data name="Hi!" xml:space="preserve">
+    <value>Hi!</value>
+  </data>
+  <data name="Hi, {0}!" xml:space="preserve">
+    <value>Hi {0}!</value>
+  </data>
+  <data name="Embedding Cache" xml:space="preserve">
+    <value>Embedding Cache</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Strings" xml:space="preserve">
+    <value>Strings</value>
+  </data>
+  <data name="stringsCountInfo" xml:space="preserve">
+    <value>The number of strings for which there are embeddings. I.e. If you use two models, the amount of embeddings will be twice this number.</value>
+  </data>
+  <data name="Embeddings" xml:space="preserve">
+    <value>Embeddings</value>
+  </data>
+  <data name="Health Checks" xml:space="preserve">
+    <value>Health Checks</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="AI Providers" xml:space="preserve">
+    <value>AI Providers</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="Total Entities" xml:space="preserve">
+    <value>Total Entities</value>
+  </data>
+  <data name="Total query cache utilization" xml:space="preserve">
+    <value>Total query cache utilization</value>
+  </data>
+  <data name="Unable to fetch searchdomain database utilization" xml:space="preserve">
+    <value>Unable to fetch searchdomain database utilization</value>
+  </data>
 </root>
