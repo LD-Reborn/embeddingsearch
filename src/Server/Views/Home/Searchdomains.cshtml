@@ -92,7 +92,7 @@
           <div class="card section-card mb-4">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <h3>Recent queries</h3>
+                <h3>@T["Recent queries"]</h3>
                 <input
                   type="text"
                   class="form-control form-control-sm w-25"
@@ -103,8 +103,8 @@
               <table id="queriesTable" class="table table-striped" style="max-height: 60vh; overflow-y: auto; display: block;">
                 <thead>
                   <tr>
-                    <th class="visually-hidden">Name</th>
-                    <th class="visually-hidden">Action</th>
+                    <th class="visually-hidden">@T["Name"]</th>
+                    <th class="visually-hidden">@T["Action"]</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -129,8 +129,8 @@
               <table id="entitiesTable" class="table table-striped" style="max-height: 60vh; overflow-y: auto; display: block;">
                 <thead>
                   <tr>
-                    <th class="visually-hidden">Name</th>
-                    <th class="visually-hidden">Action</th>
+                    <th class="visually-hidden">@T["Name"]</th>
+                    <th class="visually-hidden">@T["Action"]</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -298,10 +298,10 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-warning" onclick="renameSearchdomain(getSelectedDomainKey(), document.getElementById('renameSearchdomainNewName').value)" data-bs-dismiss="modal">
-          Rename
+          @T["Rename"]
         </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Close
+          @T["Close"]
         </button>
       </div>
     </div>

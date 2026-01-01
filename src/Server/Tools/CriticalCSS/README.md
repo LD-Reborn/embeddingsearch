@@ -8,3 +8,4 @@ npm install puppeteer
 ```bash
 node CriticalCSSGenerator.js
 ```
+3. Move the `.css` files from the current directory to the `CriticalCSS/` folder (overwrite existing files)

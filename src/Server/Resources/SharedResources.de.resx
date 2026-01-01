@@ -55,7 +55,7 @@
     <value>Such-Cache</value>
   </data>
   <data name="Search cache utilization" xml:space="preserve">
-    <value>Such-Cache Speicherauslastung</value>
+    <value>Such-Cache-Speicherauslastung</value>
   </data>
   <data name="Clear" xml:space="preserve">
     <value>Leeren</value>
@@ -121,7 +121,7 @@
     <value>Searchdomain Name</value>
   </data>
   <data name="Enable cache reconciliation" xml:space="preserve">
-    <value>Cache Abgleich verwenden</value>
+    <value>Cache-Abgleich verwenden</value>
   </data>
   <data name="Create entity" xml:space="preserve">
     <value>Entity erstellen</value>
@@ -175,10 +175,10 @@
     <value>Searchdomain konnte nicht erstellt werden</value>
   </data>
   <data name="Searchdomain cache was cleared successfully" xml:space="preserve">
-    <value>Searchdomain Cache wurde erfolgreich geleert</value>
+    <value>Searchdomain-Cache wurde erfolgreich geleert</value>
   </data>
   <data name="Failed to clear searchdomain cache" xml:space="preserve">
-    <value>Searchdomain Cache konnte nicht geleert werden</value>
+    <value>Searchdomain-Cache konnte nicht geleert werden</value>
   </data>
   <data name="Entity was deleted successfully" xml:space="preserve">
     <value>Entity wurde erfolgreich gelöscht</value>
@@ -229,7 +229,7 @@
     <value>Searchdomain Einstellungen konnten nicht abgerufen werden</value>
   </data>
   <data name="Unable to fetch searchdomain cache utilization" xml:space="preserve">
-    <value>Searchdomain Cache-Auslastung konnte nicht abgerufen werden</value>
+    <value>Searchdomain-Cache-Auslastung konnte nicht abgerufen werden</value>
   </data>
   <data name="Details" xml:space="preserve">
     <value>Details</value>
@@ -242,5 +242,62 @@
   </data>
   <data name="Close alert" xml:space="preserve">
     <value>Benachrichtigung schließen</value>
+  </data>
+  <data name="Recent queries" xml:space="preserve">
+    <value>Letzte Queries</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="Searchdomains" xml:space="preserve">
+    <value>Searchdomains</value>
+  </data>
+  <data name="Swagger" xml:space="preserve">
+    <value>Swagger</value>
+  </data>
+  <data name="Elmah" xml:space="preserve">
+    <value>Elmah</value>
+  </data>
+  <data name="Hi!" xml:space="preserve">
+    <value>Hallo!</value>
+  </data>
+  <data name="Hi, {0}!" xml:space="preserve">
+    <value>Hallo {0}!</value>
+  </data>
+  <data name="Embedding Cache" xml:space="preserve">
+    <value>Embedding-Cache</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Größe</value>
+  </data>
+  <data name="Strings" xml:space="preserve">
+    <value>Zeichenketten</value>
+  </data>
+  <data name="stringsCountInfo" xml:space="preserve">
+    <value>Die Anzahl der Zeichenketten, für die Embeddings vorliegen. D.h. wenn zwei Modelle verwendet werden, ist die Zahl der Embeddings zweimal so hoch.</value>
+  </data>
+  <data name="Embeddings" xml:space="preserve">
+    <value>Embeddings</value>
+  </data>
+  <data name="Health Checks" xml:space="preserve">
+    <value>Health Checks</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="AI Providers" xml:space="preserve">
+    <value>AI Providers</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>Anzahl</value>
+  </data>
+  <data name="Total Entities" xml:space="preserve">
+    <value>Entities insgesamt</value>
+  </data>
+  <data name="Total query cache utilization" xml:space="preserve">
+    <value>Query-Cache-Verwendung insgesamt</value>
+  </data>
+  <data name="Unable to fetch searchdomain database utilization" xml:space="preserve">
+    <value>Searchdomain Datenbank-Auslastung konnte nicht abgerufen werden</value>
   </data>
 </root>
