@@ -1,7 +1,10 @@
 ﻿@using System.Globalization
 @using Server.Services
+@using System.Net
 @inject LocalizationService T
-
+@{
+    var currentUrl = WebUtility.HtmlEncode(Context.Request.Path);
+}
 <!DOCTYPE html>
 <html lang="@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName">
 <head>
@@ -59,6 +62,18 @@
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Searchdomains">@T["Searchdomains"]</a>
                             </li>
+                            @if (User.IsInRole("Admin") || User.IsInRole("Swagger"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" href="/swagger/index.html?ReturnUrl=@(currentUrl)">@T["Swagger"]</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" href="/elmah?ReturnUrl=@(currentUrl)">@T["Elmah"]</a>
+                                </li>
+                            }
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Logout">@T["Logout"]</a>
                             </li>

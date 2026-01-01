@@ -15,6 +15,7 @@ using Microsoft.OpenApi.Models;
 using Shared.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Net;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -141,6 +142,57 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Configure Elmah
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/elmah"))
+    {
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers.Append(
+                "Content-Security-Policy",
+                "default-src 'self' 'unsafe-inline' 'unsafe-eval'"
+            );
+            return Task.CompletedTask;
+        });
+    }
+
+    await next();
+});
+app.Use(async (context, next) =>
+{
+    if (!context.Request.Path.StartsWithSegments("/elmah"))
+    {
+        await next();
+        return;
+    }
+
+    var originalBody = context.Response.Body;
+    using var memStream = new MemoryStream();
+    context.Response.Body = memStream;
+
+    await next();
+
+    memStream.Position = 0;
+    var html = await new StreamReader(memStream).ReadToEndAsync();
+
+    if (context.Response.ContentType?.Contains("text/html") == true)
+    {
+        html = html.Replace(
+            "</head>",
+            """
+            <link rel="stylesheet" href="/elmah-ui/custom.css" />
+            <script src="/elmah-ui/custom.js"></script>
+            </head>
+            """
+        );
+    }
+
+    var bytes = Encoding.UTF8.GetBytes(html);
+    context.Response.ContentLength = bytes.Length;
+    await originalBody.WriteAsync(bytes);
+    context.Response.Body = originalBody;
+});
 app.UseElmah();
 
 app.MapHealthChecks("/healthz");
@@ -180,6 +232,8 @@ app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
     options.EnablePersistAuthorization();
+    options.InjectStylesheet("/swagger-ui/custom.css");
+    options.InjectJavascript("/swagger-ui/custom.js");
 });
 //app.UseElmahExceptionPage(); // Messes with JSON response for API calls. Leaving this here so I don't accidentally put this in again later on.
 
