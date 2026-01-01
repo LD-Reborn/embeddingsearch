@@ -19,7 +19,7 @@ const cookies = await page.cookies();
 await browser.close();
 
 async function generateCriticalCSSForViews() {
-  const viewsDir = '../Views';
+  const viewsDir = '../../Views';
   
   // Helper function to get all .cshtml files recursively
   function getAllCshtmlFiles(dir) {
@@ -29,8 +29,6 @@ async function generateCriticalCSSForViews() {
     list.forEach(file => {
       const filePath = path.join(dir, file);
       const stat = fs.statSync(filePath);
-      console.log("DEBUG@2");
-      console.log(filePath);
       if (stat && stat.isDirectory()) {
         // Recursively get files from subdirectories
         results = results.concat(getAllCshtmlFiles(filePath));
@@ -78,7 +76,7 @@ async function generateCriticalCSSForViews() {
   // Process each file
   for (const file of cshtmlFiles) {
     try {
-      const urlPath = filePathToUrlPath(file).replace("../", "").replace("/Views", "");
+      const urlPath = filePathToUrlPath(file).replace("../", "").replace("../", "").replace("/Views", "");
       
       // Generate critical CSS
       await generate({
@@ -105,14 +103,14 @@ async function generateCriticalCSSForViews() {
             '.d-flex', '.justify-content-between', '.mt-2', // card - content
             '.progress', '.mt-3', // card - progress bar
             '.list-group', '.list-group-flush', '.list-group-item', '.list-group-flush>.list-group-item', '.list-group-flush>.list-group-item:last-child', '.badge', '.bg-warning', '.bg-success', '.h-100', // card - health check list
-            '.btn', '.btn-sm', '.btn-primary', '.btn-warning', '.btn-danger', // Searchdomains buttons
+            '.btn-primary', '.btn-warning', '.btn-danger', '.btn-info', // Searchdomains buttons
             '.col-md-8', '.sidebar',
             '.mb-0', '.mb-2', '.align-items-center',
             'h3', '.col-md-3', '.col-md-2', '.text-nowrap', '.overflow-auto'
           ]
         },
         target: {
-          css: path.join(criticalCssDir, urlPath.replace(/\//g, '.').replace(/^\./, '').replace("...", "") + '.css')
+          css: path.join(criticalCssDir, "../../CriticalCSS/" + urlPath.replace(/\//g, '.').replace(/^\./, '').replace("...", "") + '.css')
         }
       });
       
