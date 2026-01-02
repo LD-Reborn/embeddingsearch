@@ -6,6 +6,8 @@ using Server.Exceptions;
 using AdaptiveExpressions;
 using Shared.Models;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
+using Server.Models;
 
 namespace Server;
 
@@ -13,24 +15,24 @@ public class SearchdomainManager
 {
     private Dictionary<string, Searchdomain> searchdomains = [];
     private readonly ILogger<SearchdomainManager> _logger;
-    private readonly IConfiguration _config;
+    private readonly EmbeddingSearchOptions _options;
     public readonly AIProvider aIProvider;
     private readonly DatabaseHelper _databaseHelper;
     private readonly string connectionString;
     private MySqlConnection connection;
     public SQLHelper helper;
     public LRUCache<string, Dictionary<string, float[]>> embeddingCache;
-    public int EmbeddingCacheMaxCount;
+    public long EmbeddingCacheMaxCount;
 
-    public SearchdomainManager(ILogger<SearchdomainManager> logger, IConfiguration config, AIProvider aIProvider, DatabaseHelper databaseHelper)
+    public SearchdomainManager(ILogger<SearchdomainManager> logger, IOptions<EmbeddingSearchOptions> options, AIProvider aIProvider, DatabaseHelper databaseHelper)
     {
         _logger = logger;
-        _config = config;
+        _options = options.Value;
         this.aIProvider = aIProvider;
         _databaseHelper = databaseHelper;
-        EmbeddingCacheMaxCount = config.GetValue<int?>("Embeddingsearch:EmbeddingCacheMaxCount") ?? 1000000;
-        embeddingCache = new(EmbeddingCacheMaxCount);
-        connectionString = _config.GetSection("Embeddingsearch").GetConnectionString("SQL") ?? "";
+        EmbeddingCacheMaxCount = _options.EmbeddingCacheMaxCount;
+        embeddingCache = new((int)EmbeddingCacheMaxCount);
+        connectionString = _options.ConnectionStrings.SQL;
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection, connectionString);
@@ -121,5 +123,10 @@ public class SearchdomainManager
     {
         searchdomains[name] = searchdomain;
         return searchdomain;
+    }
+
+    public bool IsSearchdomainLoaded(string name)
+    {
+        return searchdomains.ContainsKey(name);
     }
 }

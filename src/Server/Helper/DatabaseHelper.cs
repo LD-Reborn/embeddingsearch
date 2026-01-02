@@ -1,6 +1,9 @@
+using System.Configuration;
 using System.Data.Common;
 using System.Text;
+using MySql.Data.MySqlClient;
 using Server.Exceptions;
+using Server.Models;
 using Shared.Models;
 
 namespace Server.Helper;
@@ -8,6 +11,14 @@ namespace Server.Helper;
 public class DatabaseHelper(ILogger<DatabaseHelper> logger)
 {
     private readonly ILogger<DatabaseHelper> _logger = logger;
+
+    public static SQLHelper GetSQLHelper(EmbeddingSearchOptions embeddingSearchOptions)
+    {
+        string connectionString = embeddingSearchOptions.ConnectionStrings.SQL;
+        MySqlConnection connection = new(connectionString);
+        connection.Open();
+        return new SQLHelper(connection, connectionString);
+    }
 
     public static void DatabaseInsertEmbeddingBulk(SQLHelper helper, int id_datapoint, List<(string model, byte[] embedding)> data)
     {
@@ -210,5 +221,27 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         attributeSumReader.Close();
 
         return result;
-    } 
+    }
+
+    public static async Task<long> CountEntities(SQLHelper helper)
+    {
+        DbDataReader searchdomainSumReader = helper.ExecuteSQLCommand("SELECT COUNT(*) FROM entity;", []);
+        bool success = searchdomainSumReader.Read();
+        long result = success && !searchdomainSumReader.IsDBNull(0) ? searchdomainSumReader.GetInt64(0) : 0;
+        searchdomainSumReader.Close();
+        return result;
+    }
+
+    public static long CountEntitiesForSearchdomain(SQLHelper helper, string searchdomain)
+    {
+        Dictionary<string, dynamic> parameters = new()
+        {
+            { "searchdomain", searchdomain}
+        };
+        DbDataReader searchdomainSumReader = helper.ExecuteSQLCommand("SELECT COUNT(*) FROM entity e JOIN searchdomain s on e.id_searchdomain = s.id WHERE e.id_searchdomain = s.id AND s.name = @searchdomain;", parameters);
+        bool success = searchdomainSumReader.Read();
+        long result = success && !searchdomainSumReader.IsDBNull(0) ? searchdomainSumReader.GetInt64(0) : 0;
+        searchdomainSumReader.Close();
+        return result;
+    }
 }

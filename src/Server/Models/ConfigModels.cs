@@ -6,7 +6,7 @@ namespace Server.Models;
 
 public class EmbeddingSearchOptions : ApiKeyOptions
 {
-    public required ConnectionStringsSection ConnectionStrings { get; set; }
+    public required ConnectionStringsOptions ConnectionStrings { get; set; }
     public ElmahOptions? Elmah { get; set; }
     public required long EmbeddingCacheMaxCount { get; set; }
     public required Dictionary<string, AiProvider> AiProviders { get; set; }
@@ -33,4 +33,9 @@ public class SimpleUser
     public string Username { get; set; } = "";
     public string Password { get; set; } = "";
     public string[] Roles { get; set; } = [];
+}
+
+public class ConnectionStringsOptions
+{
+    public required string SQL { get; set; }
 }
