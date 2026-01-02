@@ -75,3 +75,8 @@ url("/fonts/bootstrap-icons.woff") format("woff");
 }
 
 .bi-info-circle-fill::before { content: "\f430"; }
+
+td.btn-group {
+  display: revert;
+  min-width: 15rem;
+}
