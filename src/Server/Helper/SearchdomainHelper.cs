@@ -299,4 +299,9 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             return (null, 404, $"Unable to update searchdomain {searchdomain}");
         }
     }
+
+    public static bool IsSearchdomainLoaded(SearchdomainManager searchdomainManager, string name)
+    {
+        return searchdomainManager.IsSearchdomainLoaded(name);
+    }
 }

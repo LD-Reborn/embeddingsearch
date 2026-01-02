@@ -339,4 +339,16 @@ public class Searchdomain
     {
         searchCache = [];
     }
+
+    public long GetSearchCacheSize()
+    {
+        long sizeInBytes = 0;
+        foreach (var entry in searchCache)
+        {
+            sizeInBytes += sizeof(int); // string length prefix
+            sizeInBytes += entry.Key.Length * sizeof(char); // string characters
+            sizeInBytes += entry.Value.EstimateSize();
+        }
+        return sizeInBytes;
+    }
 }

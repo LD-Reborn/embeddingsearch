@@ -247,17 +247,13 @@ public class SearchdomainController : ControllerBase
     [HttpGet("QueryCache/Size")]
     public ActionResult<SearchdomainSearchCacheSizeResults> GetSearchCacheSize([Required]string searchdomain)
     {
+        if (!SearchdomainHelper.IsSearchdomainLoaded(_domainManager, searchdomain))
+        {
+            return Ok(new SearchdomainSearchCacheSizeResults() { QueryCacheSizeBytes = 0, Success = true });
+        }
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.searchCache;
-        long sizeInBytes = 0;
-        foreach (var entry in searchCache)
-        {
-            sizeInBytes += sizeof(int); // string length prefix
-            sizeInBytes += entry.Key.Length * sizeof(char); // string characters
-            sizeInBytes += entry.Value.EstimateSize();
-        }
-        return Ok(new SearchdomainSearchCacheSizeResults() { QueryCacheSizeBytes = sizeInBytes, Success = true });
+        return Ok(new SearchdomainSearchCacheSizeResults() { QueryCacheSizeBytes = searchdomain_.GetSearchCacheSize(), Success = true });
     }
 
     /// <summary>
@@ -284,5 +280,5 @@ public class SearchdomainController : ControllerBase
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         long sizeInBytes = DatabaseHelper.GetSearchdomainDatabaseSize(searchdomain_.helper, searchdomain);
         return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = sizeInBytes, Success = true });        
-    } 
+    }
 }

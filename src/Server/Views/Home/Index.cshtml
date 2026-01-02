@@ -5,7 +5,6 @@
 @using Server
 
 @inject LocalizationService T
-@inject AIProvider AIProvider
 @model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
@@ -144,39 +143,14 @@
                 searchdomains = result.Searchdomains;
                 hideThrobber(searchdomainCount);
                 searchdomainCount.textContent = searchdomains.length;
-
-                const perDomainPromises = searchdomains.map(async domain => {
-                    const [entityListResult, querycacheUtilizationResult] = await Promise.all([
-                        listEntities(domain),
-                        getQuerycacheUtilization(domain)
-                    ]);
-
-                    return {
-                        entityCount: entityListResult.Results.length,
-                        utilization: querycacheUtilizationResult.QueryCacheSizeBytes
-                    };
-                });
-
-                const results = await Promise.all(perDomainPromises);
-
-                let entityCount = 0;
-                let totalUtilization = 0;
-
-                for (const r of results) {
-                    entityCount += r.entityCount;
-                    totalUtilization += r.utilization;
-                }
-
-                hideThrobber(searchdomainEntityCount);
-                hideThrobber(totalQuerycacheUtilization);
-                searchdomainEntityCount.textContent = entityCount;
-                totalQuerycacheUtilization.textContent = NumberOfBytesAsHumanReadable(totalUtilization);
             });
-            getEmbeddingcacheUtilization().then(result => {
+            getServerStats().then(result => {
                 let utilization = result.SizeInBytes;
                 let maxElementCount = result.MaxElementCount;
                 let elementCount = result.ElementCount;
                 let embeddingCount = result.EmbeddingsCount;
+                let entityCount = result.EntityCount;
+                let queryCacheUtilization = result.QueryCacheUtilization;
                 hideThrobber(embeddingcacheSize);
                 embeddingcacheSize.textContent = NumberOfBytesAsHumanReadable(utilization);
                 hideThrobber(embeddingcacheElementCount);
@@ -184,6 +158,10 @@
                 hideThrobber(embeddingcacheEmbeddingCount);
                 embeddingcacheEmbeddingCount.textContent = embeddingCount;
                 embeddingcacheElementCountProgressBar.style.width = `${elementCount / maxElementCount * 100}%`;
+                hideThrobber(searchdomainEntityCount);
+                searchdomainEntityCount.textContent = entityCount;
+                hideThrobber(totalQuerycacheUtilization);
+                totalQuerycacheUtilization.textContent = NumberOfBytesAsHumanReadable(queryCacheUtilization);
             });
             getHealthCheckStatusAndApply(healthchecksServer, "/healthz/Database");
             getHealthCheckStatusAndApply(healthchecksAiProvider, "/healthz/AIProvider");
@@ -206,8 +184,8 @@
             .then(r => r.json());
     }
 
-    async function getEmbeddingcacheUtilization() {
-        return await fetch(`/Server/EmbeddingCache/Size`)
+    async function getServerStats() {
+        return await fetch(`/Server/Stats`)
             .then(r => r.json());
     }
 

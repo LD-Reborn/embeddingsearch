@@ -8,14 +8,18 @@ public class ServerGetModelsResult : SuccesMessageBaseModel
     public string[]? Models { get; set; }    
 }
 
-public class ServerGetEmbeddingCacheSizeResult : SuccesMessageBaseModel
+public class ServerGetStatsResult : SuccesMessageBaseModel
 {
     [JsonPropertyName("SizeInBytes")]
-    public required long? SizeInBytes { get; set; }
+    public long? SizeInBytes { get; set; }
     [JsonPropertyName("MaxElementCount")]
-    public required long? MaxElementCount { get; set; }
+    public long? MaxElementCount { get; set; }
     [JsonPropertyName("ElementCount")]
-    public required long? ElementCount { get; set; }
+    public long? ElementCount { get; set; }
     [JsonPropertyName("EmbeddingsCount")]
-    public required long? EmbeddingsCount { get; set; }    
+    public long? EmbeddingsCount { get; set; }
+    [JsonPropertyName("EntityCount")]
+    public long? EntityCount { get; set; }
+    [JsonPropertyName("QueryCacheUtilization")]
+    public long? QueryCacheUtilization { get; set; }
 }
