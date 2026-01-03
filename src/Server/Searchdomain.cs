@@ -4,6 +4,7 @@ using System.Text.Json;
 using ElmahCore.Mvc.Logger;
 using MySql.Data.MySqlClient;
 using Server.Helper;
+using Shared;
 using Shared.Models;
 using AdaptiveExpressions;
 
@@ -17,7 +18,7 @@ public class Searchdomain
     public string searchdomain;
     public int id;
     public SearchdomainSettings settings;
-    public Dictionary<string, DateTimedSearchResult> searchCache; // Key: query, Value: Search results for that query (with timestamp)
+    public EnumerableLruCache<string, DateTimedSearchResult> queryCache; // Key: query, Value: Search results for that query (with timestamp)
     public List<Entity> entityCache;
     public List<string> modelsInUse;
     public LRUCache<string, Dictionary<string, float[]>> embeddingCache;
@@ -33,12 +34,12 @@ public class Searchdomain
         this.aIProvider = aIProvider;
         this.embeddingCache = embeddingCache;
         this._logger = logger;
-        searchCache = [];
         entityCache = [];
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection, connectionString);
         settings = GetSettings();
+        queryCache = new(settings.QueryCacheSize);
         modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
         if (!runEmpty)
         {
@@ -163,7 +164,7 @@ public class Searchdomain
 
     public List<(float, string)> Search(string query, int? topN = null)
     {
-        if (searchCache.TryGetValue(query, out DateTimedSearchResult cachedResult))
+        if (queryCache.TryGetValue(query, out DateTimedSearchResult cachedResult))
         {
             cachedResult.AccessDateTimes.Add(DateTime.Now);
             return [.. cachedResult.Results.Select(r => (r.Score, r.Name))];
@@ -187,7 +188,7 @@ public class Searchdomain
             [.. sortedResults.Select(r =>
                 new ResultItem(r.Item1, r.Item2 ))]
         );
-        searchCache[query] = new DateTimedSearchResult(DateTime.Now, searchResult);
+        queryCache.Set(query, new DateTimedSearchResult(DateTime.Now, searchResult));
         return results;
     }
 
@@ -292,7 +293,7 @@ public class Searchdomain
     {
         if (settings.CacheReconciliation)
         {
-            foreach (KeyValuePair<string, DateTimedSearchResult> element in searchCache)
+            foreach (var element in queryCache)
             {
                 string query = element.Key;
                 DateTimedSearchResult searchResult = element.Value;
@@ -322,7 +323,7 @@ public class Searchdomain
     {
         if (settings.CacheReconciliation)
         {
-            foreach (KeyValuePair<string, DateTimedSearchResult> element in searchCache)
+            foreach (KeyValuePair<string, DateTimedSearchResult> element in queryCache)
             {
                 string query = element.Key;
                 DateTimedSearchResult searchResult = element.Value;
@@ -337,13 +338,13 @@ public class Searchdomain
 
     public void InvalidateSearchCache()
     {
-        searchCache = [];
+        queryCache = new(settings.QueryCacheSize);
     }
 
     public long GetSearchCacheSize()
     {
         long sizeInBytes = 0;
-        foreach (var entry in searchCache)
+        foreach (var entry in queryCache)
         {
             sizeInBytes += sizeof(int); // string length prefix
             sizeInBytes += entry.Key.Length * sizeof(char); // string characters

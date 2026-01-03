@@ -62,11 +62,17 @@
           <!-- Settings -->
           <div class="row align-items-center mb-3">
             <h3>@T["Settings"]</h3>
+            <div class="col-md-3">
+              <label class="form-check-label" for="searchdomainConfigQueryCacheSize">@T["Query cache size"]:</label>
+              <input type="number" class="form-control" id="searchdomainConfigQueryCacheSize" />
+            </div>
             <div class="col-md-6">
               <input type="checkbox" class="form-check-input" id="searchdomainConfigCacheReconciliation" />
               <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconciliation"]</label>
             </div>
-            <div class="col-md-2 mt-3 mt-md-0">
+          </div>
+          <div class="row align-items-center mb-3">
+            <div class="col-md-2 mt-md-0">
               <button class="btn btn-warning w-100" id="searchdomainConfigUpdate">@T["Update"]</button>
             </div>
           </div>
@@ -347,10 +353,20 @@
       </div>
 
       <div class="modal-body">
-        <label for="createSearchdomainName" class="form-label">@T["Searchdomain name"]</label>
-        <input type="text" class="form-control mb-3" id="createSearchdomainName" placeholder="@T["Searchdomain name"]" />
-        <input type="checkbox" class="form-check-input" id="createSearchdomainWithCacheReconciliation" />
-        <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconciliation"]</label>
+        <div class="row align-items-center mb-3">
+          <div class="col-md-12">
+            <label for="createSearchdomainName" class="form-label">@T["Searchdomain name"]</label>
+            <input type="text" class="form-control mb-3" id="createSearchdomainName" placeholder="@T["Searchdomain name"]" />
+          </div>
+          <div class="col-md-5">
+            <label class="form-check-label mb-2" for="createSearchdomainQueryCacheSize">@T["Query cache size"]:</label>
+            <input type="number" class="form-control" id="createSearchdomainQueryCacheSize" />
+          </div>
+          <div class="col-md-7">
+            <input type="checkbox" class="form-check-input" id="createSearchdomainWithCacheReconciliation" />
+            <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconciliation"]</label>
+          </div>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -694,7 +710,8 @@
             .addEventListener('click', () => {
                 const domainKey = getSelectedDomainKey();
                 const cacheReconciliation = document.getElementById('searchdomainConfigCacheReconciliation').checked;
-                updateSearchdomainConfig(domainKey, { CacheReconciliation: cacheReconciliation});
+                const queryCacheSize = document.getElementById('searchdomainConfigQueryCacheSize').value;
+                updateSearchdomainConfig(domainKey, { CacheReconciliation: cacheReconciliation, QueryCacheSize: queryCacheSize});
             });
 
         document
@@ -775,8 +792,9 @@
                     document.getElementById('createSearchdomainModal')
                 );
                 const name = document.getElementById('createSearchdomainName').value;
+                const queryCacheSize = document.getElementById('createSearchdomainQueryCacheSize').value;
                 const cacheReconciliation = document.getElementById('createSearchdomainWithCacheReconciliation').checked;
-                const settings = { CacheReconciliation: cacheReconciliation };
+                const settings = { CacheReconciliation: cacheReconciliation, QueryCacheSize: queryCacheSize };
                 // Implement create logic here
                 fetch(`/Searchdomain?searchdomain=${encodeURIComponent(name)}`, {
                     method: 'POST',
@@ -1053,6 +1071,7 @@
 
         let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
         let configElementCachereconciliation = document.getElementById('searchdomainConfigCacheReconciliation');
+        let configElementCacheSize = document.getElementById('searchdomainConfigQueryCacheSize');
 
         let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
         let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
@@ -1097,6 +1116,7 @@
         searchdomainConfigPromise.then(searchdomainConfig => {
             if (searchdomainConfig != null && searchdomainConfig.Settings != null)
             {
+                configElementCacheSize.value = searchdomainConfig.Settings.QueryCacheSize;
                 configElementCachereconciliation.checked = searchdomainConfig.Settings.CacheReconciliation;
                 configElementCachereconciliation.disabled = false;
             } else {
@@ -1106,10 +1126,10 @@
             }
         });
         cacheUtilizationPromise.then(cacheUtilization => {
-            if (cacheUtilization != null && cacheUtilization.QueryCacheSizeBytes != null)
+            if (cacheUtilization != null && cacheUtilization.SizeBytes != null)
             {
                 document.querySelector('#cacheUtilization').innerText =
-                    `${NumberOfBytesAsHumanReadable(cacheUtilization.QueryCacheSizeBytes)}`;
+                    `${NumberOfBytesAsHumanReadable(cacheUtilization.SizeBytes)}`;
             } else {
                 showToast("@T["Unable to fetch searchdomain cache utilization"]", "danger");
                 console.error('Failed to fetch searchdomain cache utilization');
