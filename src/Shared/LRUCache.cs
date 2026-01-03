@@ -154,13 +154,26 @@ public class EnumerableLruCache<TKey, TValue> where TKey : notnull
 
     public bool TryGetValue(TKey key, out TValue? value)
     {
-        _readerWriterLock.EnterReadLock();
+        _readerWriterLock.EnterUpgradeableReadLock();
         try
         {
-            return _cache.TryGetValue(key, out value);            
+            if (_cache.TryGetValue(key, out value))
+            {
+                return false;
+            }
+            _readerWriterLock.EnterWriteLock();
+            try
+            {
+                _keys.Remove(key);
+                _keys.AddFirst(key);
+            } finally
+            {
+                _readerWriterLock.ExitWriteLock();
+            }
+            return true;
         } finally
         {
-            _readerWriterLock.ExitReadLock();
+            _readerWriterLock.ExitUpgradeableReadLock();
         }
     }
 
