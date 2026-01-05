@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Shared;
 
 namespace Shared.Models;
 
@@ -25,7 +26,7 @@ public class SearchdomainDeleteResults : SuccesMessageBaseModel
     public required int DeletedEntities { get; set; }
 }
 
-public class SearchdomainSearchesResults : SuccesMessageBaseModel
+public class SearchdomainQueriesResults : SuccesMessageBaseModel
 {
     [JsonPropertyName("Searches")]
     public required Dictionary<string, DateTimedSearchResult> Searches { get; set; }
@@ -41,10 +42,14 @@ public class SearchdomainSettingsResults : SuccesMessageBaseModel
     public required SearchdomainSettings? Settings { get; set; }
 }
 
-public class SearchdomainSearchCacheSizeResults : SuccesMessageBaseModel
+public class SearchdomainQueryCacheSizeResults : SuccesMessageBaseModel
 {
-    [JsonPropertyName("QueryCacheSizeBytes")]
-    public required long? QueryCacheSizeBytes { get; set; }
+    [JsonPropertyName("ElementCount")]
+    public required int? ElementCount { get; set; }
+    [JsonPropertyName("ElementMaxCount")]
+    public required int? ElementMaxCount { get; set; }
+    [JsonPropertyName("SizeBytes")]
+    public required long? SizeBytes { get; set; }
 }
 
 public class SearchdomainInvalidateCacheResults : SuccesMessageBaseModel {}

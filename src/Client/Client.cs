@@ -121,13 +121,13 @@ public class Client
             }), new StringContent(settings, Encoding.UTF8, "application/json"));
         }
 
-        public async Task<SearchdomainSearchesResults> SearchdomainGetQueriesAsync(string searchdomain)
+        public async Task<SearchdomainQueriesResults> SearchdomainGetQueriesAsync(string searchdomain)
         {
             Dictionary<string, string> parameters = new()
             {
                 {"searchdomain", searchdomain}
             };
-            return await FetchUrlAndProcessJson<SearchdomainSearchesResults>(HttpMethod.Get, GetUrl($"{baseUri}/Searchdomain", "Queries", parameters));
+            return await FetchUrlAndProcessJson<SearchdomainQueriesResults>(HttpMethod.Get, GetUrl($"{baseUri}/Searchdomain", "Queries", parameters));
         }
 
         public async Task<EntityQueryResults> SearchdomainQueryAsync(string query)
@@ -190,13 +190,13 @@ public class Client
             return await FetchUrlAndProcessJson<SearchdomainUpdateResults>(HttpMethod.Put, GetUrl($"{baseUri}/Searchdomain", "Settings", parameters), content);
         }
 
-        public async Task<SearchdomainSearchCacheSizeResults> SearchdomainGetQueryCacheSizeAsync(string searchdomain)
+        public async Task<SearchdomainQueryCacheSizeResults> SearchdomainGetQueryCacheSizeAsync(string searchdomain)
         {
             Dictionary<string, string> parameters = new()
             {
                 {"searchdomain", searchdomain}
             };
-            return await FetchUrlAndProcessJson<SearchdomainSearchCacheSizeResults>(HttpMethod.Get, GetUrl($"{baseUri}/Searchdomain/QueryCache", "Size", parameters));
+            return await FetchUrlAndProcessJson<SearchdomainQueryCacheSizeResults>(HttpMethod.Get, GetUrl($"{baseUri}/Searchdomain/QueryCache", "Size", parameters));
         }
 
         public async Task<SearchdomainInvalidateCacheResults> SearchdomainClearQueryCache(string searchdomain)
@@ -222,9 +222,9 @@ public class Client
             return await FetchUrlAndProcessJson<ServerGetModelsResult>(HttpMethod.Get, GetUrl($"{baseUri}/Server", "Models", []));
         }
 
-        public async Task<ServerGetEmbeddingCacheSizeResult> ServerGetEmbeddingCacheSizeAsync()
+        public async Task<ServerGetStatsResult> ServerGetStatsAsync()
         {
-            return await FetchUrlAndProcessJson<ServerGetEmbeddingCacheSizeResult>(HttpMethod.Get, GetUrl($"{baseUri}/Server/EmbeddingCache", "Size", []));
+            return await FetchUrlAndProcessJson<ServerGetStatsResult>(HttpMethod.Get, GetUrl($"{baseUri}/Server/Stats", "Size", []));
         }
 
         private async Task<T> FetchUrlAndProcessJson<T>(HttpMethod httpMethod, string url, HttpContent? content = null)

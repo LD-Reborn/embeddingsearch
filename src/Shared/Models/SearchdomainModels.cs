@@ -95,10 +95,12 @@ public struct DateTimedSearchResult(DateTime dateTime, List<ResultItem> results)
     }
 }
 
-public struct SearchdomainSettings(bool cacheReconciliation = false)
+public struct SearchdomainSettings(bool cacheReconciliation = false, int queryCacheSize = 1_000_000)
 {
     [JsonPropertyName("CacheReconciliation")]
     public bool CacheReconciliation { get; set; } = cacheReconciliation;
+    [JsonPropertyName("QueryCacheSize")]
+    public int QueryCacheSize { get; set; } = queryCacheSize;
 }
 
 public static class MemorySizes
