@@ -91,4 +91,10 @@ public static class DatabaseMigrations
         helper.ExecuteSQLNonQuery("ALTER TABLE datapoint ADD COLUMN similaritymethod VARCHAR(512) NULL DEFAULT 'Cosine' AFTER probmethod_embedding", []);
         return 4;
     }
+
+    public static int UpdateFrom4(SQLHelper helper)
+    {
+        helper.ExecuteSQLNonQuery("UPDATE searchdomain SET settings = JSON_SET(settings, '$.QueryCacheSize', 1000000) WHERE JSON_EXTRACT(settings, '$.QueryCacheSize') is NULL;", []); // Set QueryCacheSize to a default of 1000000
+        return 5;
+    }
 }

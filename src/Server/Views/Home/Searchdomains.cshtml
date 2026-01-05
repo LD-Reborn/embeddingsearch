@@ -887,12 +887,12 @@
                 var data = [{
                   "name": name,
                   "probmethod": probMethod,
-                  "searchdomain": encodeURIComponent(domains[getSelectedDomainKey()]),
+                  "searchdomain": domains[getSelectedDomainKey()],
                   "attributes": attributes,
                   "datapoints": datapoints
                 }];
                 showToast("@T["Updating entity"]", "primary");
-                fetch(`/Entity`, {
+                fetch(`/Entities`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1073,6 +1073,8 @@
         let configElementCachereconciliation = document.getElementById('searchdomainConfigCacheReconciliation');
         let configElementCacheSize = document.getElementById('searchdomainConfigQueryCacheSize');
 
+        showThrobber(document.querySelector('#searchdomainConfigQueryCacheSize'), true);
+        showThrobber(document.querySelector('#searchdomainConfigCacheReconciliation'), true);
         let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
         let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
 
@@ -1114,6 +1116,7 @@
             });
 
         searchdomainConfigPromise.then(searchdomainConfig => {
+            hideThrobber(document.querySelector('#searchdomainConfigCacheReconciliation'), true);
             if (searchdomainConfig != null && searchdomainConfig.Settings != null)
             {
                 configElementCacheSize.value = searchdomainConfig.Settings.QueryCacheSize;
@@ -1126,6 +1129,7 @@
             }
         });
         cacheUtilizationPromise.then(cacheUtilization => {
+            hideThrobber(document.querySelector('#searchdomainConfigQueryCacheSize'), true);
             if (cacheUtilization != null && cacheUtilization.SizeBytes != null)
             {
                 document.querySelector('#cacheUtilization').innerText =
@@ -1309,14 +1313,30 @@
       domainItem.classList.add('list-group-item-danger');
     }
 
-    function showThrobber(element = null) {
+    function showThrobber(element = null, direct = false) {
       if (element == null) element = document;
-      element.querySelector('.spinner').classList.remove('d-none');
+      if (direct) {
+        let spinner = document.createElement('div');
+        spinner.classList.add('spinner');
+        spinner.style.position = "absolute";
+        spinner.style.marginTop = "0.5rem";
+        spinner.style.marginLeft = "0.5rem";
+        element.style.opacity = "0.25";
+        element.parentElement.insertBefore(spinner, element);
+      } else {
+        element.querySelector('.spinner').classList.remove('d-none');
+      }
+
     }
 
-    function hideThrobber(element = null) {
+    function hideThrobber(element = null, direct = false) {
       if (element == null) element = document;
-      element.querySelector('.spinner').classList.add('d-none');
+      if (direct) {
+        element.previousElementSibling.remove()
+        element.style.opacity = "1";
+      } else {
+        element.querySelector('.spinner').classList.add('d-none');
+      }
     }
 
     function showEntityDetails(entity) {

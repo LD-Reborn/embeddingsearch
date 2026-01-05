@@ -55,6 +55,10 @@ public class SearchdomainController : ControllerBase
     {
         try
         {
+            if (settings.QueryCacheSize <= 0)
+            {
+                settings.QueryCacheSize = 1_000_000; // TODO get rid of this magic number
+            }
             int id = _domainManager.CreateSearchdomain(searchdomain, settings);
             return Ok(new SearchdomainCreateResults(){Id = id, Success = true});
         } catch (Exception)
@@ -255,7 +259,7 @@ public class SearchdomainController : ControllerBase
         }
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        int elementCount = searchdomain_.queryCache.Count();
+        int elementCount = searchdomain_.queryCache.Count;
         int ElementMaxCount = searchdomain_.settings.QueryCacheSize;
         return Ok(new SearchdomainQueryCacheSizeResults() { SizeBytes = searchdomain_.GetSearchCacheSize(), ElementCount = elementCount, ElementMaxCount = ElementMaxCount, Success = true });
     }
