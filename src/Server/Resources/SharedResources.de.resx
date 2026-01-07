@@ -300,4 +300,19 @@
   <data name="Unable to fetch searchdomain database utilization" xml:space="preserve">
     <value>Searchdomain Datenbank-Auslastung konnte nicht abgerufen werden</value>
   </data>
+  <data name="Query cache entry count" xml:space="preserve">
+    <value>Query-Cache Einträge</value>
+  </data>
+  <data name="Query cache capacity (all)" xml:space="preserve">
+    <value>Query-Cache Kapazität (alle)</value>
+  </data>
+  <data name="queryCacheEntryCountAllInfo" xml:space="preserve">
+    <value>Anzahl der Einträge, die insgesamt in den Query-Cache passen. Ungeladene Searchdomains werden berücksichtigt.</value>
+  </data>
+  <data name="Query cache capacity (loaded)" xml:space="preserve">
+    <value>Query-Cache Kapazität (geladen)</value>
+  </data>
+  <data name="queryCacheEntryCountLoadedInfo" xml:space="preserve">
+    <value>Anzahl der Einträge, die insgesamt in den Query-Cache der geladenen Searchdomains passen.</value>
+  </data>
 </root>

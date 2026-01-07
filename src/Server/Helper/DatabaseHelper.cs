@@ -1,6 +1,7 @@
 using System.Configuration;
 using System.Data.Common;
 using System.Text;
+using System.Text.Json;
 using MySql.Data.MySqlClient;
 using Server.Exceptions;
 using Server.Models;
@@ -243,5 +244,23 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         long result = success && !searchdomainSumReader.IsDBNull(0) ? searchdomainSumReader.GetInt64(0) : 0;
         searchdomainSumReader.Close();
         return result;
+    }
+
+    public static SearchdomainSettings GetSearchdomainSettings(SQLHelper helper, string searchdomain)
+    {
+        Dictionary<string, dynamic> parameters = new()
+        {
+            ["name"] = searchdomain
+        };
+        DbDataReader reader = helper.ExecuteSQLCommand("SELECT settings from searchdomain WHERE name = @name", parameters);
+        try
+        {
+            reader.Read();
+            string settingsString = reader.GetString(0);
+            return JsonSerializer.Deserialize<SearchdomainSettings>(settingsString);
+        } finally
+        {
+            reader.Close();
+        }
     }
 }

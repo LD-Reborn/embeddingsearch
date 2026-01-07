@@ -286,7 +286,7 @@ public class SearchdomainController : ControllerBase
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        long sizeInBytes = DatabaseHelper.GetSearchdomainDatabaseSize(searchdomain_.helper, searchdomain);
-        return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = sizeInBytes, Success = true });        
+        long EmbeddingCacheUtilization = DatabaseHelper.GetSearchdomainDatabaseSize(searchdomain_.helper, searchdomain);
+        return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = EmbeddingCacheUtilization, Success = true });        
     }
 }

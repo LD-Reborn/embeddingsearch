@@ -104,6 +104,43 @@
                         <span>@T["Total query cache utilization"]</span>
                         <strong id="totalQuerycacheUtilization"></strong>
                     </div>
+
+                    <!-- Query cache -->
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>@T["Query cache entry count"]</span>
+                        <strong id="querycacheCount"></strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>
+                            @T["Query cache capacity (loaded)"]
+                            <i class="bi bi-info-circle-fill text-info" 
+                            data-bs-toggle="tooltip" 
+                            title="@T["queryCacheEntryCountLoadedInfo"]"></i>
+                        </span>
+                        <strong id="querycacheLoadedMaxElementCount"></strong>
+                    </div>
+
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div id="querycacheLoadedMaxElementCountProgressBar" class="progress-bar"
+                             style="width: 0.00%"></div>
+                    </div>
+
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>
+                            @T["Query cache capacity (all)"]
+                            <i class="bi bi-info-circle-fill text-info" 
+                            data-bs-toggle="tooltip" 
+                            title="@T["queryCacheEntryCountAllInfo"]"></i>
+                        </span>
+                        <strong id="querycacheMaxElementCount"></strong>
+                    </div>
+
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div id="querycacheMaxElementCountProgressBar" class="progress-bar"
+                             style="width: 0.00%"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -135,6 +172,17 @@
         let embeddingcacheEmbeddingCount = document.getElementById("embeddingcacheEmbeddingCount");
         showThrobber(embeddingcacheEmbeddingCount);
         let embeddingcacheElementCountProgressBar = document.getElementById("embeddingcacheElementCountProgressBar");
+
+        let querycacheCount = document.getElementById("querycacheCount");
+        showThrobber(querycacheCount);
+        let querycacheMaxElementCount = document.getElementById("querycacheMaxElementCount");
+        showThrobber(querycacheMaxElementCount);
+        let querycacheMaxElementCountProgressBar = document.getElementById("querycacheMaxElementCountProgressBar");
+        let querycacheLoadedMaxElementCount = document.getElementById("querycacheLoadedMaxElementCount");
+        showThrobber(querycacheLoadedMaxElementCount);
+        let querycacheLoadedElementCountProgressBar = document.getElementById("querycacheLoadedElementCountProgressBar");
+
+
         let healthchecksServer = document.getElementById("healthchecksServer");
         let healthchecksAiProvider = document.getElementById("healthchecksAiProvider");
 
@@ -145,23 +193,34 @@
                 searchdomainCount.textContent = searchdomains.length;
             });
             getServerStats().then(result => {
-                let utilization = result.SizeInBytes;
-                let maxElementCount = result.MaxElementCount;
-                let elementCount = result.ElementCount;
+                let utilization = result.EmbeddingCacheUtilization;
+                let embeddingCacheMaxElementCount = result.EmbeddingCacheMaxElementCount;
+                let embeddingCacheElementCount = result.ElementCount;
                 let embeddingCount = result.EmbeddingsCount;
                 let entityCount = result.EntityCount;
                 let queryCacheUtilization = result.QueryCacheUtilization;
+                let queryCacheElementCount = result.QueryCacheElementCount;
+                let queryCacheMaxElementCountAll = result.QueryCacheMaxElementCountAll;
+                let queryCacheMaxElementCountLoadedSearchdomainsOnly = result.QueryCacheMaxElementCountLoadedSearchdomainsOnly;
                 hideThrobber(embeddingcacheSize);
                 embeddingcacheSize.textContent = NumberOfBytesAsHumanReadable(utilization);
                 hideThrobber(embeddingcacheElementCount);
-                embeddingcacheElementCount.textContent = `${elementCount.toLocaleString()} / ${maxElementCount.toLocaleString()}`;
+                embeddingcacheElementCount.textContent = `${embeddingCacheElementCount.toLocaleString()} / ${embeddingCacheMaxElementCount.toLocaleString()}`;
                 hideThrobber(embeddingcacheEmbeddingCount);
                 embeddingcacheEmbeddingCount.textContent = embeddingCount;
-                embeddingcacheElementCountProgressBar.style.width = `${elementCount / maxElementCount * 100}%`;
+                embeddingcacheElementCountProgressBar.style.width = `${embeddingCacheElementCount / embeddingCacheMaxElementCount * 100}%`;
                 hideThrobber(searchdomainEntityCount);
                 searchdomainEntityCount.textContent = entityCount;
                 hideThrobber(totalQuerycacheUtilization);
                 totalQuerycacheUtilization.textContent = NumberOfBytesAsHumanReadable(queryCacheUtilization);
+                hideThrobber(querycacheMaxElementCount);
+                querycacheCount.textContent = queryCacheElementCount;
+                hideThrobber(querycacheCount);
+                querycacheMaxElementCount.textContent = queryCacheMaxElementCountAll.toLocaleString();
+                querycacheMaxElementCountProgressBar.style.width = `${queryCacheElementCount / queryCacheMaxElementCountAll * 100}%`;
+                hideThrobber(querycacheLoadedMaxElementCount);
+                querycacheLoadedMaxElementCount.textContent = queryCacheMaxElementCountLoadedSearchdomainsOnly.toLocaleString();
+                querycacheLoadedMaxElementCountProgressBar.style.width = `${queryCacheElementCount / queryCacheMaxElementCountLoadedSearchdomainsOnly * 100}%`;
             });
             getHealthCheckStatusAndApply(healthchecksServer, "/healthz/Database");
             getHealthCheckStatusAndApply(healthchecksAiProvider, "/healthz/AIProvider");

@@ -88,7 +88,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
 
     public Entity? EntityFromJSON(SearchdomainManager searchdomainManager, ILogger logger, JSONEntity jsonEntity) //string json)
     {
-        SQLHelper helper = searchdomainManager.helper.DuplicateConnection();
+        using SQLHelper helper = searchdomainManager.helper.DuplicateConnection();
         Searchdomain searchdomain = searchdomainManager.GetSearchdomain(jsonEntity.Searchdomain);
         List<Entity> entityCache = searchdomain.entityCache;
         AIProvider aIProvider = searchdomain.aIProvider;

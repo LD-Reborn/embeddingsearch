@@ -278,15 +278,7 @@ public class Searchdomain
 
     public SearchdomainSettings GetSettings()
     {
-        Dictionary<string, dynamic> parameters = new()
-        {
-            ["name"] = searchdomain
-        };
-        DbDataReader reader = helper.ExecuteSQLCommand("SELECT settings from searchdomain WHERE name = @name", parameters);
-        reader.Read();
-        string settingsString = reader.GetString(0);
-        reader.Close();
-        return JsonSerializer.Deserialize<SearchdomainSettings>(settingsString);
+        return DatabaseHelper.GetSearchdomainSettings(helper, searchdomain);
     }
 
     public void ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(Entity entity)
@@ -343,13 +335,13 @@ public class Searchdomain
 
     public long GetSearchCacheSize()
     {
-        long sizeInBytes = 0;
+        long EmbeddingCacheUtilization = 0;
         foreach (var entry in queryCache)
         {
-            sizeInBytes += sizeof(int); // string length prefix
-            sizeInBytes += entry.Key.Length * sizeof(char); // string characters
-            sizeInBytes += entry.Value.EstimateSize();
+            EmbeddingCacheUtilization += sizeof(int); // string length prefix
+            EmbeddingCacheUtilization += entry.Key.Length * sizeof(char); // string characters
+            EmbeddingCacheUtilization += entry.Value.EstimateSize();
         }
-        return sizeInBytes;
+        return EmbeddingCacheUtilization;
     }
 }
