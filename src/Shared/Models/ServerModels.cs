@@ -10,16 +10,22 @@ public class ServerGetModelsResult : SuccesMessageBaseModel
 
 public class ServerGetStatsResult : SuccesMessageBaseModel
 {
-    [JsonPropertyName("SizeInBytes")]
-    public long? SizeInBytes { get; set; }
-    [JsonPropertyName("MaxElementCount")]
-    public long? MaxElementCount { get; set; }
+    [JsonPropertyName("EmbeddingCacheUtilization")]
+    public long? EmbeddingCacheUtilization { get; set; }
+    [JsonPropertyName("EmbeddingCacheMaxElementCount")]
+    public long? EmbeddingCacheMaxElementCount { get; set; }
     [JsonPropertyName("ElementCount")]
-    public long? ElementCount { get; set; }
+    public long? EmbeddingCacheElementCount { get; set; }
     [JsonPropertyName("EmbeddingsCount")]
     public long? EmbeddingsCount { get; set; }
     [JsonPropertyName("EntityCount")]
     public long? EntityCount { get; set; }
+    [JsonPropertyName("QueryCacheElementCount")]
+    public long? QueryCacheElementCount { get; set; }
+    [JsonPropertyName("QueryCacheMaxElementCountAll")]
+    public long? QueryCacheMaxElementCountAll { get; set; }
+    [JsonPropertyName("QueryCacheMaxElementCountLoadedSearchdomainsOnly")]
+    public long? QueryCacheMaxElementCountLoadedSearchdomainsOnly { get; set; }
     [JsonPropertyName("QueryCacheUtilization")]
     public long? QueryCacheUtilization { get; set; }
 }

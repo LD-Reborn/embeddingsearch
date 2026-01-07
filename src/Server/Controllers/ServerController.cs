@@ -80,6 +80,9 @@ public class ServerController : ControllerBase
             var sqlHelper = DatabaseHelper.GetSQLHelper(_options.Value);
             Task<long> entityCountTask = DatabaseHelper.CountEntities(sqlHelper);
             long queryCacheUtilization = 0;
+            long queryCacheElementCount = 0;
+            long queryCacheMaxElementCountAll = 0;
+            long queryCacheMaxElementCountLoadedSearchdomainsOnly = 0;
             foreach (string searchdomain in _searchdomainManager.ListSearchdomains())
             {
                 if (SearchdomainHelper.IsSearchdomainLoaded(_searchdomainManager, searchdomain))
@@ -87,10 +90,29 @@ public class ServerController : ControllerBase
                     (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_searchdomainManager, searchdomain, _logger);
                     if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new ServerGetStatsResult(){Success = false, Message = message});
                     queryCacheUtilization += searchdomain_.GetSearchCacheSize();
+                    queryCacheElementCount += searchdomain_.queryCache.Count;
+                    queryCacheMaxElementCountAll += searchdomain_.queryCache.Capacity;
+                    queryCacheMaxElementCountLoadedSearchdomainsOnly += searchdomain_.queryCache.Capacity;
+                } else
+                {
+                    var searchdomainSettings = DatabaseHelper.GetSearchdomainSettings(sqlHelper, searchdomain);
+                    queryCacheMaxElementCountAll += searchdomainSettings.QueryCacheSize;
                 }
             };
             long entityCount = await entityCountTask;
-            return new ServerGetStatsResult() { Success = true, EntityCount = entityCount, QueryCacheUtilization = queryCacheUtilization, SizeInBytes = size, MaxElementCount = _searchdomainManager.EmbeddingCacheMaxCount, ElementCount = elementCount, EmbeddingsCount = embeddingsCount};
+            
+            return new ServerGetStatsResult() {
+                Success = true,
+                EntityCount = entityCount,
+                QueryCacheUtilization = queryCacheUtilization,
+                QueryCacheElementCount = queryCacheElementCount,
+                QueryCacheMaxElementCountAll = queryCacheMaxElementCountAll,
+                QueryCacheMaxElementCountLoadedSearchdomainsOnly = queryCacheMaxElementCountLoadedSearchdomainsOnly,
+                EmbeddingCacheUtilization = size,
+                EmbeddingCacheMaxElementCount = _searchdomainManager.EmbeddingCacheMaxCount,
+                EmbeddingCacheElementCount = elementCount,
+                EmbeddingsCount = embeddingsCount
+            };
         } catch (Exception ex)
         {
             ElmahExtensions.RaiseError(ex);
