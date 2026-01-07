@@ -1,3 +1,4 @@
+using System.Data;
 using System.Data.Common;
 using MySql.Data.MySqlClient;
 
@@ -6,6 +7,7 @@ namespace Server.Helper;
 public class SQLHelper:IDisposable
 {
     public MySqlConnection connection;
+    public DbDataReader? dbDataReader;
     public string connectionString;
     public SQLHelper(MySqlConnection connection, string connectionString)
     {
@@ -30,13 +32,15 @@ public class SQLHelper:IDisposable
         lock (connection)
         {
             EnsureConnected();
+            EnsureDbReaderIsClosed();
             using MySqlCommand command = connection.CreateCommand();
             command.CommandText = query;
             foreach (KeyValuePair<string, dynamic> parameter in parameters)
             {
                 command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
             }
-            return command.ExecuteReader();
+            dbDataReader = command.ExecuteReader();
+            return dbDataReader;
         }
     }
 
@@ -45,6 +49,7 @@ public class SQLHelper:IDisposable
         lock (connection)
         {
             EnsureConnected();
+            EnsureDbReaderIsClosed();
             using MySqlCommand command = connection.CreateCommand();
 
             command.CommandText = query;
@@ -61,6 +66,7 @@ public class SQLHelper:IDisposable
         lock (connection)
         {
             EnsureConnected();
+            EnsureDbReaderIsClosed();
             using MySqlCommand command = connection.CreateCommand();
 
             command.CommandText = query;
@@ -83,11 +89,29 @@ public class SQLHelper:IDisposable
                 connection.Close();
                 connection.Open();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw; // TODO add logging here
+                ElmahCore.ElmahExtensions.RaiseError(ex);
+                throw;
             }
         }
         return true;
+    }
+
+    public void EnsureDbReaderIsClosed()
+    {
+        int counter = 0;
+        int sleepTime = 10;
+        int timeout = 5000;
+        while (!(dbDataReader?.IsClosed ?? true))
+        {
+            if (counter > timeout / sleepTime)
+            {
+                TimeoutException ex = new("Unable to ensure dbDataReader is closed");
+                ElmahCore.ElmahExtensions.RaiseError(ex);
+                throw ex;
+            }
+            Thread.Sleep(sleepTime);
+        }
     }
 }

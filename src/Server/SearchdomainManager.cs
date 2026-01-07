@@ -82,12 +82,18 @@ public class SearchdomainManager
         {
             DbDataReader reader = helper.ExecuteSQLCommand("SELECT name FROM searchdomain", []);
             List<string> results = [];
-            while (reader.Read())
+            try
             {
-                results.Add(reader.GetString(0));
+                while (reader.Read())
+                {
+                    results.Add(reader.GetString(0));
+                }
+                return results;                
             }
-            reader.Close();
-            return results;
+            finally
+            {
+                reader.Close();
+            }
         }
     }
 
