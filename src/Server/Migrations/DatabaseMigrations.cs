@@ -12,6 +12,11 @@ public static class DatabaseMigrations
         int initialDatabaseVersion = DatabaseGetVersion(helper);
         int databaseVersion = initialDatabaseVersion;
 
+        if (databaseVersion == 0)
+        {
+            databaseVersion = Create(helper);
+        }
+
         var updateMethods = typeof(DatabaseMigrations)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
             .Where(m => m.Name.StartsWith("UpdateFrom") && m.ReturnType == typeof(int))
