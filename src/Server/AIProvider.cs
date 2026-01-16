@@ -31,7 +31,12 @@ public class AIProvider
         }
     }
 
-    public float[] GenerateEmbeddings(string modelUri, string[] input)
+    public float[] GenerateEmbeddings(string modelUri, string input)
+    {
+        return [.. GenerateEmbeddings(modelUri, [input]).First()];
+    }
+
+    public IEnumerable<float[]> GenerateEmbeddings(string modelUri, string[] input)
     {
         Uri uri = new(modelUri);
         string provider = uri.Scheme;
@@ -103,13 +108,13 @@ public class AIProvider
         try
         {
             JObject responseContentJson = JObject.Parse(responseContent);
-            JToken? responseContentTokens = responseContentJson.SelectToken(embeddingsJsonPath);
+            List<JToken>? responseContentTokens = [.. responseContentJson.SelectTokens(embeddingsJsonPath)];
             if (responseContentTokens is null)
             {
                 _logger.LogError("Unable to select tokens using JSONPath {embeddingsJsonPath} for string: {responseContent}.", [embeddingsJsonPath, responseContent]);
                 throw new JSONPathSelectionException(embeddingsJsonPath, responseContent);
             }
-            return [.. responseContentTokens.Values<float>()];
+            return [.. responseContentTokens.Select(token => token.ToObject<float[]>() ?? throw new Exception("Unable to cast embeddings response to float[]"))];
         }
         catch (Exception ex)
         {

@@ -74,6 +74,12 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                 }
             }
         }
+        foreach (var toBeCachedKV in toBeCached)
+        {
+            string model = toBeCachedKV.Key;
+            List<string> uniqueStrings = [.. toBeCachedKV.Value.Distinct()];
+            Datapoint.GetEmbeddings([.. uniqueStrings], [model], aIProvider, embeddingCache);
+        } 
         ConcurrentQueue<Entity> retVal = [];
         ParallelOptions parallelOptions = new() { MaxDegreeOfParallelism = 16 }; // <-- This is needed! Otherwise if we try to index 100+ entities at once, it spawns 100 threads, exploding the SQL pool
         Parallel.ForEach(jsonEntities, parallelOptions, jSONEntity =>
