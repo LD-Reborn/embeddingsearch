@@ -21,12 +21,12 @@ public class Searchdomain
     public EnumerableLruCache<string, DateTimedSearchResult> queryCache; // Key: query, Value: Search results for that query (with timestamp)
     public List<Entity> entityCache;
     public List<string> modelsInUse;
-    public LRUCache<string, Dictionary<string, float[]>> embeddingCache;
+    public EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache;
     private readonly MySqlConnection connection;
     public SQLHelper helper;
     private readonly ILogger _logger;
 
-    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, LRUCache<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
+    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
@@ -194,12 +194,12 @@ public class Searchdomain
 
     public Dictionary<string, float[]> GetQueryEmbeddings(string query)
     {
-        bool hasQuery = embeddingCache.TryGet(query, out Dictionary<string, float[]> queryEmbeddings);
+        bool hasQuery = embeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings);
         bool allModelsInQuery = queryEmbeddings is not null && modelsInUse.All(model => queryEmbeddings.ContainsKey(model));
         if (!(hasQuery && allModelsInQuery) || queryEmbeddings is null)
         {
-            queryEmbeddings = Datapoint.GenerateEmbeddings(query, modelsInUse, aIProvider, embeddingCache);
-            if (!embeddingCache.TryGet(query, out var embeddingCacheForCurrentQuery))
+            queryEmbeddings = Datapoint.GetEmbeddings(query, modelsInUse, aIProvider, embeddingCache);
+            if (!embeddingCache.TryGetValue(query, out var embeddingCacheForCurrentQuery))
             {
                 embeddingCache.Set(query, queryEmbeddings);
             }
@@ -207,7 +207,7 @@ public class Searchdomain
             {
                 foreach (KeyValuePair<string, float[]> kvp in queryEmbeddings) // kvp.Key = model, kvp.Value = embedding
                 {
-                    if (!embeddingCache.TryGet(kvp.Key, out var _))
+                    if (!embeddingCache.TryGetValue(kvp.Key, out var _))
                     {
                         embeddingCacheForCurrentQuery[kvp.Key] = kvp.Value;
                     }

@@ -8,6 +8,7 @@ using Shared.Models;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Server.Models;
+using Shared;
 
 namespace Server;
 
@@ -21,7 +22,7 @@ public class SearchdomainManager
     private readonly string connectionString;
     private MySqlConnection connection;
     public SQLHelper helper;
-    public LRUCache<string, Dictionary<string, float[]>> embeddingCache;
+    public EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache;
     public long EmbeddingCacheMaxCount;
 
     public SearchdomainManager(ILogger<SearchdomainManager> logger, IOptions<EmbeddingSearchOptions> options, AIProvider aIProvider, DatabaseHelper databaseHelper)

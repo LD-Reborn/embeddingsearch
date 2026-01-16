@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Server.Exceptions;
 using Server.Helper;
 using Server.Models;
+using Shared;
 using Shared.Models;
 
 [ApiController]
@@ -61,18 +62,12 @@ public class ServerController : ControllerBase
             long size = 0;
             long elementCount = 0;
             long embeddingsCount = 0;
-            LRUCache<string, Dictionary<string, float[]>> embeddingCache = _searchdomainManager.embeddingCache;
-            var cacheListField = embeddingCache.GetType()
-                .GetField("_cacheList", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException("_cacheList field not found"); // TODO Remove this unsafe reflection atrocity
-            LinkedList<string> cacheListOriginal = (LinkedList<string>)cacheListField.GetValue(embeddingCache)!;
-            LinkedList<string> cacheList = new(cacheListOriginal);
+            EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = _searchdomainManager.embeddingCache;
 
-            foreach (string key in cacheList)
+            foreach (KeyValuePair<string, Dictionary<string, float[]>> kv in embeddingCache)
             {
-                if (!embeddingCache.TryGet(key, out var entry))
-                    continue;
-
-                // estimate size
+                string key = kv.Key;
+                Dictionary<string, float[]> entry = kv.Value;
                 size += EstimateEntrySize(key, entry);
                 elementCount++;
                 embeddingsCount += entry.Keys.Count;

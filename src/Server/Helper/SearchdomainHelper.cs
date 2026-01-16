@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using AdaptiveExpressions;
 using Server.Exceptions;
+using Shared;
 using Shared.Models;
 
 namespace Server.Helper;
@@ -47,7 +48,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
 
     public List<Entity>? EntitiesFromJSON(SearchdomainManager searchdomainManager, ILogger logger, string json)
     {
-        LRUCache<string, Dictionary<string, float[]>> embeddingCache = searchdomainManager.embeddingCache;
+        EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = searchdomainManager.embeddingCache;
         AIProvider aIProvider = searchdomainManager.aIProvider;
         SQLHelper helper = searchdomainManager.helper;
 
@@ -92,7 +93,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         Searchdomain searchdomain = searchdomainManager.GetSearchdomain(jsonEntity.Searchdomain);
         List<Entity> entityCache = searchdomain.entityCache;
         AIProvider aIProvider = searchdomain.aIProvider;
-        LRUCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
+        EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
         Entity? preexistingEntity = entityCache.FirstOrDefault(entity => entity.name == jsonEntity.Name);
         bool invalidateSearchCache = false;
 
@@ -274,10 +275,10 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             throw new Exception("jsonDatapoint.Text must not be null at this point");
         }
         using SQLHelper helper = searchdomain.helper.DuplicateConnection();
-        LRUCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
+        EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
         hash ??= Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(jsonDatapoint.Text)));
         DatabaseHelper.DatabaseInsertDatapoint(helper, jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, jsonDatapoint.SimilarityMethod, hash, entityId);
-        Dictionary<string, float[]> embeddings = Datapoint.GenerateEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], searchdomain.aIProvider, embeddingCache);
+        Dictionary<string, float[]> embeddings = Datapoint.GetEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], searchdomain.aIProvider, embeddingCache);
         var probMethod_embedding = new ProbMethod(jsonDatapoint.Probmethod_embedding, logger) ?? throw new ProbMethodNotFoundException(jsonDatapoint.Probmethod_embedding);
         var similarityMethod = new SimilarityMethod(jsonDatapoint.SimilarityMethod, logger) ?? throw new SimilarityMethodNotFoundException(jsonDatapoint.SimilarityMethod);
         return new Datapoint(jsonDatapoint.Name, probMethod_embedding, similarityMethod, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
