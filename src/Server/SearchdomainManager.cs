@@ -37,15 +37,6 @@ public class SearchdomainManager
         connection = new MySqlConnection(connectionString);
         connection.Open();
         helper = new SQLHelper(connection, connectionString);
-        try
-        {
-            DatabaseMigrations.Migrate(helper);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical("Unable to migrate the database due to the exception: {ex}", [ex.Message]);
-            throw;
-        }
     }
 
     public Searchdomain GetSearchdomain(string searchdomain)
