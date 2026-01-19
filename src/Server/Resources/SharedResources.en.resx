@@ -324,4 +324,16 @@
   <data name="parallelEmbeddingsPrefetchInfo" xml:space="preserve">
     <value>With this setting activated the embeddings retrieval will be parallelized when indexing entities. Disable this setting if model unloading is an issue.</value>
   </data>
+  <data name="Add result" xml:space="preserve">
+    <value>Add result</value>
+  </data>
+  <data name="Search query was updated successfully" xml:space="preserve">
+    <value>Search query was updated successfully</value>
+  </data>
+  <data name="Total RAM usage" xml:space="preserve">
+    <value>Total RAM usage</value>
+  </data>
+  <data name="Total Database size" xml:space="preserve">
+    <value>Total Database size</value>
+  </data>
 </root>
