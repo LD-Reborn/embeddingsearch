@@ -265,12 +265,13 @@
 
         <!-- Results -->
         <h3>@T["Results"]</h3>
+        <button class="btn btn-primary btn-sm" onclick="queryUpdateAddResult('', '', null, true)">@T["Add result"]</button>
         <table class="table table-sm table-striped">
           <thead>
             <tr>
               <th style="width: 85px;">@T["Score"]</th>
               <th>@T["Name"]</th>
-              <th>@T["Action"]</th>
+              <th class="text-center">@T["Action"]</th>
             </tr>
           </thead>
           <tbody id="queryUpdateResultsBody"></tbody>
@@ -970,7 +971,7 @@
                 }).then(async response => {
                     result = await response.json();
                     if (response.ok && result.Success) {
-                        showToast("@T["Searchdomain was created successfully"]", "success");
+                        showToast("@T["Search query was updated successfully"]", "success");
                         console.log('Search query was updated successfully');
                         selectDomain(getSelectedDomainKey());
                     } else {
@@ -1494,28 +1495,7 @@
                 </tr>`;
         } else {
             query.Results.forEach(r => {
-                const row = document.createElement('tr');
-                row.setAttribute("draggable", true);
-                const tdScore = document.createElement('td');
-                const scoreInput = document.createElement('input');
-                scoreInput.classList.add('form-control');
-                scoreInput.value = r.Score.toFixed(4);
-                tdScore.append(scoreInput);
-                const tdName = document.createElement('td');
-                tdName.classList.add("text-break");
-                tdName.innerText = r.Name;
-                const tdAction = document.createElement('td');
-                const deleteButton = document.createElement('button');
-                deleteButton.classList.add('btn', 'btn-danger', 'btn-sm');
-                deleteButton.innerText = '@Html.Raw(T["Delete"])';
-                deleteButton.onclick = function() {
-                    row.remove();
-                };
-                tdAction.append(deleteButton);
-                row.append(tdScore);
-                row.append(tdName);
-                row.append(tdAction);
-                resultsBody.appendChild(row);
+                queryUpdateAddResult(r.Score.toFixed(4), r.Name, resultsBody);
             });
         }
 
@@ -1524,6 +1504,66 @@
           document.getElementById('queryUpdateModal')
         );
         modal.show();
+    }
+
+    function queryUpdateAddResult(score, name, target=null, insertAtTop=false) {
+        target = target ?? document.getElementById('queryUpdateResultsBody');
+
+        const row = document.createElement('tr');
+        row.setAttribute("draggable", true);
+        const tdScore = document.createElement('td');
+        const scoreInput = document.createElement('input');
+        scoreInput.classList.add('form-control');
+        scoreInput.value = score;
+        scoreInput.ariaLabel = "@T["Score"]";
+        tdScore.append(scoreInput);
+        const tdName = document.createElement('td');
+        const tdNameInput = document.createElement('input');
+        tdNameInput.classList.add("form-control");
+        tdNameInput.value = name;
+        tdNameInput.ariaLabel = "@T["Name"]";
+        tdName.append(tdNameInput);
+        const tdAction = document.createElement('td');
+        tdAction.classList.add('text-center');
+
+        const upButton = document.createElement('button');
+        upButton.classList.add('btn', 'btn-primary', 'btn-sm');
+        upButton.innerText = '↑';
+        upButton.onclick = function() {
+            const currentRow = this.closest('tr');
+            const previousRow = currentRow.previousElementSibling;
+            if (previousRow) {
+                target.insertBefore(currentRow, previousRow);
+            }
+        };
+        const downButton = document.createElement('button');
+        downButton.classList.add('btn', 'btn-primary', 'btn-sm', 'mx-1');
+        downButton.innerText = '↓';
+        downButton.onclick = function() {
+            const currentRow = this.closest('tr');
+            const nextRow = currentRow.nextElementSibling;
+            if (nextRow) {
+                target.insertBefore(nextRow, currentRow);
+            }
+        };
+
+        const deleteButton = document.createElement('button');
+        deleteButton.classList.add('btn', 'btn-danger', 'btn-sm', 'mx-2');
+        deleteButton.innerText = '@Html.Raw(T["Delete"])';
+        deleteButton.onclick = function() {
+            row.remove();
+        };
+        tdAction.append(upButton);
+        tdAction.append(downButton);
+        tdAction.append(deleteButton);
+        row.append(tdScore);
+        row.append(tdName);
+        row.append(tdAction);
+        if (!insertAtTop) {
+            target.appendChild(row);
+        } else {
+            target.insertBefore(row, target.firstChild);
+        }
     }
 
     function NumberOfBytesAsHumanReadable(bytes, decimals = 2) {
@@ -1732,7 +1772,7 @@
             
             // Get the text content from the second cell (index 1) which contains the path
             const score = parseFloat(cells[0].firstChild.value);
-            const name = cells[1].textContent.trim();
+            const name = cells[1].firstChild.value;
             
             result.push({
                 "Score": score,

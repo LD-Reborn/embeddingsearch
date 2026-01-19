@@ -324,4 +324,16 @@
   <data name="parallelEmbeddingsPrefetchInfo" xml:space="preserve">
     <value>Wenn diese Einstellung aktiv ist, wird das Abrufen von Embeddings beim Indizieren von Entities parallelisiert. Deaktiviere diese Einstellung, falls Model-unloading ein Problem ist.</value>
   </data>
+  <data name="Add result" xml:space="preserve">
+    <value>Ergebnis hinzufügen</value>
+  </data>
+  <data name="Search query was updated successfully" xml:space="preserve">
+    <value>Suchanfrage wurde erfolgreich angepasst</value>
+  </data>
+  <data name="Total RAM usage" xml:space="preserve">
+    <value>RAM Verwendung insgesamt</value>
+  </data>
+  <data name="Total Database size" xml:space="preserve">
+    <value>Datenbankgröße insgesamt</value>
+  </data>
 </root>
