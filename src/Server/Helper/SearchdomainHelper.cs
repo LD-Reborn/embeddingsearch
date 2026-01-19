@@ -58,28 +58,42 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             return null;
         }
 
-        // toBeCached: model -> [datapoint.text * n]
+        // Prefetch embeddings
         Dictionary<string, List<string>> toBeCached = [];
+        Dictionary<string, List<string>> toBeCachedParallel = [];
         foreach (JSONEntity jSONEntity in jsonEntities)
         {
+            Dictionary<string, List<string>> targetDictionary = toBeCached;
+            if (searchdomainManager.GetSearchdomain(jSONEntity.Searchdomain).settings.ParallelEmbeddingsPrefetch)
+            {
+                targetDictionary = toBeCachedParallel;
+            }
             foreach (JSONDatapoint datapoint in jSONEntity.Datapoints)
             {
                 foreach (string model in datapoint.Model)
                 {
-                    if (!toBeCached.ContainsKey(model))
+                    if (!targetDictionary.ContainsKey(model))
                     {
-                        toBeCached[model] = [];
+                        targetDictionary[model] = [];
                     }
-                    toBeCached[model].Add(datapoint.Text);
+                    targetDictionary[model].Add(datapoint.Text);
                 }
             }
         }
+        
         foreach (var toBeCachedKV in toBeCached)
         {
             string model = toBeCachedKV.Key;
             List<string> uniqueStrings = [.. toBeCachedKV.Value.Distinct()];
             Datapoint.GetEmbeddings([.. uniqueStrings], [model], aIProvider, embeddingCache);
-        } 
+        }
+        Parallel.ForEach(toBeCachedParallel, toBeCachedParallelKV =>
+        {
+            string model = toBeCachedParallelKV.Key;
+            List<string> uniqueStrings = [.. toBeCachedParallelKV.Value.Distinct()];
+            Datapoint.GetEmbeddings([.. uniqueStrings], [model], aIProvider, embeddingCache);
+        });
+        // Index/parse the entities
         ConcurrentQueue<Entity> retVal = [];
         ParallelOptions parallelOptions = new() { MaxDegreeOfParallelism = 16 }; // <-- This is needed! Otherwise if we try to index 100+ entities at once, it spawns 100 threads, exploding the SQL pool
         Parallel.ForEach(jsonEntities, parallelOptions, jSONEntity =>

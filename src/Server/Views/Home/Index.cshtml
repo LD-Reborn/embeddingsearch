@@ -152,13 +152,6 @@
     var searchdomains = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Initialize all tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        });
-
-
         let searchdomainCount = document.getElementById("searchdomainCount");
         showThrobber(searchdomainCount);
         let searchdomainEntityCount = document.getElementById("searchdomainEntityCount");

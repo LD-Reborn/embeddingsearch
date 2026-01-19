@@ -49,3 +49,13 @@ function showToast(message, type) {
     bsToast.show();
     toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize all tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        let retVal = new bootstrap.Tooltip(tooltipTriggerEl);
+        tooltipTriggerEl.role = "tooltip";
+        return retVal;
+    });
+});
