@@ -16,6 +16,7 @@ using Shared.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Net;
 using System.Text;
+using Server.Migrations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,9 +32,12 @@ builder.Services.AddControllersWithViews()
 // Add Configuration
 IConfigurationSection configurationSection = builder.Configuration.GetSection("Embeddingsearch");
 EmbeddingSearchOptions configuration = configurationSection.Get<EmbeddingSearchOptions>() ?? throw new ConfigurationErrorsException("Unable to start server due to an invalid configration");
-
 builder.Services.Configure<EmbeddingSearchOptions>(configurationSection);
 builder.Services.Configure<ApiKeyOptions>(configurationSection);
+
+// Migrate database
+var helper = new SQLHelper(new MySql.Data.MySqlClient.MySqlConnection(configuration.ConnectionStrings.SQL), configuration.ConnectionStrings.SQL);
+DatabaseMigrations.Migrate(helper);
 
 // Add Localization
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
