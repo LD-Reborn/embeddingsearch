@@ -24,6 +24,24 @@
 
     <div class="row g-4">
 
+        <!-- Server -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="card-title fs-5">@T["Server"]</h2>
+
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>@T["Total RAM usage"]</span>
+                        <strong id="serverMemorySize"></strong>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>@T["Total Database size"]</span>
+                        <strong id="serverDatabaseSize"></strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Embedding Cache -->
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
@@ -175,6 +193,10 @@
         showThrobber(querycacheLoadedMaxElementCount);
         let querycacheLoadedElementCountProgressBar = document.getElementById("querycacheLoadedElementCountProgressBar");
 
+        let serverMemorySize = document.getElementById("serverMemorySize");
+        showThrobber(serverMemorySize);
+        let serverDatabaseSize = document.getElementById("serverDatabaseSize");
+        showThrobber(serverDatabaseSize);
 
         let healthchecksServer = document.getElementById("healthchecksServer");
         let healthchecksAiProvider = document.getElementById("healthchecksAiProvider");
@@ -214,6 +236,10 @@
                 hideThrobber(querycacheLoadedMaxElementCount);
                 querycacheLoadedMaxElementCount.textContent = queryCacheMaxElementCountLoadedSearchdomainsOnly.toLocaleString();
                 querycacheLoadedMaxElementCountProgressBar.style.width = `${queryCacheElementCount / queryCacheMaxElementCountLoadedSearchdomainsOnly * 100}%`;
+                serverMemorySize.textContent = NumberOfBytesAsHumanReadable(result.RamTotalSize);
+                hideThrobber(serverMemorySize);
+                serverDatabaseSize.textContent = NumberOfBytesAsHumanReadable(result.DatabaseTotalSize);
+                hideThrobber(serverDatabaseSize);
             });
             getHealthCheckStatusAndApply(healthchecksServer, "/healthz/Database");
             getHealthCheckStatusAndApply(healthchecksAiProvider, "/healthz/AIProvider");
