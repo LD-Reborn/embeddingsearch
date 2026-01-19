@@ -315,4 +315,13 @@
   <data name="queryCacheEntryCountLoadedInfo" xml:space="preserve">
     <value>Number of query cache entries that can be stored in the query cache of all loaded searchdomains.</value>
   </data>
+  <data name="Query cache size" xml:space="preserve">
+    <value>Query Cache size</value>
+  </data>
+  <data name="Embeddings parallel prefetching" xml:space="preserve">
+    <value>Embeddings parallel prefetching</value>
+  </data>
+  <data name="parallelEmbeddingsPrefetchInfo" xml:space="preserve">
+    <value>With this setting activated the embeddings retrieval will be parallelized when indexing entities. Disable this setting if model unloading is an issue.</value>
+  </data>
 </root>

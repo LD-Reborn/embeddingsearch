@@ -66,9 +66,16 @@
               <label class="form-check-label" for="searchdomainConfigQueryCacheSize">@T["Query cache size"]:</label>
               <input type="number" class="form-control" id="searchdomainConfigQueryCacheSize" />
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6 mt-3">
               <input type="checkbox" class="form-check-input" id="searchdomainConfigCacheReconciliation" />
               <label class="form-check-label" for="searchdomainConfigCacheReconciliation">@T["Cache reconciliation"]</label>
+            </div>
+            <div class="col-md-6 mt-3">
+              <input type="checkbox" class="form-check-input" id="searchdomainConfigParallelEmbeddingsPrefetch" />
+              <label class="form-check-label" for="searchdomainConfigParallelEmbeddingsPrefetch">@T["Embeddings parallel prefetching"]</label>
+              <i class="bi bi-info-circle-fill text-info" 
+                data-bs-toggle="tooltip" 
+                title="@T["parallelEmbeddingsPrefetchInfo"]"></i>
             </div>
           </div>
           <div class="row align-items-center mb-3">
@@ -362,9 +369,13 @@
             <label class="form-check-label mb-2" for="createSearchdomainQueryCacheSize">@T["Query cache size"]:</label>
             <input type="number" class="form-control" id="createSearchdomainQueryCacheSize" />
           </div>
-          <div class="col-md-7">
+          <div class="col-md-7 mt-3">
             <input type="checkbox" class="form-check-input" id="createSearchdomainWithCacheReconciliation" />
             <label class="form-check-label" for="createSearchdomainWithCacheReconciliation">@T["Enable cache reconciliation"]</label>
+          </div>
+          <div class="col-md-6 mt-3">
+            <input type="checkbox" class="form-check-input" id="createSearchdomainConfigParallelEmbeddingsPrefetch" />
+            <label class="form-check-label" for="createSearchdomainConfigParallelEmbeddingsPrefetch">@T["Embeddings parallel prefetching"]</label>
           </div>
         </div>
       </div>
@@ -672,7 +683,10 @@
         queriesFilter.addEventListener('input', () => {
             populateQueriesTable(queriesFilter.value);
         });
-        selectDomain(0);
+        try
+        {
+            selectDomain(0);
+        } catch (error) {}
 
         document
             .getElementById('searchdomainRename')
@@ -711,7 +725,8 @@
                 const domainKey = getSelectedDomainKey();
                 const cacheReconciliation = document.getElementById('searchdomainConfigCacheReconciliation').checked;
                 const queryCacheSize = document.getElementById('searchdomainConfigQueryCacheSize').value;
-                updateSearchdomainConfig(domainKey, { CacheReconciliation: cacheReconciliation, QueryCacheSize: queryCacheSize});
+                const parallelEmbeddingsPrefetch = document.getElementById('searchdomainConfigParallelEmbeddingsPrefetch').checked;
+                updateSearchdomainConfig(domainKey, { CacheReconciliation: cacheReconciliation, QueryCacheSize: queryCacheSize, ParallelEmbeddingsPrefetch: parallelEmbeddingsPrefetch});
             });
 
         document
@@ -794,8 +809,8 @@
                 const name = document.getElementById('createSearchdomainName').value;
                 const queryCacheSize = document.getElementById('createSearchdomainQueryCacheSize').value;
                 const cacheReconciliation = document.getElementById('createSearchdomainWithCacheReconciliation').checked;
-                const settings = { CacheReconciliation: cacheReconciliation, QueryCacheSize: queryCacheSize };
-                // Implement create logic here
+                const parallelEmbeddingsPrefetch = document.getElementById('createSearchdomainConfigParallelEmbeddingsPrefetch').checked;
+                const settings = { CacheReconciliation: cacheReconciliation, QueryCacheSize: queryCacheSize, ParallelEmbeddingsPrefetch: parallelEmbeddingsPrefetch };
                 fetch(`/Searchdomain?searchdomain=${encodeURIComponent(name)}`, {
                     method: 'POST',
                     headers: {
@@ -1072,9 +1087,11 @@
         let searchdomainConfigPromise = getSearchdomainConfig(getSelectedDomainKey());
         let configElementCachereconciliation = document.getElementById('searchdomainConfigCacheReconciliation');
         let configElementCacheSize = document.getElementById('searchdomainConfigQueryCacheSize');
+        let configElementParallelEmbeddingsPrefetch = document.getElementById('searchdomainConfigParallelEmbeddingsPrefetch');
 
         showThrobber(document.querySelector('#searchdomainConfigQueryCacheSize'), true);
         showThrobber(document.querySelector('#searchdomainConfigCacheReconciliation'), true);
+        showThrobber(document.querySelector('#searchdomainConfigParallelEmbeddingsPrefetch'), true);
         let cacheUtilizationPromise = getSearchdomainCacheUtilization(getSelectedDomainKey());
         let databaseUtilizationPromise = getSearchdomainDatabaseUtilization(getSelectedDomainKey());
 
@@ -1117,11 +1134,14 @@
 
         searchdomainConfigPromise.then(searchdomainConfig => {
             hideThrobber(document.querySelector('#searchdomainConfigCacheReconciliation'), true);
+            hideThrobber(document.querySelector('#searchdomainConfigParallelEmbeddingsPrefetch'), true);
+
             if (searchdomainConfig != null && searchdomainConfig.Settings != null)
             {
                 configElementCacheSize.value = searchdomainConfig.Settings.QueryCacheSize;
                 configElementCachereconciliation.checked = searchdomainConfig.Settings.CacheReconciliation;
                 configElementCachereconciliation.disabled = false;
+                configElementParallelEmbeddingsPrefetch.checked = searchdomainConfig.Settings.ParallelEmbeddingsPrefetch;
             } else {
                 configElementCachereconciliation.disabled = true;
                 showToast("@T["Unable to fetch searchdomain config"]", "danger");

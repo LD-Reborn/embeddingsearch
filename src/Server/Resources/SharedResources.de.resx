@@ -315,4 +315,13 @@
   <data name="queryCacheEntryCountLoadedInfo" xml:space="preserve">
     <value>Anzahl der Einträge, die insgesamt in den Query-Cache der geladenen Searchdomains passen.</value>
   </data>
+  <data name="Query cache size" xml:space="preserve">
+    <value>Query Cache Größe</value>
+  </data>
+  <data name="Embeddings parallel prefetching" xml:space="preserve">
+    <value>Embeddings parallel prefetchen</value>
+  </data>
+  <data name="parallelEmbeddingsPrefetchInfo" xml:space="preserve">
+    <value>Wenn diese Einstellung aktiv ist, wird das Abrufen von Embeddings beim Indizieren von Entities parallelisiert. Deaktiviere diese Einstellung, falls Model-unloading ein Problem ist.</value>
+  </data>
 </root>
