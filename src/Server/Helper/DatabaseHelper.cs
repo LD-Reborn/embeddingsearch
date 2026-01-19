@@ -224,6 +224,21 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         return result;
     }
 
+    public static long GetTotalDatabaseSize(SQLHelper helper)
+    {
+        Dictionary<string, dynamic> parameters = [];
+        DbDataReader searchdomainSumReader = helper.ExecuteSQLCommand("SELECT SUM(Data_length) FROM information_schema.tables", parameters);
+        try
+        {
+            bool success = searchdomainSumReader.Read();
+            long result = success && !searchdomainSumReader.IsDBNull(0) ? searchdomainSumReader.GetInt64(0) : 0;
+            return result;
+        } finally
+        {
+            searchdomainSumReader.Close();
+        }
+    }
+
     public static async Task<long> CountEntities(SQLHelper helper)
     {
         DbDataReader searchdomainSumReader = helper.ExecuteSQLCommand("SELECT COUNT(*) FROM entity;", []);

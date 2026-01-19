@@ -1,12 +1,8 @@
 namespace Server.Controllers;
 
-using System.Reflection;
-using System.Text.Json;
-using AdaptiveExpressions;
 using ElmahCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Server.Exceptions;
 using Server.Helper;
 using Server.Models;
 using Shared;
@@ -73,6 +69,7 @@ public class ServerController : ControllerBase
                 embeddingsCount += entry.Keys.Count;
             }
             var sqlHelper = DatabaseHelper.GetSQLHelper(_options.Value);
+            var databaseTotalSize = DatabaseHelper.GetTotalDatabaseSize(sqlHelper);
             Task<long> entityCountTask = DatabaseHelper.CountEntities(sqlHelper);
             long queryCacheUtilization = 0;
             long queryCacheElementCount = 0;
@@ -95,6 +92,10 @@ public class ServerController : ControllerBase
                 }
             };
             long entityCount = await entityCountTask;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            long ramTotalSize = GC.GetTotalMemory(false);
             
             return new ServerGetStatsResult() {
                 Success = true,
@@ -106,7 +107,9 @@ public class ServerController : ControllerBase
                 EmbeddingCacheUtilization = size,
                 EmbeddingCacheMaxElementCount = _searchdomainManager.EmbeddingCacheMaxCount,
                 EmbeddingCacheElementCount = elementCount,
-                EmbeddingsCount = embeddingsCount
+                EmbeddingsCount = embeddingsCount,
+                DatabaseTotalSize = databaseTotalSize,
+                RamTotalSize = ramTotalSize
             };
         } catch (Exception ex)
         {

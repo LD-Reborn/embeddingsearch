@@ -28,4 +28,8 @@ public class ServerGetStatsResult : SuccesMessageBaseModel
     public long? QueryCacheMaxElementCountLoadedSearchdomainsOnly { get; set; }
     [JsonPropertyName("QueryCacheUtilization")]
     public long? QueryCacheUtilization { get; set; }
+    [JsonPropertyName("DatabaseTotalSize")]
+    public long? DatabaseTotalSize { get; set; }
+    [JsonPropertyName("RamTotalSize")]
+    public long? RamTotalSize { get; set; }
 }
