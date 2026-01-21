@@ -20,3 +20,4 @@ src/Shared/obj
 src/Server/wwwroot/logs/*
 src/Server/Tools/CriticalCSS/node_modules
 src/Server/Tools/CriticalCSS/package*.json
+*.db*
