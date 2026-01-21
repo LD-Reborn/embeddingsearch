@@ -9,10 +9,11 @@ using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Server.Models;
 using Shared;
+using System.Diagnostics;
 
 namespace Server;
 
-public class SearchdomainManager
+public class SearchdomainManager : IDisposable
 {
     private Dictionary<string, Searchdomain> searchdomains = [];
     private readonly ILogger<SearchdomainManager> _logger;
@@ -24,6 +25,7 @@ public class SearchdomainManager
     public SQLHelper helper;
     public EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache;
     public long EmbeddingCacheMaxCount;
+    private bool disposed = false;
 
     public SearchdomainManager(ILogger<SearchdomainManager> logger, IOptions<EmbeddingSearchOptions> options, AIProvider aIProvider, DatabaseHelper databaseHelper)
     {
@@ -31,8 +33,17 @@ public class SearchdomainManager
         _options = options.Value;
         this.aIProvider = aIProvider;
         _databaseHelper = databaseHelper;
-        EmbeddingCacheMaxCount = _options.EmbeddingCacheMaxCount;
-        embeddingCache = new((int)EmbeddingCacheMaxCount);
+        EmbeddingCacheMaxCount = _options.Cache.CacheTopN;
+        if (options.Value.Cache.StoreEmbeddingCache)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            embeddingCache = CacheHelper.GetEmbeddingStore(options.Value);
+            stopwatch.Stop();
+            _logger.LogInformation("GetEmbeddingStore completed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
+        } else
+        {
+            embeddingCache = new((int)EmbeddingCacheMaxCount);
+        }
         connectionString = _options.ConnectionStrings.SQL;
         connection = new MySqlConnection(connectionString);
         connection.Open();
@@ -80,7 +91,7 @@ public class SearchdomainManager
                 {
                     results.Add(reader.GetString(0));
                 }
-                return results;                
+                return results;
             }
             finally
             {
@@ -126,5 +137,40 @@ public class SearchdomainManager
     public bool IsSearchdomainLoaded(string name)
     {
         return searchdomains.ContainsKey(name);
+    }
+
+    // Cleanup procedure
+    private async Task Cleanup()
+    {
+        try
+        {
+            if (_options.Cache.StoreEmbeddingCache)
+            {
+                var stopwatch = Stopwatch.StartNew();
+                await CacheHelper.UpdateEmbeddingStore(embeddingCache, _options);
+                stopwatch.Stop();
+                _logger.LogInformation("UpdateEmbeddingStore completed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
+            }
+            _logger.LogInformation("SearchdomainManager cleanup completed");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during SearchdomainManager cleanup");
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true).Wait();
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual async Task Dispose(bool disposing)
+    {
+        if (!disposed && disposing)
+        {
+            await Cleanup();
+            disposed = true;
+        }
     }
 }

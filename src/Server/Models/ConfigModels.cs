@@ -8,9 +8,9 @@ public class EmbeddingSearchOptions : ApiKeyOptions
 {
     public required ConnectionStringsOptions ConnectionStrings { get; set; }
     public ElmahOptions? Elmah { get; set; }
-    public required long EmbeddingCacheMaxCount { get; set; }
     public required Dictionary<string, AiProvider> AiProviders { get; set; }
     public required SimpleAuthOptions SimpleAuth { get; set; }
+    public required CacheOptions Cache { get; set; }
     public required bool UseHttpsRedirection { get; set; }
 }
 
@@ -38,4 +38,12 @@ public class SimpleUser
 public class ConnectionStringsOptions
 {
     public required string SQL { get; set; }
+    public string? Cache { get; set; }
+}
+
+public class CacheOptions
+{
+    public required long CacheTopN { get; set; }
+    public bool StoreEmbeddingCache { get; set; } = false;
+    public int? StoreTopN { get; set; }
 }

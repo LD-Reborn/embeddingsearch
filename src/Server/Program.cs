@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using System.Net;
 using System.Text;
 using Server.Migrations;
+using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,15 @@ builder.Services.Configure<ApiKeyOptions>(configurationSection);
 // Migrate database
 var helper = new SQLHelper(new MySql.Data.MySqlClient.MySqlConnection(configuration.ConnectionStrings.SQL), configuration.ConnectionStrings.SQL);
 DatabaseMigrations.Migrate(helper);
+
+// Migrate SQLite cache
+if (configuration.ConnectionStrings.Cache is not null)
+{
+
+    var SqliteConnection = new SqliteConnection(configuration.ConnectionStrings.Cache);
+    SqliteConnection.Open();
+    SQLiteMigrations.Migrate(SqliteConnection);
+}
 
 // Add Localization
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
