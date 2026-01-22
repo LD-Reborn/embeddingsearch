@@ -1,5 +1,5 @@
 # How to use CriticalCSS
-1. Install it here
+1. Install the dependencies from here
 ```bash
 npm i -D critical
 npm install puppeteer
@@ -8,4 +8,3 @@ npm install puppeteer
 ```bash
 node CriticalCSSGenerator.js
 ```
-3. Move the `.css` files from the current directory to the `CriticalCSS/` folder (overwrite existing files)

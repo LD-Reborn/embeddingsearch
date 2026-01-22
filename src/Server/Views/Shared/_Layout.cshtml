@@ -52,7 +52,9 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">embeddingsearch</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img fetchpriority="high" alt="Logo" src="/logo.png" width="40" height="40" style="width: 40px; height: 40px;">
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -69,17 +71,20 @@
                             </li>
                             @if (User.IsInRole("Admin") || User.IsInRole("Swagger"))
                             {
-                                <li class="nav-item">
-                                    <a class="nav-link text" href="/swagger/index.html?ReturnUrl=@(currentUrl)">@T["Swagger"]</a>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        @T["Tools"]
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                                        <a class="dropdown-item" href="/swagger/index.html?ReturnUrl=@(currentUrl)">@T["Swagger"]</a>
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <a class="dropdown-item" href="/elmah?ReturnUrl=@(currentUrl)">@T["Elmah"]</a>
+                                        }
+                                    </div>
                                 </li>
                             }
-                            @if (User.IsInRole("Admin"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text" href="/elmah?ReturnUrl=@(currentUrl)">@T["Elmah"]</a>
-                                </li>
-                            }
-                            <li class="nav-item">
+                            <li class="nav-item ms-auto">
                                 <a class="nav-link text" asp-area="" asp-controller="Account" asp-action="Logout">@T["Logout"]</a>
                             </li>
                         }

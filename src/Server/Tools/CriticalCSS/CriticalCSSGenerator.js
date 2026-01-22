@@ -91,8 +91,8 @@ async function generateCriticalCSSForViews() {
           forceExclude: ['.btn'], // Otherwise buttons end up colorless and .btn overrides other classes like .btn-warning, etc. - so it has to be force-excluded here and re-added later
           forceInclude: [
             '[data-bs-theme="dark"]', '[data-bs-theme="dark"] body', '[data-bs-theme="dark"] .navbar', '[data-bs-theme="dark"] .card', '[data-bs-theme="dark"] .btn',
-            '.navbar',
             '.col-md-4',
+            '.navbar', '.ms-auto', '.dropdown', '.dropdown-menu',
             '.visually-hidden', // visually hidden headings
             '.bi-info-circle-fill', '.text-info', // info icon
             '.container', '.col-md-6', '.row', '.g-4', '.row>*',
