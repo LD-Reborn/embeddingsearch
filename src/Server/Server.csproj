@@ -12,21 +12,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AdaptiveExpressions" Version="4.23.0" />
-    <PackageReference Include="ElmahCore" Version="2.1.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
-      <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
-      <PackageReference Include="MySql.Data" Version="9.2.0" />
-      <PackageReference Include="Npgsql" Version="9.0.3" />
+      <PackageReference Include="AdaptiveExpressions" Version="4.23.1" />
+      <PackageReference Include="ElmahCore" Version="2.1.2" />
+      <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+      <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+      <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+      <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+      <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
+      <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.2" />
+      <PackageReference Include="MySql.Data" Version="9.6.0" />
+      <PackageReference Include="Npgsql" Version="10.0.1" />
       <PackageReference Include="OllamaSharp" Version="5.2.2" />
-      <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.3" />
+      <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.2" />
       <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
-      <PackageReference Include="System.Data.Sqlite" Version="1.0.119" />
-      <PackageReference Include="System.Numerics.Tensors" Version="9.0.3" />
+      <PackageReference Include="System.Data.Sqlite" Version="2.0.2" />
+      <PackageReference Include="System.Numerics.Tensors" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>

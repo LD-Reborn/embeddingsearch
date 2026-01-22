@@ -9,9 +9,8 @@ using Server.Helper;
 using Server.Models;
 using Server.Services;
 using System.Text.Json.Serialization;
-using System.Reflection;
 using System.Configuration;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Shared.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Net;
@@ -64,36 +63,37 @@ builder.Services.AddScoped<LocalizationService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddOpenApi(options =>
 {
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    c.IncludeXmlComments(xmlPath);
-    if (configuration.ApiKeys is not null)
+    options.AddDocumentTransformer((document, context, _) =>
     {
-        c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
-        {
-            Description = "ApiKey must appear in header",
-            Type = SecuritySchemeType.ApiKey,
-            Name = "X-API-KEY",
-            In = ParameterLocation.Header,
-            Scheme = "ApiKeyScheme"
-        });
-        var key = new OpenApiSecurityScheme()
-        {
-            Reference = new OpenApiReference
+        if (configuration.ApiKeys is null)
+            return Task.CompletedTask;
+
+        document.Components ??= new();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["ApiKey"] =
+            new OpenApiSecurityScheme
             {
-                Type = ReferenceType.SecurityScheme,
-                Id = "ApiKey"
-            },
-            In = ParameterLocation.Header
-        };
-        var requirement = new OpenApiSecurityRequirement
-        {
-            { key, []}
-        };
-        c.AddSecurityRequirement(requirement);
-    }
+                Type = SecuritySchemeType.ApiKey,
+                Name = "X-API-KEY",
+                In = ParameterLocation.Header,
+                Description = "ApiKey must appear in header"
+            };
+        
+        document.Security ??= [];
+
+        // Apply globally
+        document.Security?.Add(
+            new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("ApiKey", document)] = []
+            }
+        );
+
+        return Task.CompletedTask;
+    });
 });
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -242,13 +242,16 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
+    options.SwaggerEndpoint("/openapi/v1.json", "API v1");
+    options.RoutePrefix = "swagger";
     options.EnablePersistAuthorization();
     options.InjectStylesheet("/swagger-ui/custom.css");
     options.InjectJavascript("/swagger-ui/custom.js");
 });
+app.MapOpenApi("/openapi/v1.json");
+
 //app.UseElmahExceptionPage(); // Messes with JSON response for API calls. Leaving this here so I don't accidentally put this in again later on.
 
 if (configuration.ApiKeys is not null)
