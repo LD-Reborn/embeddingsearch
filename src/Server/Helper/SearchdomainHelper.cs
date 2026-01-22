@@ -16,7 +16,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
 
     public static byte[] BytesFromFloatArray(float[] floats)
     {
-        var byteArray = new byte[floats.Length * 4];
+        var byteArray = new byte[floats.Length * sizeof(float)];
         var floatArray = floats.ToArray();
         Buffer.BlockCopy(floatArray, 0, byteArray, 0, byteArray.Length);
         return byteArray;
@@ -24,7 +24,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
 
     public static float[] FloatArrayFromBytes(byte[] bytes)
     {
-        var floatArray = new float[bytes.Length / 4];
+        var floatArray = new float[bytes.Length / sizeof(float)];
         Buffer.BlockCopy(bytes, 0, floatArray, 0, bytes.Length);
         return floatArray;
     }
