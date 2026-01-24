@@ -80,3 +80,7 @@ td.btn-group {
   display: revert;
   min-width: 15rem;
 }
+
+[data-bs-theme="light"] img[alt="Logo"] {
+  filter: invert(100%);
+}

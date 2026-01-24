@@ -1,5 +1,5 @@
 # embeddingsearch
-<img src="https://github.com/LD-Reborn/embeddingsearch/blob/main/logo.png" alt="Logo" width="100">
+<img src="docs/logo.png" alt="Logo" width="100">
 
 embeddingsearch is a self-hosted semantic search server built on vector embeddings.
 
