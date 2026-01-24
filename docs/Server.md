@@ -1,21 +1,21 @@
 # Overview
 The server by default
 - runs on port 5146
-- Uses Swagger UI in development mode (`/swagger/index.html`)
-- Ignores API keys when in development mode
+- Uses Swagger UI (`/swagger/index.html`)
 - Uses Elmah error logging (endpoint: `/elmah`, local files: `~/logs`)
 - Uses serilog logging (local files: `~/logs`)
 - Uses HealthChecks (endpoint: `/healthz`)
 ## Docker installation
-(On Linux you might need root privileges, thus use `sudo` where necessary)
-1. Navigate to the `src/server` directory
-2. Build the docker container: `docker build -t embeddingsearch-server -f /Dockerfile .`
-3. Run the docker container: `docker run --net=host -t embeddingsearch-server` (the `-t` is optional, but you get more meaningful output. Or use `-d` to run it in the background)
+(On Linux you might need root privileges. Use `sudo` where necessary)
+1. [Set up the configuration](docs/Server.md#setup)
+2. Navigate to the `src` directory
+3. Build the docker container: `docker build -t embeddingsearch-server -f Server/Dockerfile .`
+4. Run the docker container: `docker run --net=host -t embeddingsearch-server` (the `-t` is optional, but you get more meaningful output. Or use `-d` to run it in the background)
 # Installing the dependencies
 ## Ubuntu 24.04
-1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-8.0 -y`
+1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-10.0 -y`
 ## Windows
-Download the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow these steps to use WSL:
+Download and install the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow these steps to use WSL:
 1. Install Ubuntu in WSL (`wsl --install` and `wsl --install -d Ubuntu`)
 2. Enter your WSL environment `wsl.exe` and configure it
 3. Update via `sudo apt update && sudo apt upgrade -y && sudo snap refresh`
@@ -30,6 +30,9 @@ Download the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow t
 `CREATE DATABASE embeddingsearch; use embeddingsearch;`
 4. Create the user (replace "somepassword! with a secure password):
 `CREATE USER 'embeddingsearch'@'%' identified by "somepassword!"; GRANT ALL ON embeddingsearch.* TO embeddingsearch; FLUSH PRIVILEGES;`
+    - Caution: The symbol "%" in the command means that this user can be logged into from outside of the machine.
+    - Replace `'%'` with `'localhost'` or with the IP of your embeddingsearch server machine if that is a concern.
+5. Exit mysql: `exit`
 
 # Configuration
 ## Environments
@@ -43,34 +46,39 @@ If you just installed the server and want to configure it:
 3. Check the "AiProviders" section. If your Ollama/LocalAI/etc. instance does not run locally, update the "baseURL" to point to the correct URL.
 4. If you plan on using the server in production:
     1. Set the environment variable `DOTNET_ENVIRONMENT` to something that is not "Development". (e.g. "Prod")
-    2. Rename the `appsettings.Development.json` - replace "Development" with whatever you chose. (e.g. "Prod")
+    2. Rename the `appsettings.Development.json` - replace "Development" with what you chose for `DOTNET_ENVIRONMENT`
     3. Set API keys in the "ApiKeys" section (generate keys using the `uuid` command on Linux)
 ## Structure
 ```json
   "Embeddingsearch": {
     "ConnectionStrings": {
-      "SQL": "server=localhost;database=embeddingsearch;uid=embeddingsearch;pwd=somepassword!;"
+      "SQL": "server=localhost;database=embeddingsearch;uid=embeddingsearch;pwd=somepassword!;",
+      "Cache": "Data Source=embeddings.db;Mode=ReadWriteCreate;Cache=Shared" // Name of the sqlite cache file
     },
     "Elmah": {
-      "AllowedHosts": [ // Specify which IP addresses can access /elmah
-        "127.0.0.1",
-        "::1",
-        "172.17.0.1"
-      ]
+      "LogPath": "~/logs" // Where the logs are stored
     },
     "AiProviders": {
-      "ollama": { // Name of the provider. Used when defining models for a datapoint, e.g. "ollama:mxbai-embed-large"
+      "ollama": { // Name for the provider. Used when defining models for a datapoint, e.g. "ollama:mxbai-embed-large"
         "handler": "ollama", // The type of API located at baseURL
-        "baseURL": "http://localhost:11434" // Location of the API
+        "baseURL": "http://localhost:11434", // Location of the API
+        "Allowlist": [".*"], // Allow- and Denylist. Filter out non-embeddings models using regular expressions
+        "Denylist": ["qwen3-coder:latest", "qwen3:0.6b", "deepseek-v3.1:671b-cloud", "qwen3-vl", "deepseek-ocr"]
       },
-      "localAI": {
+      "localAI": { // e.g. model name: "localAI:bert-embeddings"
         "handler": "openai",
         "baseURL": "http://localhost:8080",
-        "ApiKey": "Some API key here"
+        "ApiKey": "Some API key here",
+        "Allowlist": [".*"],
+        "Denylist": ["cross-encoder", "..."]
       }
     },
-    "ApiKeys": ["Some UUID here", "Another UUID here"], // Restrict access in non-development environments to the server's API using your own generated API keys
-    "UseHttpsRedirection": true // tbh I don't even know why this is still here. // TODO implement HttpsRedirection or remove this line
+    "ApiKeys": ["Some UUID here", "Another UUID here"], // (optional) Restrict access using API keys
+    "Cache": {
+      "CacheTopN": 10000, // Only cache this number of queries. (Eviction policy: LRU)
+      "StoreEmbeddingCache": true, // If set to true, the SQLite database will be used to store the embeddings
+      "StoreTopN": 10000 // Only write the top n number of queries to the SQLite database
+    }
   }
 ```
 ## AiProviders
@@ -91,9 +99,9 @@ One can even specify multiple Ollama instances and name them however one pleases
 ```
 ### handler
 Currently two handlers are implemented for embeddings generation:
-- ollama
+- `ollama`
     - requests embeddings from `/api/embed`
-- localai
+- `openai`
     - requests embeddings from `/v1/embeddings`
 ### baseURL
 Specified by `scheme://host:port`. E.g.: `"baseUrl": "http://localhost:11434"`
@@ -105,7 +113,7 @@ Any specified absolute path will be disregarded. (e.g. "http://x.x.x.x/any/subro
 
 # API
 ## Accessing the api
-Once started, the server's API can be comfortably be viewed and manipulated via swagger.
+Once started, the server's API can be viewed and manipulated via swagger.
 
 By default it is accessible under: `http://localhost:5146/swagger/index.html`
 
@@ -114,7 +122,7 @@ To make an API request from within swagger:
 2. Click the "Try it out" button. The input fields (if there are any for your action) should now be editable.
 3. Fill in the necessary information
 4. Click "Execute"
-## Restricting access
-API keys do **not** get checked in Development environment!
+## Authorization
+Being logged in has priority over API Key requirement (if api keys are set).
 
-Set up a non-development environment as described in [Configuration>Setup](#setup) to enable API key authentication.
+So being logged in automatically authorizes endpoint usage.

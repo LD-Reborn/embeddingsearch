@@ -1,92 +1,60 @@
 # embeddingsearch
 <img src="https://github.com/LD-Reborn/embeddingsearch/blob/main/logo.png" alt="Logo" width="100">
 
-embeddingsearch is a search server that uses Embedding Similarity Search (similiarly to [Magna](https://github.com/yousef-rafat/Magna/tree/main)) to semantically compare a given input to a database of indexed entries.
+embeddingsearch is a self-hosted semantic search server built on vector embeddings.
 
-embeddingsearch offers:
-- Privacy and flexibility through self-hosted solutions like:
-  - ollama
+It lets you index and semantically search text using modern embedding models. It's designed to be flexible, extensible, and easy to use.
+
+<img src="docs/ProjectOutline/ProjectOutlineDiagram.excalidraw.svg" alt="Logo">
+
+## What embeddingsearch offers:
+- Privacy and flexibility by allowing one to self-host everything, including:
+  - Ollama
   - OpenAI-compatible APIs (like LocalAI)
-- Great flexibility through deep control over
-  - the amount of datapoints per entity (i.e. the thing you're trying to find)
-  - which models are used (multiple per datapoint possible to improve accuracy)
-  - which models are sourced from where (multiple Ollama/OpenAI-compatible sources possible)
-  - similarity calculation methods
-  - aggregation of results (when multiple models are used per datapoint)
+- Astonishing accuracy when using multiple models for single indices
+- Ease-of-use and ease-of-implementation
+  - The server offers a front-end for management and status information, as well as a decorated swagger back-end
+  - The indexer can also be self-hosted and serves as a host for executing indexing scripts
+  - The client library can be used to develop your own client software that posts queries or creates indices
+- Caching & persistency
+  - Generating embeddings is expensive. So why not cache AND store them?
+  - Query results can also be cached.
+  - "Doesn't that eat a lot of precious RAM?" - My own testing showed: embeddings take up around 4200-5200 bytes each depending on the request string size. So around 4-5 GB per million cached embeddings.
 
-This repository comes with a
-- server (accessible via API calls & swagger)
-- clientside library (C#)
-- scripting based indexer service that supports the use of
+This repository comes with a:
+- Server
+- Client library (C#)
+- Scripting based indexer service that supports the use of
   - Python
-  - CSharp (Roslyn)
-  - Golang (Planned)
+  - CSharp (Roslyn - at-runtime evaluation)
+  - CSharp (Reflection - compiled)
+  - Lua (Planned)
   - Javascript (Planned)
 
-# How to set up / use
+# How to set up
 ## Server
-(Docker now available! See [Docker installation](docs/Server.md#docker-installation))
-1. Install [ollama](https://ollama.com/download)
-2. Pull a few models using ollama (e.g. `paraphrase-multilingual`, `bge-m3`, `mxbai-embed-large`, `nomic-embed-text`)
-3. [Install the depencencies](docs/Server.md#installing-the-dependencies)
-4. [Set up a local mysql database](docs/Server.md#mysql-database-setup)
-5. [Set up the configuration](docs/Server.md#setup)
-6. In `src/server` execute `dotnet build && dotnet run` to start the server
-7. (optional) [Create a searchdomain using the web interface](docs/Server.md#accessing-the-api)
-## Client
-1. Download the package and add it to your project (TODO: NuGet)
-2. Create a new client by either:
-    1. By injecting IConfiguration (e.g. `services.AddSingleton<Client>();`)
-    2. By specifying the baseUri, apiKey, and searchdomain (e.g. `new Client.Client(baseUri, apiKey, searchdomain)`)
+(Docker also available! See [Docker installation](docs/Server.md#docker-installation))
+1. Install the inferencing tool of your choice, (e.g. [ollama](https://ollama.com/download)) and pull a few models that support generating embeddings.
+2. [Install the depencencies](docs/Server.md#installing-the-dependencies)
+3. [Set up a mysql database](docs/Server.md#mysql-database-setup)
+4. [Set up the configuration](docs/Server.md#configuration)
+5. In `src/Server` execute `dotnet build && dotnet run` to start the server
+6. (optional) Create a searchdomain using the web interface
 ## Indexer
 (Docker now available! See [Docker installation](docs/Indexer.md#docker-installation))
 1. [Install the dependencies](docs/Indexer.md#installing-the-dependencies)
-2. [Set up the server](#server)
-3. [Configure the indexer](docs/Indexer.md#configuration)
-4. [Set up your indexing script(s)](docs/Indexer.md#scripting)
-5. Run with `dotnet build && dotnet run` (Or `/usr/bin/dotnet build && /usr/bin/dotnet run`)
+2. [Configure the indexer](docs/Indexer.md#configuration)
+3. [Set up your indexing script(s)](docs/Indexer.md#scripting)
+4. In `src/Indexer` execute `dotnet build && dotnet run` to start the indexer
 # Known issues
 | Issue | Solution |
 | --- | --- |
-| Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Invalid attempt to access a field before calling Read() | The searchdomain you entered does not exist |
-| Unhandled exception. MySql.Data.MySqlClient.MySqlException (0x80004005): Authentication to host 'localhost' for user 'embeddingsearch' using method 'caching_sha2_password' failed with message: Access denied for user 'embeddingsearch'@'localhost' (using password: YES) | TBD |
-| System.DllNotFoundException: Could not load libpython3.12.so with flags RTLD_NOW \| RTLD_GLOBAL: libpython3.12.so: cannot open shared object file: No such file or directory | Install python3.12-dev via apt. Also: try running the indexer using `/usr/bin/dotnet` instead of `dotnet` (make sure dotnet is installed via apt) |
-# To-do
-- (High priority) Add default indexer
-  - Library
-    - Processing:
-      - Text / Markdown documents: file name, full text, paragraphs
-      - Documents
-        - PDF: file name, full text, headline?, paragraphs, images?
-        - odt/docx: file name, full text, headline?, images?
-        - msg/eml: file name, title, recipients, cc, text
-      - Images: file name, OCR, image description?
-      - Videos?
-      - Presentations (Impress/Powerpoint): file name, full text, first slide title, titles, slide texts
-      - Tables (Calc / Excel): file name, tab/page names?, full text (per tab/page)
-      - Other? (TBD)
-  - Server
-    - ~~Scripting capability (Python; perhaps also lua)~~ (Done with the latest commits)
-      - ~~Intended sourcing possibilities:~~
-        - ~~Local/Remote files (CIFS, SMB, FTP)~~
-        - ~~Database contents (MySQL, MSSQL)~~
-        - ~~Web requests (E.g. manual crawling)~~
-    - ~~Script call management (interval based & event based)~~
-- Implement [ReaderWriterLock](https://learn.microsoft.com/en-us/dotnet/api/system.threading.readerwriterlockslim?view=net-9.0&redirectedfrom=MSDN) for entityCache to allow for multithreaded read access while retaining single-threaded write access.
-- NuGet packaging and corresponding README documentation
-- Add option for query result detail levels. e.g.:
-  - Level 0: `{"Name": "...", "Value": 0.53}`
-  - Level 1: `{"Name": "...", "Value": 0.53, "Datapoints": [{"Name": "title", "Value": 0.65}, {...}]}`
-  - Level 2: `{"Name": "...", "Value": 0.53, "Datapoints": [{"Name": "title", "Value": 0.65, "Embeddings": [{"Model": "bge-m3", "Value": 0.87}, {...}]}, {...}]}`
-- Add "Click-Through" result evaluation (For each entity: store a list of queries that led to the entity being chosen by the user. Then at query-time choose the best-fitting entry and maybe use it as another datapoint? Or use a separate weight function?)
-- Reranker/Crossencoder/RAG (or anything else beyond initial retrieval) support
-- Remove the `id` collumns from the database tables where the table is actually identified (and should be unique by) the name, which should become the new primary key.
-- Improve performance & latency (Create ready-to-go processes where each contain an n'th share of the entity cache, ready to perform a query. Prepare it after creating the entity cache.)
-- Implement dynamic invocation based database migrations
+| System.DllNotFoundException: Could not load libpython3.13.so with flags RTLD_NOW \| RTLD_GLOBAL: libpython3.12.so: cannot open shared object file: No such file or directory | Install python3.13-dev via apt. Also: try running the indexer using `/usr/bin/dotnet` instead of `dotnet` (to make sure dotnet is not running as a snap) |
 
-# Future features
-- Support for other database types (MSSQL, SQLite)
-
+# Planned features and support
+- Document processor with automatic chunking (e.g.: .md, .pdf, .docx, .xlsx, .png, .mp4)
+- Indexer front-end
+- Support for other database types (MSSQL, SQLite, PostgreSQL, MongoDB, Redis)
 
 # Community
 <a href="https://discord.gg/MUKeZM3k"><img src="https://img.shields.io/badge/Join%20Discord-7289DA?style=flat&logo=discord&logoColor=whiteServer" alt="Discord"></img></a>

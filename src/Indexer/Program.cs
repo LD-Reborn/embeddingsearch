@@ -80,8 +80,6 @@ else
     app.UseMiddleware<Shared.ApiKeyMiddleware>();
 }
 
-// app.UseHttpsRedirection();
-
 app.MapControllers();
 
 app.Run();

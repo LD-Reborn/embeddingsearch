@@ -8,15 +8,18 @@ The indexer by default
 - Uses HealthChecks (endpoint: `/healthz`)
 ## Docker installation
 (On Linux you might need root privileges, thus use `sudo` where necessary)
-1. Navigate to the `src` directory
-2. Build the docker container: `docker build -t embeddingsearch-indexer -f Indexer/Dockerfile .`
-3. Run the docker container: `docker run --net=host -t embeddingsearch-indexer` (the `-t` is optional, but you get more meaningful output. Or use `-d` to run it in the background)
+1. [Configure the indexer](docs/Indexer.md#configuration)
+2. [Set up your indexing script(s)](docs/Indexer.md#scripting)
+3. Navigate to the `src` directory
+4. Build the docker container: `docker build -t embeddingsearch-indexer -f Indexer/Dockerfile .`
+5. Run the docker container: `docker run --net=host -t embeddingsearch-indexer` (the `-t` is optional, but you get more meaningful output. Or use `-d` to run it in the background)
 ## Installing the dependencies
 ## Ubuntu 24.04
-1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-8.0 -y`
-2. Install the python SDK: `sudo apt install python3 python3.12 python3.12-dev`
+1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-10.0 -y`
+2. Install the python SDK: `sudo apt install python3 python3.13 python3.13-dev`
+    - Note: Python 3.14 is not supported yet
 ## Windows
-Download the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow these steps to use WSL:
+Download and install the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow these steps to use WSL:
 1. Install Ubuntu in WSL (`wsl --install` and `wsl --install -d Ubuntu`)
 2. Enter your WSL environment `wsl.exe` and configure it
 3. Update via `sudo apt update && sudo apt upgrade -y && sudo snap refresh`
@@ -26,15 +29,15 @@ The configuration is located in `src/Indexer` and conforms to the [ASP.NET confi
 
 If you plan to use multiple environments, create any `appsettings.{YourEnvironment}.json` (e.g. `Development`, `Staging`, `Prod`) and set the environment variable `DOTNET_ENVIRONMENT` accordingly on the target machine.
 ## Setup
-If you just installed the server and want to configure it:
-1. Open `src/Server/appsettings.Development.json`
+If you just installed the indexer and want to configure it:
+1. Open `src/Indexer/appsettings.Development.json`
 2. If your search server is not on the same machine as the indexer, update "BaseUri" to reflect the URL to the server.
-3. If your search server requires API keys, (i.e. it's operating outside of the "Development" environment) set `"ApiKey": "<your key here>"` beneath `"BaseUri"` in the `"Embeddingsearch"` section.
-4. Create your own indexing script(s) in `src/Indexer/Scripts/` and configure their use as 
+3. If you configured API keys for the search server, set `"ApiKey": "<your key here>"` beneath `"BaseUri"` in the `"Server"` section.
+4. Create your own indexing script(s) in `src/Indexer/Scripts/` and configure them as shown below
 ## Structure
 ```json
-  "EmbeddingsearchIndexer": {
-    "Worker":
+  "Indexer": {
+    "Workers":
     [ // This is a list; you can have as many "workers" as you want
       {
         "Name": "example",
@@ -50,7 +53,12 @@ If you just installed the server and want to configure it:
         "Name": "secondWorker",
         /* ... */
       }
-    ]
+    ],
+    "ApiKeys": ["YourApiKeysHereForTheIndexer"], // API Keys for if you want to protect the indexer's API
+    "Server": {
+      "BaseUri": "http://localhost:5000", // URL to the embeddingsearch server
+      "ApiKey": "ServerApiKeyHere" // API Key set in the server
+    }
   }
 ```
 ## Call types
@@ -71,6 +79,13 @@ If you just installed the server and want to configure it:
     - Parameters:
       - Path (e.g. "Scripts/example_content")
 # Scripting
+Scripts should be put in `src/Indexer/Scripts/`. If you look there, by default you will find some example scripts that can be taken as reference when building your own.
+
+For configuration of the scripts see: [Structure](#structure)
+
+The next few sections explain some core concepts/patterns. If you want to skip to explicit code examples, look here:
+- [Python](#python)
+- [Roslyn](#c-roslyn)
 ## General
 Scripts need to define the following functions:
 - `init()`
@@ -186,7 +201,7 @@ from tools import * # Import all tools that are provided for ease of scripting
 
 def init(toolset: Toolset): # defining an init() function with 1 parameter is required.
     pass # Your code would go here.
-    # DO NOT put a main loop here! Why?
+    # Don't put a main loop here! Why?
     # This function prevents the application from initializing and maintains exclusive control over the GIL
 
 def update(toolset: Toolset): # defining an update() function with 1 parameter is required.
@@ -261,7 +276,7 @@ public class ExampleScript : Indexer.Models.IScript
 // Required: return an instance of your IScript-extending class
 return new ExampleScript();
 ```
-## Golang
+## Lua
 TODO
 ## Javascript
 TODO
