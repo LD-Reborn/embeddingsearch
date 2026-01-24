@@ -1,14 +1,7 @@
-# embeddingsearch
-<table>
-<tr>
-<td><img src="docs/logo.png" alt="Logo" width="100"></td>
-<td>
-embeddingsearch is a self-hosted semantic search server built on vector embeddings.
-<br/>
-It lets you index and semantically search text using modern embedding models. It's designed to be flexible, extensible, and easy to use.
-</td>
-</tr>
-</table>
+# embeddingsearch<img src="docs/logo.png" alt="Logo" width="50" align="left">
+embeddingsearch is a self-hosted semantic search server built on vector embeddings.<br/>It lets you index and semantically search text using modern embedding models.
+<br/><br/>
+It's designed to be flexible, extensible, and easy to use.
 
 # Project outline
 <img src="docs/ProjectOutline/ProjectOutlineDiagram.excalidraw.svg" alt="Logo">
