@@ -219,7 +219,7 @@ public class Searchdomain
 
     public void UpdateModelsInUse()
     {
-        modelsInUse = GetModels([.. entityCache]);
+        modelsInUse = GetModels(entityCache.ToList());
     }
 
     private static float EvaluateEntityAgainstQueryEmbeddings(Entity entity, Dictionary<string, float[]> queryEmbeddings)
