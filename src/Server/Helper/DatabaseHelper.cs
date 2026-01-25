@@ -1,4 +1,3 @@
-using System.Configuration;
 using System.Data.Common;
 using System.Text;
 using System.Text.Json;
@@ -70,6 +69,18 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
             { "id_entity", id_entity }
         };
         return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO attribute (attribute, value, id_entity) VALUES (@attribute, @value, @id_entity)", parameters);
+    }
+
+    public static int DatabaseInsertAttributes(SQLHelper helper, List<(string attribute, string value, int id_entity)> values) //string[] attribute, string value, int id_entity)
+    {
+        return helper.BulkExecuteNonQuery(
+            "INSERT INTO attribute (attribute, value, id_entity) VALUES (@attribute, @value, @id_entity)",
+            values.Select(element => new object[] {
+                new MySqlParameter("@attribute", element.attribute),
+                new MySqlParameter("@value", element.value),
+                new MySqlParameter("@id_entity", element.id_entity)
+            })
+        );
     }
 
     public static int DatabaseInsertDatapoint(SQLHelper helper, string name, ProbMethodEnum probmethod_embedding, SimilarityMethodEnum similarityMethod, string hash, int id_entity)
