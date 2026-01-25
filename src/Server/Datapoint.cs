@@ -1,6 +1,3 @@
-using AdaptiveExpressions;
-using OllamaSharp;
-using OllamaSharp.Models;
 using Shared;
 
 namespace Server;
@@ -79,6 +76,10 @@ public class Datapoint
                         toBeGenerated.Add(value);
                     }
                 }
+            }
+            if (toBeGenerated.Count == 0)
+            {
+                continue;
             }
             IEnumerable<float[]> generatedEmbeddings = GenerateEmbeddings([.. toBeGenerated], model, aIProvider, embeddingCache);
             if (generatedEmbeddings.Count() != toBeGenerated.Count)

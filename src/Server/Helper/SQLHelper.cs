@@ -80,6 +80,33 @@ public class SQLHelper:IDisposable
         }
     }
 
+    public int BulkExecuteNonQuery(string sql, IEnumerable<object[]> parameterSets)
+    {
+        lock (connection)
+        {
+            EnsureConnected();
+            EnsureDbReaderIsClosed();
+
+            using var transaction = connection.BeginTransaction();
+            using var command = connection.CreateCommand();
+
+            command.CommandText = sql;
+            command.Transaction = transaction;
+
+            int affectedRows = 0;
+
+            foreach (var parameters in parameterSets)
+            {
+                command.Parameters.Clear();
+                command.Parameters.AddRange(parameters);
+                affectedRows += command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+            return affectedRows;
+        }
+    }
+
     public bool EnsureConnected()
     {
         if (connection.State != System.Data.ConnectionState.Open)

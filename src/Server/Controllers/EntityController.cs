@@ -116,12 +116,14 @@ public class EntityController : ControllerBase
             else
             {
                 _logger.LogError("Unable to deserialize an entity");
+                ElmahCore.ElmahExtensions.RaiseError(new Exception("Unable to deserialize an entity"));
                 return Ok(new EntityIndexResult() { Success = false, Message = "Unable to deserialize an entity"});
             }
         } catch (Exception ex)
         {
             if (ex.InnerException is not null) ex = ex.InnerException;
             _logger.LogError("Unable to index the provided entities. {ex.Message} - {ex.StackTrace}", [ex.Message, ex.StackTrace]);
+            ElmahCore.ElmahExtensions.RaiseError(ex);
             return Ok(new EntityIndexResult() { Success = false, Message = ex.Message });
         }
 
@@ -142,6 +144,11 @@ public class EntityController : ControllerBase
         if (entity_ is null)
         {
             _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
+            ElmahCore.ElmahExtensions.RaiseError(
+                new Exception(
+                    $"Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name"
+                )
+            );
             return Ok(new EntityDeleteResults() {Success = false, Message = "Entity not found"});
         }
         searchdomain_.ReconciliateOrInvalidateCacheForDeletedEntity(entity_);

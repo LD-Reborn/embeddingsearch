@@ -245,10 +245,16 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         else
         {
             int id_entity = DatabaseHelper.DatabaseInsertEntity(helper, jsonEntity.Name, jsonEntity.Probmethod, _databaseHelper.GetSearchdomainID(helper, jsonEntity.Searchdomain));
+            List<(string attribute, string value, int id_entity)> values = [];
             foreach (KeyValuePair<string, string> attribute in jsonEntity.Attributes)
             {
-                DatabaseHelper.DatabaseInsertAttribute(helper, attribute.Key, attribute.Value, id_entity); // TODO implement bulk insert to reduce number of queries
+                values.Add(new() {
+                    attribute = attribute.Key,
+                    value = attribute.Value,
+                    id_entity = id_entity
+                });
             }
+            DatabaseHelper.DatabaseInsertAttributes(helper, values);
 
             List<Datapoint> datapoints = [];
             foreach (JSONDatapoint jsonDatapoint in jsonEntity.Datapoints)
