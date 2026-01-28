@@ -245,25 +245,30 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         else
         {
             int id_entity = DatabaseHelper.DatabaseInsertEntity(helper, jsonEntity.Name, jsonEntity.Probmethod, _databaseHelper.GetSearchdomainID(helper, jsonEntity.Searchdomain));
-            List<(string attribute, string value, int id_entity)> values = [];
+            List<(string attribute, string value, int id_entity)> toBeInsertedAttributes = [];
             foreach (KeyValuePair<string, string> attribute in jsonEntity.Attributes)
             {
-                values.Add(new() {
+                toBeInsertedAttributes.Add(new() {
                     attribute = attribute.Key,
                     value = attribute.Value,
                     id_entity = id_entity
                 });
             }
-            DatabaseHelper.DatabaseInsertAttributes(helper, values);
+            DatabaseHelper.DatabaseInsertAttributes(helper, toBeInsertedAttributes);
 
             List<Datapoint> datapoints = [];
+            List<(JSONDatapoint datapoint, string hash)> toBeInsertedDatapoints = [];
             foreach (JSONDatapoint jsonDatapoint in jsonEntity.Datapoints)
             {
                 string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(jsonDatapoint.Text)));
-                Datapoint datapoint = DatabaseInsertDatapointWithEmbeddings(helper, searchdomain, jsonDatapoint, id_entity, hash);
-                datapoints.Add(datapoint);
+                toBeInsertedDatapoints.Add(new()
+                {
+                    datapoint = jsonDatapoint,
+                    hash = hash
+                });
             }
-
+            List<Datapoint> datapoint = DatabaseInsertDatapointsWithEmbeddings(helper, searchdomain, toBeInsertedDatapoints, id_entity);
+            
             var probMethod = Probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new ProbMethodNotFoundException(jsonEntity.Probmethod);
             Entity entity = new(jsonEntity.Attributes, probMethod, jsonEntity.Probmethod.ToString(), datapoints, jsonEntity.Name)
             {
@@ -274,6 +279,38 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             searchdomain.UpdateModelsInUse();
             return entity;
         }
+    }
+
+    public List<Datapoint> DatabaseInsertDatapointsWithEmbeddings(SQLHelper helper, Searchdomain searchdomain, List<(JSONDatapoint datapoint, string hash)> values, int id_entity)
+    {
+        List<Datapoint> result = [];
+        List<(string name, ProbMethodEnum probmethod_embedding, SimilarityMethodEnum similarityMethod, string hash)> toBeInsertedDatapoints = [];
+        List<(string hash, string model, byte[] embedding)> toBeInsertedEmbeddings = [];
+        foreach ((JSONDatapoint datapoint, string hash) value in values)
+        {
+            Datapoint datapoint = BuildDatapointFromJsonDatapoint(value.datapoint, id_entity, searchdomain, value.hash);
+            toBeInsertedDatapoints.Add(new()
+            {
+                name = datapoint.name,
+                probmethod_embedding = datapoint.probMethod.probMethodEnum,
+                similarityMethod = datapoint.similarityMethod.similarityMethodEnum,
+                hash = value.hash
+            });
+            foreach ((string, float[]) embedding in datapoint.embeddings)
+            {
+                toBeInsertedEmbeddings.Add(new()
+                {
+                    hash = value.hash,
+                    model = embedding.Item1,
+                    embedding = BytesFromFloatArray(embedding.Item2)
+                });
+            }
+            result.Add(datapoint);
+        }
+        
+        DatabaseHelper.DatabaseInsertDatapoints(helper, toBeInsertedDatapoints, id_entity);
+        DatabaseHelper.DatabaseInsertEmbeddingBulk(helper, toBeInsertedEmbeddings);
+        return result;
     }
 
     public Datapoint DatabaseInsertDatapointWithEmbeddings(SQLHelper helper, Searchdomain searchdomain, JSONDatapoint jsonDatapoint, int id_entity, string? hash = null)

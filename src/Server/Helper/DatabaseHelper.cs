@@ -39,6 +39,19 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         helper.ExecuteSQLNonQuery(query.ToString(), parameters);
     }
 
+    public static int DatabaseInsertEmbeddingBulk(SQLHelper helper, List<(string hash, string model, byte[] embedding)> data)
+    {
+        return helper.BulkExecuteNonQuery(
+            "INSERT INTO embedding (id_datapoint, model, embedding) SELECT d.id, @model, @embedding FROM datapoint d WHERE d.hash = @hash",
+            data.Select(element => new object[] {
+                new MySqlParameter("@model", element.model),
+                new MySqlParameter("@embedding", element.embedding),
+                new MySqlParameter("@hash", element.hash)
+            })
+        );
+    }
+
+
     public static int DatabaseInsertSearchdomain(SQLHelper helper, string name, SearchdomainSettings settings = new())
     {
         Dictionary<string, dynamic> parameters = new()
@@ -79,6 +92,20 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
                 new MySqlParameter("@attribute", element.attribute),
                 new MySqlParameter("@value", element.value),
                 new MySqlParameter("@id_entity", element.id_entity)
+            })
+        );
+    }
+
+    public static int DatabaseInsertDatapoints(SQLHelper helper, List<(string name, ProbMethodEnum probmethod_embedding, SimilarityMethodEnum similarityMethod, string hash)> values, int id_entity)
+    {
+        return helper.BulkExecuteNonQuery(
+            "INSERT INTO datapoint (name, probmethod_embedding, similaritymethod, hash, id_entity) VALUES (@name, @probmethod_embedding, @similaritymethod, @hash, @id_entity)",
+            values.Select(element => new object[] {
+                new MySqlParameter("@name", element.name),
+                new MySqlParameter("@probmethod_embedding", element.probmethod_embedding),
+                new MySqlParameter("@similaritymethod", element.similarityMethod),
+                new MySqlParameter("@hash", element.hash),
+                new MySqlParameter("@id_entity", id_entity)
             })
         );
     }
@@ -155,7 +182,7 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
 
         helper.ExecuteSQLNonQuery("DELETE embedding.* FROM embedding JOIN datapoint dp ON id_datapoint = dp.id JOIN entity ON id_entity = entity.id WHERE entity.id_searchdomain = @searchdomain", parameters);
         helper.ExecuteSQLNonQuery("DELETE datapoint.* FROM datapoint JOIN entity ON id_entity = entity.id WHERE entity.id_searchdomain = @searchdomain", parameters);
-        helper.ExecuteSQLNonQuery("DELETE attribute.* FROM attribute JOIN entity ON id_entity = entity.id WHERE entity.id_searchdomain = @searchdomain", parameters);
+        helper.ExecuteSQLNonQuery("DELETE FROM attribute WHERE id_entity IN (SELECT entity.id FROM entity WHERE id_searchdomain = @searchdomain)", parameters);
         return helper.ExecuteSQLNonQuery("DELETE FROM entity WHERE entity.id_searchdomain = @searchdomain", parameters);
     }
 
