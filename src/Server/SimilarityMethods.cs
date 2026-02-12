@@ -9,16 +9,11 @@ public class SimilarityMethod
     public SimilarityMethodEnum similarityMethodEnum;
     public string name;
 
-    public SimilarityMethod(SimilarityMethodEnum similarityMethodEnum, ILogger logger)
+    public SimilarityMethod(SimilarityMethodEnum similarityMethodEnum)
     {
         this.similarityMethodEnum = similarityMethodEnum;
         this.name = similarityMethodEnum.ToString();
-        SimilarityMethods.similarityMethodDelegate? probMethod = SimilarityMethods.GetMethod(name);
-        if (probMethod is null)
-        {
-            logger.LogError("Unable to retrieve similarityMethod {name}", [name]);
-            throw new Exception("Unable to retrieve similarityMethod");
-        }
+        SimilarityMethods.similarityMethodDelegate? probMethod = SimilarityMethods.GetMethod(name) ?? throw new Exception($"Unable to retrieve similarityMethod {name}");
         method = probMethod;
     }
 }

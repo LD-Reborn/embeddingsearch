@@ -87,22 +87,38 @@ public class SQLHelper:IDisposable
             EnsureConnected();
             EnsureDbReaderIsClosed();
 
-            using var transaction = connection.BeginTransaction();
-            using var command = connection.CreateCommand();
-
-            command.CommandText = sql;
-            command.Transaction = transaction;
-
             int affectedRows = 0;
-
-            foreach (var parameters in parameterSets)
+            int retries = 0;
+            
+            while (retries <= 3)
             {
-                command.Parameters.Clear();
-                command.Parameters.AddRange(parameters);
-                affectedRows += command.ExecuteNonQuery();
-            }
+                try
+                {
+                    using var transaction = connection.BeginTransaction();
+                    using var command = connection.CreateCommand();
 
-            transaction.Commit();
+                    command.CommandText = sql;
+                    command.Transaction = transaction;
+
+                    foreach (var parameters in parameterSets)
+                    {
+                        command.Parameters.Clear();
+                        command.Parameters.AddRange(parameters);
+                        affectedRows += command.ExecuteNonQuery();
+                    }
+                    
+                    transaction.Commit();
+                    break;
+                }
+                catch (Exception)
+                {
+                    retries++;
+                    if (retries > 3)
+                        throw;
+                    Thread.Sleep(10);
+                }
+            }
+            
             return affectedRows;
         }
     }

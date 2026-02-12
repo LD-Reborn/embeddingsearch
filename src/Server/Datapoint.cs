@@ -1,4 +1,5 @@
 using Shared;
+using Shared.Models;
 
 namespace Server;
 
@@ -9,6 +10,15 @@ public class Datapoint
     public SimilarityMethod similarityMethod;
     public List<(string, float[])> embeddings;
     public string hash;
+
+    public Datapoint(string name, ProbMethodEnum probMethod, SimilarityMethodEnum similarityMethod, string hash, List<(string, float[])> embeddings)
+    {
+        this.name = name;
+        this.probMethod = new ProbMethod(probMethod);
+        this.similarityMethod = new SimilarityMethod(similarityMethod);
+        this.hash = hash;
+        this.embeddings = embeddings;
+    }
 
     public Datapoint(string name, ProbMethod probMethod, SimilarityMethod similarityMethod, string hash, List<(string, float[])> embeddings)
     {

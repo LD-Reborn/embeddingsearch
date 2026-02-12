@@ -153,7 +153,8 @@ public class EntityController : ControllerBase
         }
         searchdomain_.ReconciliateOrInvalidateCacheForDeletedEntity(entity_);
         _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
-        searchdomain_.entityCache.RemoveAll(entity => entity.name == entityName);
+        Entity toBeRemoved = searchdomain_.entityCache.First(entity => entity.name == entityName);
+        searchdomain_.entityCache = [.. searchdomain_.entityCache.Except([toBeRemoved])];
         return Ok(new EntityDeleteResults() {Success = true});
     }
 }
