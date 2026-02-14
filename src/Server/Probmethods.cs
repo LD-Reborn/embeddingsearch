@@ -10,16 +10,11 @@ public class ProbMethod
     public ProbMethodEnum probMethodEnum;
     public string name;
 
-    public ProbMethod(ProbMethodEnum probMethodEnum, ILogger logger)
+    public ProbMethod(ProbMethodEnum probMethodEnum)
     {
         this.probMethodEnum = probMethodEnum;
         this.name = probMethodEnum.ToString();
-        Probmethods.probMethodDelegate? probMethod = Probmethods.GetMethod(name);
-        if (probMethod is null)
-        {
-            logger.LogError("Unable to retrieve probMethod {name}", [name]);
-            throw new ProbMethodNotFoundException(probMethodEnum);
-        }
+        Probmethods.probMethodDelegate? probMethod = Probmethods.GetMethod(name) ?? throw new ProbMethodNotFoundException(probMethodEnum);
         method = probMethod;
     }
 }

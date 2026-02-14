@@ -12,6 +12,7 @@ public class EmbeddingSearchOptions : ApiKeyOptions
     public required SimpleAuthOptions SimpleAuth { get; set; }
     public required CacheOptions Cache { get; set; }
     public required bool UseHttpsRedirection { get; set; }
+    public int? MaxRequestBodySize { get; set; }
 }
 
 public class AiProvider

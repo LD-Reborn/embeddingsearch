@@ -35,6 +35,12 @@ EmbeddingSearchOptions configuration = configurationSection.Get<EmbeddingSearchO
 builder.Services.Configure<EmbeddingSearchOptions>(configurationSection);
 builder.Services.Configure<ApiKeyOptions>(configurationSection);
 
+// Configure Kestrel
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = configuration.MaxRequestBodySize ?? 50 * 1024 * 1024;
+});
+
 // Migrate database
 var helper = new SQLHelper(new MySql.Data.MySqlClient.MySqlConnection(configuration.ConnectionStrings.SQL), configuration.ConnectionStrings.SQL);
 DatabaseMigrations.Migrate(helper);

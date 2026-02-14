@@ -39,14 +39,15 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         helper.ExecuteSQLNonQuery(query.ToString(), parameters);
     }
 
-    public static int DatabaseInsertEmbeddingBulk(SQLHelper helper, List<(string hash, string model, byte[] embedding)> data)
+    public static int DatabaseInsertEmbeddingBulk(SQLHelper helper, List<(string name, string model, byte[] embedding)> data, int id_entity)
     {
         return helper.BulkExecuteNonQuery(
-            "INSERT INTO embedding (id_datapoint, model, embedding) SELECT d.id, @model, @embedding FROM datapoint d WHERE d.hash = @hash",
+            "INSERT INTO embedding (id_datapoint, model, embedding) SELECT d.id, @model, @embedding FROM datapoint d WHERE d.name = @name AND d.id_entity = @id_entity ORDER BY d.id LIMIT 1", // TODO: fix limitation - entity must not have 2 datapoints with the same content, i.e. hash
             data.Select(element => new object[] {
                 new MySqlParameter("@model", element.model),
                 new MySqlParameter("@embedding", element.embedding),
-                new MySqlParameter("@hash", element.hash)
+                new MySqlParameter("@name", element.name),
+                new MySqlParameter("@id_entity", id_entity)
             })
         );
     }
@@ -96,6 +97,29 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         );
     }
 
+    public static int DatabaseUpdateAttributes(SQLHelper helper, List<(string attribute, string value, int id_entity)> values)
+    {
+        return helper.BulkExecuteNonQuery(
+            "UPDATE attribute SET value=@value WHERE id_entity=@id_entity AND attribute=@attribute",
+            values.Select(element => new object[] {
+                new MySqlParameter("@attribute", element.attribute),
+                new MySqlParameter("@value", element.value),
+                new MySqlParameter("@id_entity", element.id_entity)
+            })
+        );
+    }
+
+    public static int DatabaseDeleteAttributes(SQLHelper helper, List<(string attribute, int id_entity)> values)
+    {
+        return helper.BulkExecuteNonQuery(
+            "DELETE FROM attribute WHERE id_entity=@id_entity AND attribute=@attribute",
+            values.Select(element => new object[] {
+                new MySqlParameter("@attribute", element.attribute),
+                new MySqlParameter("@id_entity", element.id_entity)
+            })
+        );
+    }
+
     public static int DatabaseInsertDatapoints(SQLHelper helper, List<(string name, ProbMethodEnum probmethod_embedding, SimilarityMethodEnum similarityMethod, string hash)> values, int id_entity)
     {
         return helper.BulkExecuteNonQuery(
@@ -121,6 +145,38 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
             { "id_entity", id_entity }
         };
         return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO datapoint (name, probmethod_embedding, similaritymethod, hash, id_entity) VALUES (@name, @probmethod_embedding, @similaritymethod, @hash, @id_entity)", parameters);
+    }
+
+    public static (int datapoints, int embeddings) DatabaseDeleteDatapoints(SQLHelper helper, List<string> values, int id_entity)
+    {
+        int embeddings = helper.BulkExecuteNonQuery(
+            "DELETE e FROM embedding e JOIN datapoint d ON e.id_datapoint=d.id WHERE d.name=@datapointName AND d.id_entity=@entityId",
+            values.Select(element => new object[] {
+                new MySqlParameter("@datapointName", element),
+                new MySqlParameter("@entityId", id_entity)
+            })
+        );
+        int datapoints = helper.BulkExecuteNonQuery(
+            "DELETE FROM datapoint WHERE name=@datapointName AND id_entity=@entityId",
+            values.Select(element => new object[] {
+                new MySqlParameter("@datapointName", element),
+                new MySqlParameter("@entityId", id_entity)
+            })
+        );
+        return (datapoints: datapoints, embeddings: embeddings);
+    }
+
+    public static int DatabaseUpdateDatapoint(SQLHelper helper, List<(string name, string probmethod_embedding, string similarityMethod)> values, int id_entity)
+    {
+        return helper.BulkExecuteNonQuery(
+            "UPDATE datapoint SET probmethod_embedding=@probmethod, similaritymethod=@similaritymethod WHERE id_entity=@entityId AND name=@datapointName",
+            values.Select(element => new object[] {
+                new MySqlParameter("@probmethod", element.probmethod_embedding),
+                new MySqlParameter("@similaritymethod", element.similarityMethod),
+                new MySqlParameter("@entityId", id_entity),
+                new MySqlParameter("@datapointName", element.name)
+            })
+        );
     }
 
     public static int DatabaseInsertEmbedding(SQLHelper helper, int id_datapoint, string model, byte[] embedding)

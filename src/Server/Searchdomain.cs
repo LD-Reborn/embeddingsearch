@@ -7,6 +7,7 @@ using Server.Helper;
 using Shared;
 using Shared.Models;
 using AdaptiveExpressions;
+using System.Collections.Concurrent;
 
 namespace Server;
 
@@ -19,7 +20,7 @@ public class Searchdomain
     public int id;
     public SearchdomainSettings settings;
     public EnumerableLruCache<string, DateTimedSearchResult> queryCache; // Key: query, Value: Search results for that query (with timestamp)
-    public List<Entity> entityCache;
+    public ConcurrentBag<Entity> entityCache;
     public List<string> modelsInUse;
     public EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache;
     private readonly MySqlConnection connection;
@@ -105,8 +106,8 @@ public class Searchdomain
                 typeof(SimilarityMethodEnum),
                 similarityMethodString
             );
-            ProbMethod probmethod = new(probmethodEnum, _logger);
-            SimilarityMethod similarityMethod = new(similairtyMethodEnum, _logger);
+            ProbMethod probmethod = new(probmethodEnum);
+            SimilarityMethod similarityMethod = new(similairtyMethodEnum);
             if (embedding_unassigned.TryGetValue(id, out Dictionary<string, float[]>? embeddings) && probmethod is not null)
             {
                 embedding_unassigned.Remove(id);
@@ -173,7 +174,6 @@ public class Searchdomain
         Dictionary<string, float[]> queryEmbeddings = GetQueryEmbeddings(query);
 
         List<(float, string)> result = [];
-
         foreach (Entity entity in entityCache)
         {
             result.Add((EvaluateEntityAgainstQueryEmbeddings(entity, queryEmbeddings), entity.name));
@@ -219,7 +219,10 @@ public class Searchdomain
 
     public void UpdateModelsInUse()
     {
-        modelsInUse = GetModels(entityCache.ToList());
+        lock (modelsInUse)
+        {
+            modelsInUse = GetModels(entityCache);
+        }
     }
 
     private static float EvaluateEntityAgainstQueryEmbeddings(Entity entity, Dictionary<string, float[]> queryEmbeddings)
@@ -240,21 +243,24 @@ public class Searchdomain
         return entity.probMethod(datapointProbs);
     }
 
-    public static List<string> GetModels(List<Entity> entities)
+    public static List<string> GetModels(ConcurrentBag<Entity> entities)
     {
         List<string> result = [];
-        lock (entities)
+        foreach (Entity entity in entities)
         {
-            foreach (Entity entity in entities)
+            lock (entity)
             {
                 foreach (Datapoint datapoint in entity.datapoints)
                 {
-                    foreach ((string, float[]) tuple in datapoint.embeddings)
+                    lock (entity.datapoints)
                     {
-                        string model = tuple.Item1;
-                        if (!result.Contains(model))
+                        foreach ((string, float[]) tuple in datapoint.embeddings)
                         {
-                            result.Add(model);
+                            string model = tuple.Item1;
+                            if (!result.Contains(model))
+                            {
+                                result.Add(model);
+                            }
                         }
                     }
                 }
