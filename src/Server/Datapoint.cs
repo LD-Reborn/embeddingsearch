@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Shared;
 using Shared.Models;
 
@@ -10,23 +11,26 @@ public class Datapoint
     public SimilarityMethod similarityMethod;
     public List<(string, float[])> embeddings;
     public string hash;
+    public int id;
 
-    public Datapoint(string name, ProbMethodEnum probMethod, SimilarityMethodEnum similarityMethod, string hash, List<(string, float[])> embeddings)
+    public Datapoint(string name, ProbMethodEnum probMethod, SimilarityMethodEnum similarityMethod, string hash, List<(string, float[])> embeddings, int id)
     {
         this.name = name;
         this.probMethod = new ProbMethod(probMethod);
         this.similarityMethod = new SimilarityMethod(similarityMethod);
         this.hash = hash;
         this.embeddings = embeddings;
+        this.id = id;
     }
 
-    public Datapoint(string name, ProbMethod probMethod, SimilarityMethod similarityMethod, string hash, List<(string, float[])> embeddings)
+    public Datapoint(string name, ProbMethod probMethod, SimilarityMethod similarityMethod, string hash, List<(string, float[])> embeddings, int id)
     {
         this.name = name;
         this.probMethod = probMethod;
         this.similarityMethod = similarityMethod;
         this.hash = hash;
         this.embeddings = embeddings;
+        this.id = id;
     }
 
     public float CalcProbability(List<(string, float)> probabilities)
@@ -34,18 +38,19 @@ public class Datapoint
         return probMethod.method(probabilities);
     }
 
-    public static Dictionary<string, float[]> GetEmbeddings(string content, List<string> models, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
+    public static Dictionary<string, float[]> GetEmbeddings(string content, ConcurrentBag<string> models, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
     {
         Dictionary<string, float[]> embeddings = [];
         bool embeddingCacheHasContent = embeddingCache.TryGetValue(content, out var embeddingCacheForContent);
         if (!embeddingCacheHasContent || embeddingCacheForContent is null)
         {
-            models.ForEach(model =>
-                embeddings[model] = GenerateEmbeddings(content, model, aIProvider, embeddingCache)
-            );
+            foreach (string model in models)
+            {
+                embeddings[model] = GenerateEmbeddings(content, model, aIProvider, embeddingCache);
+            }
             return embeddings;
         }
-        models.ForEach(model =>
+        foreach (string model in models)
         {
             bool embeddingCacheHasModel = embeddingCacheForContent.TryGetValue(model, out float[]? embeddingCacheForModel);
             if (embeddingCacheHasModel && embeddingCacheForModel is not null)
@@ -55,7 +60,7 @@ public class Datapoint
             {
                 embeddings[model] = GenerateEmbeddings(content, model, aIProvider, embeddingCache);
             }
-        });
+        }
         return embeddings;
     }
 

@@ -29,12 +29,12 @@ public class SearchdomainController : ControllerBase
     /// Lists all searchdomains
     /// </summary>
     [HttpGet("/Searchdomains")]
-    public ActionResult<SearchdomainListResults> List()
+    public async Task<ActionResult<SearchdomainListResults>> List()
     {
         List<string> results;
         try
         {
-            results = _domainManager.ListSearchdomains();
+            results = await _domainManager.ListSearchdomainsAsync();
         }
         catch (Exception)
         {
@@ -51,7 +51,7 @@ public class SearchdomainController : ControllerBase
     /// <param name="searchdomain">Name of the searchdomain</param>
     /// <param name="settings">Optional initial settings</param>
     [HttpPost]
-    public ActionResult<SearchdomainCreateResults> Create([Required]string searchdomain, [FromBody]SearchdomainSettings settings = new())
+    public async Task<ActionResult<SearchdomainCreateResults>> Create([Required]string searchdomain, [FromBody]SearchdomainSettings settings = new())
     {
         try
         {
@@ -59,7 +59,7 @@ public class SearchdomainController : ControllerBase
             {
                 settings.QueryCacheSize = 1_000_000; // TODO get rid of this magic number
             }
-            int id = _domainManager.CreateSearchdomain(searchdomain, settings);
+            int id = await _domainManager.CreateSearchdomain(searchdomain, settings);
             return Ok(new SearchdomainCreateResults(){Id = id, Success = true});
         } catch (Exception)
         {
@@ -73,7 +73,7 @@ public class SearchdomainController : ControllerBase
     /// </summary>
     /// <param name="searchdomain">Name of the searchdomain</param>
     [HttpDelete]
-    public ActionResult<SearchdomainDeleteResults> Delete([Required]string searchdomain)
+    public async Task<ActionResult<SearchdomainDeleteResults>> Delete([Required]string searchdomain)
     {
         bool success;
         int deletedEntries;
@@ -81,7 +81,7 @@ public class SearchdomainController : ControllerBase
         try
         {
             success = true;
-            deletedEntries = _domainManager.DeleteSearchdomain(searchdomain);
+            deletedEntries = await _domainManager.DeleteSearchdomain(searchdomain);
         }
         catch (SearchdomainNotFoundException ex)
         {
@@ -165,7 +165,7 @@ public class SearchdomainController : ControllerBase
         {
             Name = r.Item2,
             Value = r.Item1,
-            Attributes = returnAttributes ? (searchdomain_.entityCache.FirstOrDefault(x => x.name == r.Item2)?.attributes ?? null) : null
+            Attributes = returnAttributes ? (searchdomain_.entityCache[r.Item2]?.attributes ?? null) : null
         })];
         return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
     }

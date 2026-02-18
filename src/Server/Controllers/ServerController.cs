@@ -75,7 +75,7 @@ public class ServerController : ControllerBase
             long queryCacheElementCount = 0;
             long queryCacheMaxElementCountAll = 0;
             long queryCacheMaxElementCountLoadedSearchdomainsOnly = 0;
-            foreach (string searchdomain in _searchdomainManager.ListSearchdomains())
+            foreach (string searchdomain in await _searchdomainManager.ListSearchdomainsAsync())
             {
                 if (SearchdomainHelper.IsSearchdomainLoaded(_searchdomainManager, searchdomain))
                 {

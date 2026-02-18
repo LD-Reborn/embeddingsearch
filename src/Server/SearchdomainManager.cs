@@ -79,32 +79,17 @@ public class SearchdomainManager : IDisposable
         searchdomain.InvalidateSearchCache();
     }
 
-    public List<string> ListSearchdomains()
+    public async Task<List<string>> ListSearchdomainsAsync()
     {
-        lock (helper.connection)
-        {
-            DbDataReader reader = helper.ExecuteSQLCommand("SELECT name FROM searchdomain", []);
-            List<string> results = [];
-            try
-            {
-                while (reader.Read())
-                {
-                    results.Add(reader.GetString(0));
-                }
-                return results;
-            }
-            finally
-            {
-                reader.Close();
-            }
-        }
+        return await helper.ExecuteQueryAsync("SELECT name FROM searchdomain", [], x => x.GetString(0));
     }
 
-    public int CreateSearchdomain(string searchdomain, SearchdomainSettings settings)
+    public async Task<int> CreateSearchdomain(string searchdomain, SearchdomainSettings settings)
     {
-        return CreateSearchdomain(searchdomain, JsonSerializer.Serialize(settings));
+        return await CreateSearchdomain(searchdomain, JsonSerializer.Serialize(settings));
     }
-    public int CreateSearchdomain(string searchdomain, string settings = "{}")
+
+    public async Task<int> CreateSearchdomain(string searchdomain, string settings = "{}")
     {
         if (searchdomains.TryGetValue(searchdomain, out Searchdomain? value))
         {
@@ -116,18 +101,19 @@ public class SearchdomainManager : IDisposable
             { "name", searchdomain },
             { "settings", settings}
         };
-        return helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
+        return await helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
     }
 
-    public int DeleteSearchdomain(string searchdomain)
+    public async Task<int> DeleteSearchdomain(string searchdomain)
     {
-        int counter = _databaseHelper.RemoveAllEntities(helper, searchdomain);
+        int counter = await _databaseHelper.RemoveAllEntities(helper, searchdomain);
         _logger.LogDebug($"Number of entities deleted as part of deleting the searchdomain \"{searchdomain}\": {counter}");
-        helper.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
+        await helper.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
         searchdomains.Remove(searchdomain);
         _logger.LogDebug($"Searchdomain has been successfully removed");
         return counter;
     }
+
     private Searchdomain SetSearchdomain(string name, Searchdomain searchdomain)
     {
         searchdomains[name] = searchdomain;
