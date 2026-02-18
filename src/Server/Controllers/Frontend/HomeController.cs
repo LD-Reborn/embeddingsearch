@@ -35,11 +35,11 @@ public class HomeController : Controller
 
     [Authorize]
     [HttpGet("Searchdomains")]
-    public IActionResult Searchdomains()
+    public async Task<ActionResult> Searchdomains()
     {
         HomeIndexViewModel viewModel = new()
         {
-            Searchdomains = _domainManager.ListSearchdomains()
+            Searchdomains = await _domainManager.ListSearchdomainsAsync()
         };
         return View(viewModel);
     }

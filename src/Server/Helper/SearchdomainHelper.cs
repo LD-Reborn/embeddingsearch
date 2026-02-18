@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -29,14 +30,14 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         return floatArray;
     }
 
-    public static bool CacheHasEntity(ConcurrentBag<Entity> entityCache, string name)
+    public static bool CacheHasEntity(ConcurrentDictionary<string, Entity> entityCache, string name)
     {
         return CacheGetEntity(entityCache, name) is not null;
     }
 
-    public static Entity? CacheGetEntity(ConcurrentBag<Entity> entityCache, string name)
+    public static Entity? CacheGetEntity(ConcurrentDictionary<string, Entity> entityCache, string name)
     {
-        foreach (Entity entity in entityCache)
+        foreach ((string _, Entity entity) in entityCache)
         {
             if (entity.name == name)
             {
@@ -46,7 +47,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         return null;
     }
 
-    public List<Entity>? EntitiesFromJSON(SearchdomainManager searchdomainManager, ILogger logger, string json)
+    public async Task<List<Entity>?> EntitiesFromJSON(SearchdomainManager searchdomainManager, ILogger logger, string json)
     {
         EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = searchdomainManager.embeddingCache;
         AIProvider aIProvider = searchdomainManager.aIProvider;
@@ -96,46 +97,58 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         // Index/parse the entities
         ConcurrentQueue<Entity> retVal = [];
         ParallelOptions parallelOptions = new() { MaxDegreeOfParallelism = 16 }; // <-- This is needed! Otherwise if we try to index 100+ entities at once, it spawns 100 threads, exploding the SQL pool
-        Parallel.ForEach(jsonEntities, parallelOptions, jSONEntity =>
+
+        List<Task> entityTasks = [];
+        foreach (JSONEntity jSONEntity in jsonEntities)
         {
-            var entity = EntityFromJSON(searchdomainManager, logger, jSONEntity);
-            if (entity is not null)
+            entityTasks.Add(Task.Run(async () =>
             {
-                retVal.Enqueue(entity);
+                var entity = await EntityFromJSON(searchdomainManager, logger, jSONEntity);
+                if (entity is not null)
+                {
+                    retVal.Enqueue(entity);
+                }
+            }));
+            
+            if (entityTasks.Count >= parallelOptions.MaxDegreeOfParallelism)
+            {
+                await Task.WhenAny(entityTasks);
+                entityTasks.RemoveAll(t => t.IsCompleted);
             }
-        });
+        }
+        
+        await Task.WhenAll(entityTasks);
+
         return [.. retVal];
     }
 
-    public Entity? EntityFromJSON(SearchdomainManager searchdomainManager, ILogger logger, JSONEntity jsonEntity) //string json)
+    public async Task<Entity?> EntityFromJSON(SearchdomainManager searchdomainManager, ILogger logger, JSONEntity jsonEntity)
     {
-        using SQLHelper helper = searchdomainManager.helper.DuplicateConnection();
+        var stopwatch = Stopwatch.StartNew();
+
+        SQLHelper helper = searchdomainManager.helper;
         Searchdomain searchdomain = searchdomainManager.GetSearchdomain(jsonEntity.Searchdomain);
-        ConcurrentBag<Entity> entityCache = searchdomain.entityCache;
+        int id_searchdomain = searchdomain.id;
+        ConcurrentDictionary<string, Entity> entityCache = searchdomain.entityCache;
         AIProvider aIProvider = searchdomain.aIProvider;
         EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
-        Entity? preexistingEntity;
-        lock (entityCache)
-        {
-            preexistingEntity = entityCache.FirstOrDefault(entity => entity.name == jsonEntity.Name);
-        }
         bool invalidateSearchCache = false;
 
-        if (preexistingEntity is not null)
+
+        bool hasEntity = entityCache.TryGetValue(jsonEntity.Name, out Entity? preexistingEntity);
+
+        if (hasEntity && preexistingEntity is not null)
         {
-            int? preexistingEntityID = _databaseHelper.GetEntityID(helper, jsonEntity.Name, jsonEntity.Searchdomain);
-            if (preexistingEntityID is null)
-            {
-                _logger.LogCritical("Unable to index entity {jsonEntity.Name} because it already exists in the searchdomain but not in the database.", [jsonEntity.Name]);
-                throw new Exception($"Unable to index entity {jsonEntity.Name} because it already exists in the searchdomain but not in the database.");
-            }
+
+            int preexistingEntityID = preexistingEntity.id;
+
             Dictionary<string, string> attributes = jsonEntity.Attributes;
             
             // Attribute - get changes
-            List<(string attribute, string newValue, int entityId)> updatedAttributes = [];
-            List<(string attribute, int entityId)> deletedAttributes = [];
-            List<(string attributeKey, string attribute, int entityId)> addedAttributes = [];
-            foreach (KeyValuePair<string, string> attributesKV in preexistingEntity.attributes.ToList())
+            List<(string attribute, string newValue, int entityId)> updatedAttributes = new(preexistingEntity.attributes.Count);
+            List<(string attribute, int entityId)> deletedAttributes = new(preexistingEntity.attributes.Count);
+            List<(string attributeKey, string attribute, int entityId)> addedAttributes = new(jsonEntity.Attributes.Count);
+            foreach (KeyValuePair<string, string> attributesKV in preexistingEntity.attributes) //.ToList())
             {
                 string oldAttributeKey = attributesKV.Key;
                 string oldAttribute = attributesKV.Value;
@@ -148,6 +161,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     deletedAttributes.Add((attribute: oldAttributeKey, entityId: (int)preexistingEntityID));
                 }
             }
+
             foreach (var attributesKV in jsonEntity.Attributes)
             {
                 string newAttributeKey = attributesKV.Key;
@@ -160,12 +174,13 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                 }
             }
 
-            
+            if (updatedAttributes.Count != 0 || deletedAttributes.Count != 0 || addedAttributes.Count != 0)
+                _logger.LogDebug("EntityFromJSON - Updating existing entity. name: {name}, updatedAttributes: {updatedAttributes}, deletedAttributes: {deletedAttributes}, addedAttributes: {addedAttributes}", [preexistingEntity.name, updatedAttributes.Count, deletedAttributes.Count, addedAttributes.Count]);
             // Attribute - apply changes
             if (updatedAttributes.Count != 0)
             {
                 // Update
-                DatabaseHelper.DatabaseUpdateAttributes(helper, updatedAttributes);
+                await DatabaseHelper.DatabaseUpdateAttributes(helper, updatedAttributes);
                 lock (preexistingEntity.attributes)
                 {
                     updatedAttributes.ForEach(attribute => preexistingEntity.attributes[attribute.attribute] = attribute.newValue);
@@ -174,7 +189,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             if (deletedAttributes.Count != 0)
             {
                 // Delete
-                DatabaseHelper.DatabaseDeleteAttributes(helper, deletedAttributes);
+                await DatabaseHelper.DatabaseDeleteAttributes(helper, deletedAttributes);
                 lock (preexistingEntity.attributes)
                 {
                     deletedAttributes.ForEach(attribute => preexistingEntity.attributes.Remove(attribute.attribute));
@@ -183,7 +198,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             if (addedAttributes.Count != 0)
             {
                 // Insert
-                DatabaseHelper.DatabaseInsertAttributes(helper, addedAttributes);
+                await DatabaseHelper.DatabaseInsertAttributes(helper, addedAttributes);
                 lock (preexistingEntity.attributes)
                 {
                     addedAttributes.ForEach(attribute => preexistingEntity.attributes.Add(attribute.attributeKey, attribute.attribute));
@@ -191,17 +206,18 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             }
 
             // Datapoint - get changes
-            List<Datapoint> deletedDatapointInstances = [];
-            List<string> deletedDatapoints = [];
-            List<(string datapointName, int entityId, JSONDatapoint jsonDatapoint, string hash)> updatedDatapointsText = [];
-            List<(string datapointName, string probMethod, string similarityMethod, int entityId, JSONDatapoint jsonDatapoint)> updatedDatapointsNonText = [];
+            List<Datapoint> deletedDatapointInstances = new(preexistingEntity.datapoints.Count);
+            List<string> deletedDatapoints = new(preexistingEntity.datapoints.Count);
+            List<(string datapointName, int entityId, JSONDatapoint jsonDatapoint, string hash)> updatedDatapointsText = new(preexistingEntity.datapoints.Count);
+            List<(string datapointName, string probMethod, string similarityMethod, int entityId, JSONDatapoint jsonDatapoint)> updatedDatapointsNonText = new(preexistingEntity.datapoints.Count);
             List<Datapoint> createdDatapointInstances = [];
-            List<(string name, ProbMethodEnum probmethod_embedding, SimilarityMethodEnum similarityMethod, string hash, Dictionary<string, float[]> embeddings, JSONDatapoint datapoint)> createdDatapoints = [];
+            List<(string name, ProbMethodEnum probmethod_embedding, SimilarityMethodEnum similarityMethod, string hash, Dictionary<string, float[]> embeddings, JSONDatapoint datapoint)> createdDatapoints = new(jsonEntity.Datapoints.Length);
             
             foreach (Datapoint datapoint_ in preexistingEntity.datapoints.ToList())
             {
                 Datapoint datapoint = datapoint_; // To enable replacing the datapoint reference as foreach iterators cannot be overwritten
-                bool newEntityHasDatapoint = jsonEntity.Datapoints.Any(x => x.Name == datapoint.name);
+                JSONDatapoint? newEntityDatapoint = jsonEntity.Datapoints.FirstOrDefault(x => x.Name == datapoint.name);
+                bool newEntityHasDatapoint = newEntityDatapoint is not null;
                 if (!newEntityHasDatapoint)
                 {
                     // Datapoint - Deleted
@@ -210,7 +226,6 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     invalidateSearchCache = true;
                 } else
                 {
-                    JSONDatapoint? newEntityDatapoint = jsonEntity.Datapoints.FirstOrDefault(x => x.Name == datapoint.name);
                     string? hash = newEntityDatapoint?.Text is not null ? GetHash(newEntityDatapoint) : null;
                     if (
                         newEntityDatapoint is not null
@@ -246,6 +261,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     }
                 }
             }
+
             foreach (JSONDatapoint jsonDatapoint in jsonEntity.Datapoints)
             {
                 bool oldEntityHasDatapoint = preexistingEntity.datapoints.Any(x => x.name == jsonDatapoint.Name);
@@ -269,38 +285,51 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     invalidateSearchCache = true;
                 }
             }
-            
+
+
+            if (deletedDatapointInstances.Count != 0 || createdDatapoints.Count != 0 || addedAttributes.Count != 0 || updatedDatapointsNonText.Count != 0)
+                _logger.LogDebug(
+                    "EntityFromJSON - Updating existing entity. name: {name}, deletedDatapointInstances: {deletedDatapointInstances}, createdDatapoints: {createdDatapoints}, addedAttributes: {addedAttributes}, updatedDatapointsNonText: {updatedDatapointsNonText}",
+                    [preexistingEntity.name, deletedDatapointInstances.Count, createdDatapoints.Count, addedAttributes.Count, updatedDatapointsNonText.Count]);
             // Datapoint - apply changes
             // Deleted
             if (deletedDatapointInstances.Count != 0)
             {
-                DatabaseHelper.DatabaseDeleteDatapoints(helper, deletedDatapoints, (int)preexistingEntityID);
-                deletedDatapointInstances.ForEach(datapoint => preexistingEntity.datapoints.Remove(datapoint));
+                await DatabaseHelper.DatabaseDeleteEmbeddingsAndDatapoints(helper, deletedDatapoints, (int)preexistingEntityID);
+                preexistingEntity.datapoints = [.. preexistingEntity.datapoints
+                    .Where(x =>
+                        !deletedDatapointInstances.Contains(x)
+                    )
+                ];
             }
             // Created
             if (createdDatapoints.Count != 0)
             {
-                List<Datapoint> datapoint = DatabaseInsertDatapointsWithEmbeddings(helper, searchdomain, [.. createdDatapoints.Select(element => (element.datapoint, element.hash))], (int)preexistingEntityID);
-                createdDatapoints.ForEach(datapoint => preexistingEntity.datapoints.Add(new(
-                    datapoint.name,
-                    datapoint.probmethod_embedding,
-                    datapoint.similarityMethod,
-                    datapoint.hash,
-                    [.. datapoint.embeddings.Select(element => (element.Key, element.Value))])
-                ));
+                List<Datapoint> datapoint = await DatabaseInsertDatapointsWithEmbeddings(helper, searchdomain, [.. createdDatapoints.Select(element => (element.datapoint, element.hash))], (int)preexistingEntityID, id_searchdomain);
+                datapoint.ForEach(x => preexistingEntity.datapoints.Add(x));
             }
             // Datapoint - Updated (text)
             if (updatedDatapointsText.Count != 0)
             {
-                DatabaseHelper.DatabaseDeleteDatapoints(helper, [.. updatedDatapointsText.Select(datapoint => datapoint.datapointName)], (int)preexistingEntityID);
-                updatedDatapointsText.ForEach(datapoint => preexistingEntity.datapoints.RemoveAll(x => x.name == datapoint.datapointName));
-                List<Datapoint> datapoints = DatabaseInsertDatapointsWithEmbeddings(helper, searchdomain, [.. updatedDatapointsText.Select(element => (datapoint: element.jsonDatapoint, hash: element.hash))], (int)preexistingEntityID);
-                preexistingEntity.datapoints.AddRange(datapoints);
+                await DatabaseHelper.DatabaseDeleteEmbeddingsAndDatapoints(helper, [.. updatedDatapointsText.Select(datapoint => datapoint.datapointName)], (int)preexistingEntityID);
+                // Remove from datapoints
+                var namesToRemove = updatedDatapointsText
+                    .Select(d => d.datapointName)
+                    .ToHashSet();
+                var newBag = new ConcurrentBag<Datapoint>(
+                    preexistingEntity.datapoints
+                        .Where(x => !namesToRemove.Contains(x.name))
+                );
+                preexistingEntity.datapoints = newBag;
+                // Insert into database
+                List<Datapoint> datapoints = await DatabaseInsertDatapointsWithEmbeddings(helper, searchdomain, [.. updatedDatapointsText.Select(element => (datapoint: element.jsonDatapoint, hash: element.hash))], (int)preexistingEntityID, id_searchdomain);
+                // Insert into datapoints
+                datapoints.ForEach(datapoint => preexistingEntity.datapoints.Add(datapoint));
             }
             // Datapoint - Updated (probmethod or similaritymethod)
             if (updatedDatapointsNonText.Count != 0)
             {
-                DatabaseHelper.DatabaseUpdateDatapoint(
+                await DatabaseHelper.DatabaseUpdateDatapoint(
                     helper,
                     [.. updatedDatapointsNonText.Select(element => (element.datapointName, element.probMethod, element.similarityMethod))],
                     (int)preexistingEntityID
@@ -313,16 +342,19 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                 });
             } 
 
+
             if (invalidateSearchCache)
             {
+
                 searchdomain.ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(preexistingEntity);
+                searchdomain.UpdateModelsInUse();
             }
-            searchdomain.UpdateModelsInUse();
+
             return preexistingEntity;
         }
         else
         {
-            int id_entity = DatabaseHelper.DatabaseInsertEntity(helper, jsonEntity.Name, jsonEntity.Probmethod, _databaseHelper.GetSearchdomainID(helper, jsonEntity.Searchdomain));
+            int id_entity = await DatabaseHelper.DatabaseInsertEntity(helper, jsonEntity.Name, jsonEntity.Probmethod, id_searchdomain);
             List<(string attribute, string value, int id_entity)> toBeInsertedAttributes = [];
             foreach (KeyValuePair<string, string> attribute in jsonEntity.Attributes)
             {
@@ -332,9 +364,11 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     id_entity = id_entity
                 });
             }
-            DatabaseHelper.DatabaseInsertAttributes(helper, toBeInsertedAttributes);
+
+            var insertAttributesTask = DatabaseHelper.DatabaseInsertAttributes(helper, toBeInsertedAttributes);
 
             List<(JSONDatapoint datapoint, string hash)> toBeInsertedDatapoints = [];
+            ConcurrentBag<string> usedModels = searchdomain.modelsInUse;
             foreach (JSONDatapoint jsonDatapoint in jsonEntity.Datapoints)
             {
                 string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(jsonDatapoint.Text)));
@@ -343,29 +377,39 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
                     datapoint = jsonDatapoint,
                     hash = hash
                 });
+                foreach (string model in jsonDatapoint.Model)
+                {
+                    if (!usedModels.Contains(model))
+                    {
+                        usedModels.Add(model);
+                    }
+                }
             }
-            List<Datapoint> datapoints = DatabaseInsertDatapointsWithEmbeddings(helper, searchdomain, toBeInsertedDatapoints, id_entity);
+
+            List<Datapoint> datapoints = await DatabaseInsertDatapointsWithEmbeddings(helper, searchdomain, toBeInsertedDatapoints, id_entity, id_searchdomain);
             
             var probMethod = Probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new ProbMethodNotFoundException(jsonEntity.Probmethod);
-            Entity entity = new(jsonEntity.Attributes, probMethod, jsonEntity.Probmethod.ToString(), datapoints, jsonEntity.Name)
+            Entity entity = new(jsonEntity.Attributes, probMethod, jsonEntity.Probmethod.ToString(), new(datapoints), jsonEntity.Name)
             {
                 id = id_entity
             };
-            entityCache.Add(entity);
+            entityCache[jsonEntity.Name] = entity;
+
             searchdomain.ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(entity);
-            searchdomain.UpdateModelsInUse();
+            await insertAttributesTask;
             return entity;
         }
     }
 
-    public List<Datapoint> DatabaseInsertDatapointsWithEmbeddings(SQLHelper helper, Searchdomain searchdomain, List<(JSONDatapoint datapoint, string hash)> values, int id_entity)
+    public async Task<List<Datapoint>> DatabaseInsertDatapointsWithEmbeddings(SQLHelper helper, Searchdomain searchdomain, List<(JSONDatapoint datapoint, string hash)> values, int id_entity, int id_searchdomain)
     {
         List<Datapoint> result = [];
         List<(string name, ProbMethodEnum probmethod_embedding, SimilarityMethodEnum similarityMethod, string hash)> toBeInsertedDatapoints = [];
-        List<(string name, string model, byte[] embedding)> toBeInsertedEmbeddings = [];
+        List<(int id_datapoint, string model, byte[] embedding)> toBeInsertedEmbeddings = [];
         foreach ((JSONDatapoint datapoint, string hash) value in values)
         {
-            Datapoint datapoint = BuildDatapointFromJsonDatapoint(value.datapoint, id_entity, searchdomain, value.hash);
+            Datapoint datapoint = await BuildDatapointFromJsonDatapoint(value.datapoint, id_entity, searchdomain, value.hash);
+
             toBeInsertedDatapoints.Add(new()
             {
                 name = datapoint.name,
@@ -377,34 +421,34 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             {
                 toBeInsertedEmbeddings.Add(new()
                 {
-                    name = datapoint.name,
+                    id_datapoint = datapoint.id,
                     model = embedding.Item1,
                     embedding = BytesFromFloatArray(embedding.Item2)
                 });
             }
             result.Add(datapoint);
+
         }
         
-        int insertedDatapoints = DatabaseHelper.DatabaseInsertDatapoints(helper, toBeInsertedDatapoints, id_entity);
-        int insertedEmbeddings = DatabaseHelper.DatabaseInsertEmbeddingBulk(helper, toBeInsertedEmbeddings, id_entity);
+        await DatabaseHelper.DatabaseInsertEmbeddingBulk(helper, toBeInsertedEmbeddings, id_entity, id_searchdomain);
         return result;
     }
 
-    public Datapoint DatabaseInsertDatapointWithEmbeddings(SQLHelper helper, Searchdomain searchdomain, JSONDatapoint jsonDatapoint, int id_entity, string? hash = null)
+    public async Task<Datapoint> DatabaseInsertDatapointWithEmbeddings(SQLHelper helper, Searchdomain searchdomain, JSONDatapoint jsonDatapoint, int id_entity, int id_searchdomain, string? hash = null)
     {
         if (jsonDatapoint.Text is null)
         {
             throw new Exception("jsonDatapoint.Text must not be null at this point");
         }
         hash ??= GetHash(jsonDatapoint);
-        Datapoint datapoint = BuildDatapointFromJsonDatapoint(jsonDatapoint, id_entity, searchdomain, hash);
-        int id_datapoint = DatabaseHelper.DatabaseInsertDatapoint(helper, jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, jsonDatapoint.SimilarityMethod, hash, id_entity); // TODO make this a bulk add action to reduce number of queries
+        Datapoint datapoint = await BuildDatapointFromJsonDatapoint(jsonDatapoint, id_entity, searchdomain, hash);
+        int id_datapoint = await DatabaseHelper.DatabaseInsertDatapoint(helper, jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, jsonDatapoint.SimilarityMethod, hash, id_entity); // TODO make this a bulk add action to reduce number of queries
         List<(string model, byte[] embedding)> data = [];
         foreach ((string, float[]) embedding in datapoint.embeddings)
         {
             data.Add((embedding.Item1, BytesFromFloatArray(embedding.Item2)));
         }
-        DatabaseHelper.DatabaseInsertEmbeddingBulk(helper, id_datapoint, data);
+        await DatabaseHelper.DatabaseInsertEmbeddingBulk(helper, id_datapoint, data, id_entity, id_searchdomain);
         return datapoint;
     }
 
@@ -413,20 +457,20 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         return Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(jsonDatapoint.Text ?? throw new Exception("jsonDatapoint.Text must not be null to compute hash"))));
     }
 
-    public Datapoint BuildDatapointFromJsonDatapoint(JSONDatapoint jsonDatapoint, int entityId, Searchdomain searchdomain, string? hash = null)
+    public async Task<Datapoint> BuildDatapointFromJsonDatapoint(JSONDatapoint jsonDatapoint, int entityId, Searchdomain searchdomain, string? hash = null)
     {
         if (jsonDatapoint.Text is null)
         {
             throw new Exception("jsonDatapoint.Text must not be null at this point");
         }
-        using SQLHelper helper = searchdomain.helper.DuplicateConnection();
+        SQLHelper helper = searchdomain.helper;
         EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.embeddingCache;
         hash ??= Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(jsonDatapoint.Text)));
-        DatabaseHelper.DatabaseInsertDatapoint(helper, jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, jsonDatapoint.SimilarityMethod, hash, entityId);
+        int id = await DatabaseHelper.DatabaseInsertDatapoint(helper, jsonDatapoint.Name, jsonDatapoint.Probmethod_embedding, jsonDatapoint.SimilarityMethod, hash, entityId);
         Dictionary<string, float[]> embeddings = Datapoint.GetEmbeddings(jsonDatapoint.Text, [.. jsonDatapoint.Model], searchdomain.aIProvider, embeddingCache);
         var probMethod_embedding = new ProbMethod(jsonDatapoint.Probmethod_embedding) ?? throw new ProbMethodNotFoundException(jsonDatapoint.Probmethod_embedding);
         var similarityMethod = new SimilarityMethod(jsonDatapoint.SimilarityMethod) ?? throw new SimilarityMethodNotFoundException(jsonDatapoint.SimilarityMethod);
-        return new Datapoint(jsonDatapoint.Name, probMethod_embedding, similarityMethod, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]);
+        return new Datapoint(jsonDatapoint.Name, probMethod_embedding, similarityMethod, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))], id);
     }
 
     public static (Searchdomain?, int?, string?) TryGetSearchdomain(SearchdomainManager searchdomainManager, string searchdomain, ILogger logger)

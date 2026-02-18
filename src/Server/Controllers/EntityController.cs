@@ -46,7 +46,7 @@ public class EntityController : ControllerBase
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         EntityListResults entityListResults = new() {Results = [], Success = true};
-        foreach (Entity entity in searchdomain_.entityCache)
+        foreach ((string _, Entity entity) in searchdomain_.entityCache)
         {
             List<AttributeResult> attributeResults = [];
             foreach (KeyValuePair<string, string> attribute in entity.attributes)
@@ -90,11 +90,11 @@ public class EntityController : ControllerBase
     /// </remarks>
     /// <param name="jsonEntities">Entities to index</param>
     [HttpPut("/Entities")]
-    public ActionResult<EntityIndexResult> Index([FromBody] List<JSONEntity>? jsonEntities)
+    public async Task<ActionResult<EntityIndexResult>> Index([FromBody] List<JSONEntity>? jsonEntities)
     {
         try
         {
-            List<Entity>? entities = _searchdomainHelper.EntitiesFromJSON(
+            List<Entity>? entities = await _searchdomainHelper.EntitiesFromJSON(
                 _domainManager,
                 _logger,
                 JsonSerializer.Serialize(jsonEntities));
@@ -135,7 +135,7 @@ public class EntityController : ControllerBase
     /// <param name="searchdomain">Name of the searchdomain</param>
     /// <param name="entityName">Name of the entity</param>
     [HttpDelete]
-    public ActionResult<EntityDeleteResults> Delete(string searchdomain, string entityName)
+    public async Task<ActionResult<EntityDeleteResults>> Delete(string searchdomain, string entityName)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -152,9 +152,10 @@ public class EntityController : ControllerBase
             return Ok(new EntityDeleteResults() {Success = false, Message = "Entity not found"});
         }
         searchdomain_.ReconciliateOrInvalidateCacheForDeletedEntity(entity_);
-        _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
-        Entity toBeRemoved = searchdomain_.entityCache.First(entity => entity.name == entityName);
-        searchdomain_.entityCache = [.. searchdomain_.entityCache.Except([toBeRemoved])];
-        return Ok(new EntityDeleteResults() {Success = true});
+        await _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
+        
+        bool success = searchdomain_.entityCache.TryRemove(entityName, out Entity? _);
+        
+        return Ok(new EntityDeleteResults() {Success = success});
     }
 }

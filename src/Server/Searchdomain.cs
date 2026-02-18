@@ -20,8 +20,8 @@ public class Searchdomain
     public int id;
     public SearchdomainSettings settings;
     public EnumerableLruCache<string, DateTimedSearchResult> queryCache; // Key: query, Value: Search results for that query (with timestamp)
-    public ConcurrentBag<Entity> entityCache;
-    public List<string> modelsInUse;
+    public ConcurrentDictionary<string, Entity> entityCache;
+    public ConcurrentBag<string> modelsInUse;
     public EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache;
     private readonly MySqlConnection connection;
     public SQLHelper helper;
@@ -44,7 +44,7 @@ public class Searchdomain
         modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
         if (!runEmpty)
         {
-            GetID();
+            id = GetID().Result;
             UpdateEntityCache();
         }
     }
@@ -56,110 +56,130 @@ public class Searchdomain
         {
             ["id"] = this.id
         };
-        DbDataReader embeddingReader = helper.ExecuteSQLCommand("SELECT e.id, e.id_datapoint, e.model, e.embedding FROM embedding e JOIN datapoint d ON e.id_datapoint = d.id JOIN entity ent ON d.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
+        DbDataReader embeddingReader = helper.ExecuteSQLCommand("SELECT id, id_datapoint, model, embedding FROM embedding WHERE id_searchdomain = @id", parametersIDSearchdomain);
         Dictionary<int, Dictionary<string, float[]>> embedding_unassigned = [];
-        while (embeddingReader.Read())
+        try
         {
-            int? id_datapoint_debug = null;
-            try
+            while (embeddingReader.Read())
             {
-                int id_datapoint = embeddingReader.GetInt32(1);
-                id_datapoint_debug = id_datapoint;
-                string model = embeddingReader.GetString(2);
-                long length = embeddingReader.GetBytes(3, 0, null, 0, 0);
-                byte[] embedding = new byte[length];
-                embeddingReader.GetBytes(3, 0, embedding, 0, (int) length);
-                if (embedding_unassigned.TryGetValue(id_datapoint, out Dictionary<string, float[]>? embedding_unassigned_id_datapoint))
+                int? id_datapoint_debug = null;
+                try
                 {
-                    embedding_unassigned[id_datapoint][model] = SearchdomainHelper.FloatArrayFromBytes(embedding);
-                }
-                else
-                {
-                    embedding_unassigned[id_datapoint] = new()
+                    int id_datapoint = embeddingReader.GetInt32(1);
+                    id_datapoint_debug = id_datapoint;
+                    string model = embeddingReader.GetString(2);
+                    long length = embeddingReader.GetBytes(3, 0, null, 0, 0);
+                    byte[] embedding = new byte[length];
+                    embeddingReader.GetBytes(3, 0, embedding, 0, (int) length);
+                    if (embedding_unassigned.TryGetValue(id_datapoint, out Dictionary<string, float[]>? embedding_unassigned_id_datapoint))
                     {
-                        [model] = SearchdomainHelper.FloatArrayFromBytes(embedding)
-                    };
+                        embedding_unassigned[id_datapoint][model] = SearchdomainHelper.FloatArrayFromBytes(embedding);
+                    }
+                    else
+                    {
+                        embedding_unassigned[id_datapoint] = new()
+                        {
+                            [model] = SearchdomainHelper.FloatArrayFromBytes(embedding)
+                        };
+                    }
+                } catch (Exception e)
+                {
+                    _logger.LogError("Error reading embedding (id: {id_datapoint}) from database: {e.Message} - {e.StackTrace}", [id_datapoint_debug, e.Message, e.StackTrace]);
+                    ElmahCore.ElmahExtensions.RaiseError(e);
                 }
-            } catch (Exception e)
-            {
-                _logger.LogError("Error reading embedding (id: {id_datapoint}) from database: {e.Message} - {e.StackTrace}", [id_datapoint_debug, e.Message, e.StackTrace]);
-                ElmahCore.ElmahExtensions.RaiseError(e);
             }
+        } finally
+        {
+            embeddingReader.Close();
         }
-        embeddingReader.Close();
 
         DbDataReader datapointReader = helper.ExecuteSQLCommand("SELECT d.id, d.id_entity, d.name, d.probmethod_embedding, d.similaritymethod, d.hash FROM datapoint d JOIN entity ent ON d.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
-        Dictionary<int, List<Datapoint>> datapoint_unassigned = [];
-        while (datapointReader.Read())
+        Dictionary<int, ConcurrentBag<Datapoint>> datapoint_unassigned = [];
+        try
         {
-            int id = datapointReader.GetInt32(0);
-            int id_entity = datapointReader.GetInt32(1);
-            string name = datapointReader.GetString(2);
-            string probmethodString = datapointReader.GetString(3);
-            string similarityMethodString = datapointReader.GetString(4);
-            string hash = datapointReader.GetString(5);
-            ProbMethodEnum probmethodEnum = (ProbMethodEnum)Enum.Parse(
-                typeof(ProbMethodEnum),
-                probmethodString
-            );
-            SimilarityMethodEnum similairtyMethodEnum = (SimilarityMethodEnum)Enum.Parse(
-                typeof(SimilarityMethodEnum),
-                similarityMethodString
-            );
-            ProbMethod probmethod = new(probmethodEnum);
-            SimilarityMethod similarityMethod = new(similairtyMethodEnum);
-            if (embedding_unassigned.TryGetValue(id, out Dictionary<string, float[]>? embeddings) && probmethod is not null)
+            while (datapointReader.Read())
             {
-                embedding_unassigned.Remove(id);
-                if (!datapoint_unassigned.ContainsKey(id_entity))
+                int id = datapointReader.GetInt32(0);
+                int id_entity = datapointReader.GetInt32(1);
+                string name = datapointReader.GetString(2);
+                string probmethodString = datapointReader.GetString(3);
+                string similarityMethodString = datapointReader.GetString(4);
+                string hash = datapointReader.GetString(5);
+                ProbMethodEnum probmethodEnum = (ProbMethodEnum)Enum.Parse(
+                    typeof(ProbMethodEnum),
+                    probmethodString
+                );
+                SimilarityMethodEnum similairtyMethodEnum = (SimilarityMethodEnum)Enum.Parse(
+                    typeof(SimilarityMethodEnum),
+                    similarityMethodString
+                );
+                ProbMethod probmethod = new(probmethodEnum);
+                SimilarityMethod similarityMethod = new(similairtyMethodEnum);
+                if (embedding_unassigned.TryGetValue(id, out Dictionary<string, float[]>? embeddings) && probmethod is not null)
                 {
-                    datapoint_unassigned[id_entity] = [];
+                    embedding_unassigned.Remove(id);
+                    if (!datapoint_unassigned.ContainsKey(id_entity))
+                    {
+                        datapoint_unassigned[id_entity] = [];
+                    }
+                    datapoint_unassigned[id_entity].Add(new Datapoint(name, probmethod, similarityMethod, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))], id));
                 }
-                datapoint_unassigned[id_entity].Add(new Datapoint(name, probmethod, similarityMethod, hash, [.. embeddings.Select(kv => (kv.Key, kv.Value))]));
             }
+        } finally
+        {
+            datapointReader.Close();
         }
-        datapointReader.Close();
 
         DbDataReader attributeReader = helper.ExecuteSQLCommand("SELECT a.id, a.id_entity, a.attribute, a.value FROM attribute a JOIN entity ent ON a.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
         Dictionary<int, Dictionary<string, string>> attributes_unassigned = [];
-        while (attributeReader.Read())
+        try
         {
-            //"SELECT id, id_entity, attribute, value FROM attribute JOIN entity on attribute.id_entity as en JOIN searchdomain on en.id_searchdomain as sd WHERE sd=@id"
-            int id = attributeReader.GetInt32(0);
-            int id_entity = attributeReader.GetInt32(1);
-            string attribute = attributeReader.GetString(2);
-            string value = attributeReader.GetString(3);
-            if (!attributes_unassigned.ContainsKey(id_entity))
+            while (attributeReader.Read())
             {
-                attributes_unassigned[id_entity] = [];
+                //"SELECT id, id_entity, attribute, value FROM attribute JOIN entity on attribute.id_entity as en JOIN searchdomain on en.id_searchdomain as sd WHERE sd=@id"
+                int id = attributeReader.GetInt32(0);
+                int id_entity = attributeReader.GetInt32(1);
+                string attribute = attributeReader.GetString(2);
+                string value = attributeReader.GetString(3);
+                if (!attributes_unassigned.ContainsKey(id_entity))
+                {
+                    attributes_unassigned[id_entity] = [];
+                }
+                attributes_unassigned[id_entity].Add(attribute, value);
             }
-            attributes_unassigned[id_entity].Add(attribute, value);
+        } finally
+        {
+            attributeReader.Close();
         }
-        attributeReader.Close();
 
         entityCache = [];
         DbDataReader entityReader = helper.ExecuteSQLCommand("SELECT entity.id, name, probmethod FROM entity WHERE id_searchdomain=@id", parametersIDSearchdomain);
-        while (entityReader.Read())
+        try
         {
-            //SELECT id, name, probmethod FROM entity WHERE id_searchdomain=@id
-            int id = entityReader.GetInt32(0);
-            string name = entityReader.GetString(1);
-            string probmethodString = entityReader.GetString(2);
-            if (!attributes_unassigned.TryGetValue(id, out Dictionary<string, string>? attributes))
+            while (entityReader.Read())
             {
-                attributes = [];
-            }
-            Probmethods.probMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
-            if (datapoint_unassigned.TryGetValue(id, out List<Datapoint>? datapoints) && probmethod is not null)
-            {
-                Entity entity = new(attributes, probmethod, probmethodString, datapoints, name)
+                //SELECT id, name, probmethod FROM entity WHERE id_searchdomain=@id
+                int id = entityReader.GetInt32(0);
+                string name = entityReader.GetString(1);
+                string probmethodString = entityReader.GetString(2);
+                if (!attributes_unassigned.TryGetValue(id, out Dictionary<string, string>? attributes))
                 {
-                    id = id
-                };
-                entityCache.Add(entity);
+                    attributes = [];
+                }
+                Probmethods.probMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
+                if (datapoint_unassigned.TryGetValue(id, out ConcurrentBag<Datapoint>? datapoints) && probmethod is not null)
+                {
+                    Entity entity = new(attributes, probmethod, probmethodString, datapoints, name)
+                    {
+                        id = id
+                    };
+                    entityCache[name] = entity;
+                }
             }
+        } finally
+        {
+            entityReader.Close();
         }
-        entityReader.Close();
         modelsInUse = GetModels(entityCache);
     }
 
@@ -174,7 +194,7 @@ public class Searchdomain
         Dictionary<string, float[]> queryEmbeddings = GetQueryEmbeddings(query);
 
         List<(float, string)> result = [];
-        foreach (Entity entity in entityCache)
+        foreach ((string name, Entity entity) in entityCache)
         {
             result.Add((EvaluateEntityAgainstQueryEmbeddings(entity, queryEmbeddings), entity.name));
         }
@@ -219,10 +239,7 @@ public class Searchdomain
 
     public void UpdateModelsInUse()
     {
-        lock (modelsInUse)
-        {
-            modelsInUse = GetModels(entityCache);
-        }
+        modelsInUse = GetModels(entityCache);
     }
 
     private static float EvaluateEntityAgainstQueryEmbeddings(Entity entity, Dictionary<string, float[]> queryEmbeddings)
@@ -243,24 +260,22 @@ public class Searchdomain
         return entity.probMethod(datapointProbs);
     }
 
-    public static List<string> GetModels(ConcurrentBag<Entity> entities)
+    public static ConcurrentBag<string> GetModels(ConcurrentDictionary<string, Entity> entities)
     {
-        List<string> result = [];
-        foreach (Entity entity in entities)
+        ConcurrentBag<string> result = [];
+        foreach (KeyValuePair<string, Entity> element in entities)
         {
+            Entity entity = element.Value;
             lock (entity)
             {
                 foreach (Datapoint datapoint in entity.datapoints)
                 {
-                    lock (entity.datapoints)
+                    foreach ((string, float[]) tuple in datapoint.embeddings)
                     {
-                        foreach ((string, float[]) tuple in datapoint.embeddings)
+                        string model = tuple.Item1;
+                        if (!result.Contains(model))
                         {
-                            string model = tuple.Item1;
-                            if (!result.Contains(model))
-                            {
-                                result.Add(model);
-                            }
+                            result.Add(model);
                         }
                     }
                 }
@@ -269,17 +284,13 @@ public class Searchdomain
         return result;
     }
 
-    public int GetID()
+    public async Task<int> GetID()
     {
-        Dictionary<string, dynamic> parameters = new()
+        Dictionary<string, object?> parameters = new()
         {
-            ["name"] = this.searchdomain
+            { "name", this.searchdomain }
         };
-        DbDataReader reader = helper.ExecuteSQLCommand("SELECT id from searchdomain WHERE name = @name", parameters);
-        reader.Read();
-        this.id = reader.GetInt32(0);
-        reader.Close();
-        return this.id;
+        return (await helper.ExecuteQueryAsync("SELECT id from searchdomain WHERE name = @name", parameters, x => x.GetInt32(0))).First();
     }
 
     public SearchdomainSettings GetSettings()

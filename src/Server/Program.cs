@@ -42,7 +42,7 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 // Migrate database
-var helper = new SQLHelper(new MySql.Data.MySqlClient.MySqlConnection(configuration.ConnectionStrings.SQL), configuration.ConnectionStrings.SQL);
+SQLHelper helper = new(new MySql.Data.MySqlClient.MySqlConnection(configuration.ConnectionStrings.SQL), configuration.ConnectionStrings.SQL);
 DatabaseMigrations.Migrate(helper);
 
 // Migrate SQLite cache
