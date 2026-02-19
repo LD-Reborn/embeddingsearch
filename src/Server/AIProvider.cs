@@ -109,10 +109,19 @@ public class AIProvider
         {
             JObject responseContentJson = JObject.Parse(responseContent);
             List<JToken>? responseContentTokens = [.. responseContentJson.SelectTokens(embeddingsJsonPath)];
-            if (responseContentTokens is null)
+            if (responseContentTokens is null || responseContentTokens.Count == 0)
             {
-                _logger.LogError("Unable to select tokens using JSONPath {embeddingsJsonPath} for string: {responseContent}.", [embeddingsJsonPath, responseContent]);
-                throw new JSONPathSelectionException(embeddingsJsonPath, responseContent);
+                if (responseContentJson.TryGetValue("error", out JToken? errorMessageJson) && errorMessageJson is not null)
+                {
+                    string errorMessage = errorMessageJson.Value<string>() ?? "";
+                    _logger.LogError("Unable to retrieve embeddings due to error: {errorMessage}", [errorMessage]);
+                    throw new Exception($"Unable to retrieve embeddings due to error: {errorMessage}");
+                    
+                } else
+                {
+                    _logger.LogError("Unable to select tokens using JSONPath {embeddingsJsonPath} for string: {responseContent}.", [embeddingsJsonPath, responseContent]);
+                    throw new JSONPathSelectionException(embeddingsJsonPath, responseContent);
+                }
             }
             return [.. responseContentTokens.Select(token => token.ToObject<float[]>() ?? throw new Exception("Unable to cast embeddings response to float[]"))];
         }

@@ -58,7 +58,7 @@ public class SearchdomainManager : IDisposable
         }
         try
         {
-            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, aIProvider, embeddingCache, _logger));
+            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, helper, aIProvider, embeddingCache, _logger));
         }
         catch (MySqlException)
         {
@@ -101,7 +101,9 @@ public class SearchdomainManager : IDisposable
             { "name", searchdomain },
             { "settings", settings}
         };
-        return await helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
+        int id = await helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
+        searchdomains.Add(searchdomain, new(searchdomain, connectionString, helper, aIProvider, embeddingCache, _logger));
+        return id;
     }
 
     public async Task<int> DeleteSearchdomain(string searchdomain)

@@ -12,7 +12,7 @@ public class DatabaseHealthCheck : IHealthCheck
         _searchdomainManager = searchdomainManager;
         _logger = logger;
     }
-    public Task<HealthCheckResult> CheckHealthAsync(
+    public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         try
@@ -22,23 +22,23 @@ public class DatabaseHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             _logger.LogCritical("DatabaseHealthCheck - Exception occurred when retrieving and parsing database version: {ex}", ex.Message);
-            return Task.FromResult(
+            return await Task.FromResult(
                 HealthCheckResult.Unhealthy());
         }
 
         try
         {
-            _searchdomainManager.helper.ExecuteSQLNonQuery("INSERT INTO settings (name, value) VALUES ('test', 'x');", []);
-            _searchdomainManager.helper.ExecuteSQLNonQuery("DELETE FROM settings WHERE name = 'test';", []);
+            await _searchdomainManager.helper.ExecuteSQLNonQuery("INSERT INTO settings (name, value) VALUES ('test', 'x');", []);
+            await _searchdomainManager.helper.ExecuteSQLNonQuery("DELETE FROM settings WHERE name = 'test';", []);
         }
         catch (Exception ex)
         {
             _logger.LogCritical("DatabaseHealthCheck - Exception occurred when executing INSERT/DELETE query: {ex}", ex.Message);
-            return Task.FromResult(
+            return await Task.FromResult(
                 HealthCheckResult.Unhealthy());
         }
 
-        return Task.FromResult(
+        return await Task.FromResult(
             HealthCheckResult.Healthy());
     }
 }
