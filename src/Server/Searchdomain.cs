@@ -23,11 +23,10 @@ public class Searchdomain
     public ConcurrentDictionary<string, Entity> entityCache;
     public ConcurrentBag<string> modelsInUse;
     public EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache;
-    private readonly MySqlConnection connection;
     public SQLHelper helper;
     private readonly ILogger _logger;
 
-    public Searchdomain(string searchdomain, string connectionString, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
+    public Searchdomain(string searchdomain, string connectionString, SQLHelper sqlHelper, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
@@ -36,9 +35,7 @@ public class Searchdomain
         this.embeddingCache = embeddingCache;
         this._logger = logger;
         entityCache = [];
-        connection = new MySqlConnection(connectionString);
-        connection.Open();
-        helper = new SQLHelper(connection, connectionString);
+        helper = sqlHelper;
         settings = GetSettings();
         queryCache = new(settings.QueryCacheSize);
         modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...

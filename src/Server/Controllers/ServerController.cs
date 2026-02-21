@@ -68,7 +68,7 @@ public class ServerController : ControllerBase
                 elementCount++;
                 embeddingsCount += entry.Keys.Count;
             }
-            var sqlHelper = DatabaseHelper.GetSQLHelper(_options.Value);
+            var sqlHelper = _searchdomainManager.helper;
             var databaseTotalSize = DatabaseHelper.GetTotalDatabaseSize(sqlHelper);
             Task<long> entityCountTask = DatabaseHelper.CountEntities(sqlHelper);
             long queryCacheUtilization = 0;

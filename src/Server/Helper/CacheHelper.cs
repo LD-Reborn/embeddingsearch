@@ -72,7 +72,7 @@ public static class CacheHelper
                 deletedEntries.Add(storeEntryIndex);
             }
         }
-        Task removeEntriesFromStoreTask = RemoveEntriesFromStore(helper, deletedEntries);
+        await RemoveEntriesFromStore(helper, deletedEntries);
 
 
         List<(int Index, KeyValuePair<string, Dictionary<string, float[]>> Entry)> createdEntries = [];
@@ -127,7 +127,6 @@ public static class CacheHelper
 
         var taskSet = new List<Task>
         {
-            removeEntriesFromStoreTask,
             CreateEntriesInStore(helper, createdEntries),
             UpdateEntryIndicesInStore(helper, changedEntries),
             AddModelsToIndices(helper, AddedModels),

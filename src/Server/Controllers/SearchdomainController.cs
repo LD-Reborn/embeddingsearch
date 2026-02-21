@@ -109,7 +109,7 @@ public class SearchdomainController : ControllerBase
     /// <param name="newName">Updated name of the searchdomain</param>
     /// <param name="settings">Updated settings of searchdomain</param>
     [HttpPut]
-    public ActionResult<SearchdomainUpdateResults> Update([Required]string searchdomain, string newName, [FromBody]SearchdomainSettings? settings)
+    public async Task<ActionResult<SearchdomainUpdateResults>> Update([Required]string searchdomain, string newName, [FromBody]SearchdomainSettings? settings)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -120,7 +120,7 @@ public class SearchdomainController : ControllerBase
                 {"name", newName},
                 {"id", searchdomain_.id}
             };
-            searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name WHERE id = @id", parameters);
+            await searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name WHERE id = @id", parameters);
         } else
         {
             Dictionary<string, dynamic> parameters = new()
@@ -129,7 +129,7 @@ public class SearchdomainController : ControllerBase
                 {"settings", settings},
                 {"id", searchdomain_.id}
             };
-            searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);            
+            await searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);            
         }
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
@@ -230,8 +230,9 @@ public class SearchdomainController : ControllerBase
     /// Update the settings of a searchdomain
     /// </summary>
     /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="request">Settings to apply to the searchdomain</param>
     [HttpPut("Settings")]
-    public ActionResult<SearchdomainUpdateResults> UpdateSettings([Required]string searchdomain, [Required][FromBody] SearchdomainSettings request)
+    public async Task<ActionResult<SearchdomainUpdateResults>> UpdateSettings([Required]string searchdomain, [Required][FromBody] SearchdomainSettings request)
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
@@ -240,7 +241,7 @@ public class SearchdomainController : ControllerBase
             {"settings", JsonSerializer.Serialize(request)},
             {"id", searchdomain_.id}
         };
-        searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
+        await searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
         searchdomain_.settings = request;
         searchdomain_.queryCache.Capacity = request.QueryCacheSize;
         return Ok(new SearchdomainUpdateResults(){Success = true});
