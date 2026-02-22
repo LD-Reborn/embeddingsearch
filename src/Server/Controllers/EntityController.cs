@@ -14,6 +14,9 @@ public class EntityController : ControllerBase
     private SearchdomainManager _domainManager;
     private readonly SearchdomainHelper _searchdomainHelper;
     private readonly DatabaseHelper _databaseHelper;
+    private readonly Dictionary<string, EntityIndexSessionData> _sessions = [];
+    private readonly object _sessionLock = new();
+    private const int SessionTimeoutMinutes = 60; // TODO: remove magic number; add an optional configuration option
 
     public EntityController(ILogger<EntityController> logger, IConfiguration config, SearchdomainManager domainManager, SearchdomainHelper searchdomainHelper, DatabaseHelper databaseHelper)
     {
@@ -86,31 +89,59 @@ public class EntityController : ControllerBase
     /// Index entities
     /// </summary>
     /// <remarks>
-    /// Behavior: Creates new entities, but overwrites existing entities that have the same name
+    /// Behavior: Updates the index using the provided entities. Creates new entities, overwrites existing entities with the same name, and deletes entities that are not part of the index anymore.
+    /// 
+    /// Can be executed in a single request or in multiple chunks using a (self-defined) session UUID string.
+    /// 
+    /// For session-based chunk uploads:
+    /// - Provide sessionId to accumulate entities across multiple requests
+    /// - Set sessionComplete=true on the final request to finalize and delete entities that are not in the accumulated list
+    /// - Without sessionId: Missing entities will be deleted from the searchdomain.
+    /// - Sessions expire after 60 minutes of inactivity (or as otherwise configured in the appsettings)
     /// </remarks>
     /// <param name="jsonEntities">Entities to index</param>
+    /// <param name="sessionId">Optional session ID for batch uploads across multiple requests</param>
+    /// <param name="sessionComplete">If true, finalizes the session and deletes entities not in the accumulated list</param>
     [HttpPut("/Entities")]
-    public async Task<ActionResult<EntityIndexResult>> Index([FromBody] List<JSONEntity>? jsonEntities)
+    public async Task<ActionResult<EntityIndexResult>> Index(
+        [FromBody] List<JSONEntity>? jsonEntities,
+        string? sessionId = null,
+        bool sessionComplete = false)
     {
         try
         {
+            if (sessionId is null || string.IsNullOrWhiteSpace(sessionId))
+            {
+                sessionId = Guid.NewGuid().ToString(); // Create a short-lived session
+                sessionComplete = true; // If no sessionId was set, there is no trackable session. The pseudo-session ends here.
+            }
+            // Periodic cleanup of expired sessions
+            CleanupExpiredEntityIndexSessions();
+            EntityIndexSessionData session = GetOrCreateEntityIndexSession(sessionId);
+
+            if (jsonEntities is null && !sessionComplete)
+            {
+                return BadRequest(new EntityIndexResult() { Success = false, Message = "jsonEntities can only be null for a complete session" });
+            } else if (jsonEntities is null && sessionComplete)
+            {
+                await EntityIndexSessionDeleteUnindexedEntities(session);
+                return Ok(new EntityIndexResult() { Success = true });
+            }
+
+            // Standard entity indexing (upsert behavior)
             List<Entity>? entities = await _searchdomainHelper.EntitiesFromJSON(
                 _domainManager,
                 _logger,
                 JsonSerializer.Serialize(jsonEntities));
             if (entities is not null && jsonEntities is not null)
             {
-                List<string> invalidatedSearchdomains = [];
-                foreach (var jsonEntity in jsonEntities)
+                session.AccumulatedEntities.AddRange(entities);
+
+                if (sessionComplete)
                 {
-                    string jsonEntityName = jsonEntity.Name;
-                    string jsonEntitySearchdomainName = jsonEntity.Searchdomain;
-                    if (entities.Select(x => x.name == jsonEntityName).Any()
-                        && !invalidatedSearchdomains.Contains(jsonEntitySearchdomainName))
-                    {
-                        invalidatedSearchdomains.Add(jsonEntitySearchdomainName);
-                    }
+                    await EntityIndexSessionDeleteUnindexedEntities(session);
                 }
+
                 return Ok(new EntityIndexResult() { Success = true });
             }
             else
@@ -127,6 +158,44 @@ public class EntityController : ControllerBase
             return Ok(new EntityIndexResult() { Success = false, Message = ex.Message });
         }
 
+    }
+
+    private async Task EntityIndexSessionDeleteUnindexedEntities(EntityIndexSessionData session)
+    {
+        var entityGroupsBySearchdomain = session.AccumulatedEntities.GroupBy(e => e.searchdomain);
+
+        foreach (var entityGroup in entityGroupsBySearchdomain)
+        {
+            string searchdomainName = entityGroup.Key;
+            var entityNamesInRequest = entityGroup.Select(e => e.name).ToHashSet();
+
+            (Searchdomain? searchdomain_, int? httpStatusCode, string? message) =
+                SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomainName, _logger);
+
+            if (searchdomain_ is not null && httpStatusCode is null) // If getting searchdomain was successful
+            {
+                var entitiesToDelete = searchdomain_.entityCache
+                    .Where(kvp => !entityNamesInRequest.Contains(kvp.Value.name))
+                    .Select(kvp => kvp.Value)
+                    .ToList();
+
+                foreach (var entity in entitiesToDelete)
+                {
+                    searchdomain_.ReconciliateOrInvalidateCacheForDeletedEntity(entity);
+                    await _databaseHelper.RemoveEntity(
+                        [],
+                        _domainManager.helper,
+                        entity.name,
+                        searchdomainName);
+                    searchdomain_.entityCache.TryRemove(entity.name, out _);
+                    _logger.LogInformation("Deleted entity {entityName} from {searchdomain}", entity.name, searchdomainName);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Unable to delete entities for searchdomain {searchdomain}", searchdomainName);
+            }
+        }
     }
 
     /// <summary>
@@ -158,4 +227,44 @@ public class EntityController : ControllerBase
         
         return Ok(new EntityDeleteResults() {Success = success});
     }
+
+
+    private void CleanupExpiredEntityIndexSessions()
+    {
+        lock (_sessionLock)
+        {
+            var expiredSessions = _sessions
+                .Where(kvp => (DateTime.UtcNow - kvp.Value.LastInteractionAt).TotalMinutes > SessionTimeoutMinutes)
+                .Select(kvp => kvp.Key)
+                .ToList();
+            
+            foreach (var sessionId in expiredSessions)
+            {
+                _sessions.Remove(sessionId);
+                _logger.LogWarning("Removed expired, non-closed session {sessionId}", sessionId);
+            }
+        }
+    }
+
+    private EntityIndexSessionData GetOrCreateEntityIndexSession(string sessionId)
+    {
+        lock (_sessionLock)
+        {
+            if (!_sessions.TryGetValue(sessionId, out var session))
+            {
+                session = new EntityIndexSessionData();
+                _sessions[sessionId] = session;
+            } else
+            {
+                session.LastInteractionAt = DateTime.UtcNow;
+            }
+            return session;
+        }
+    }
+}
+
+public class EntityIndexSessionData
+{
+    public List<Entity> AccumulatedEntities { get; set; } = [];
+    public DateTime LastInteractionAt { get; set; } = DateTime.UtcNow;
 }

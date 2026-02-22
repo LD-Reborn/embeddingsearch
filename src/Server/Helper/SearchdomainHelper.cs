@@ -389,7 +389,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
             List<Datapoint> datapoints = await DatabaseInsertDatapointsWithEmbeddings(helper, searchdomain, toBeInsertedDatapoints, id_entity, id_searchdomain);
             
             var probMethod = Probmethods.GetMethod(jsonEntity.Probmethod) ?? throw new ProbMethodNotFoundException(jsonEntity.Probmethod);
-            Entity entity = new(jsonEntity.Attributes, probMethod, jsonEntity.Probmethod.ToString(), new(datapoints), jsonEntity.Name)
+            Entity entity = new(jsonEntity.Attributes, probMethod, jsonEntity.Probmethod.ToString(), [.. datapoints], jsonEntity.Name, jsonEntity.Searchdomain)
             {
                 id = id_entity
             };

@@ -166,7 +166,7 @@ public class Searchdomain
                 Probmethods.probMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
                 if (datapoint_unassigned.TryGetValue(id, out ConcurrentBag<Datapoint>? datapoints) && probmethod is not null)
                 {
-                    Entity entity = new(attributes, probmethod, probmethodString, datapoints, name)
+                    Entity entity = new(attributes, probmethod, probmethodString, datapoints, name, searchdomain)
                     {
                         id = id
                     };
