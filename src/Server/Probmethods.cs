@@ -6,29 +6,29 @@ namespace Server;
 
 public class ProbMethod
 {
-    public Probmethods.probMethodDelegate method;
-    public ProbMethodEnum probMethodEnum;
-    public string name;
+    public Probmethods.ProbMethodDelegate Method;
+    public ProbMethodEnum ProbMethodEnum;
+    public string Name;
 
     public ProbMethod(ProbMethodEnum probMethodEnum)
     {
-        this.probMethodEnum = probMethodEnum;
-        this.name = probMethodEnum.ToString();
-        Probmethods.probMethodDelegate? probMethod = Probmethods.GetMethod(name) ?? throw new ProbMethodNotFoundException(probMethodEnum);
-        method = probMethod;
+        this.ProbMethodEnum = probMethodEnum;
+        this.Name = probMethodEnum.ToString();
+        Probmethods.ProbMethodDelegate? probMethod = Probmethods.GetMethod(Name) ?? throw new ProbMethodNotFoundException(probMethodEnum);
+        Method = probMethod;
     }
 }
 
 
 public static class Probmethods
 {
-    public delegate float probMethodProtoDelegate(List<(string, float)> list, string parameters);
-    public delegate float probMethodDelegate(List<(string, float)> list);
-    public static readonly Dictionary<ProbMethodEnum, probMethodProtoDelegate> probMethods;
+    public delegate float ProbMethodProtoDelegate(List<(string, float)> list, string parameters);
+    public delegate float ProbMethodDelegate(List<(string, float)> list);
+    public static readonly Dictionary<ProbMethodEnum, ProbMethodProtoDelegate> ProbMethods;
 
     static Probmethods()
     {
-        probMethods = new Dictionary<ProbMethodEnum, probMethodProtoDelegate>
+        ProbMethods = new Dictionary<ProbMethodEnum, ProbMethodProtoDelegate>
         {
             [ProbMethodEnum.Mean] = Mean,
             [ProbMethodEnum.HarmonicMean] = HarmonicMean,
@@ -41,12 +41,12 @@ public static class Probmethods
         };
     }
 
-    public static probMethodDelegate? GetMethod(ProbMethodEnum probMethodEnum)
+    public static ProbMethodDelegate? GetMethod(ProbMethodEnum probMethodEnum)
     {
         return GetMethod(probMethodEnum.ToString());
     }
 
-    public static probMethodDelegate? GetMethod(string name)
+    public static ProbMethodDelegate? GetMethod(string name)
     {
         string methodName = name;
         string? jsonArg = "";
@@ -63,7 +63,7 @@ public static class Probmethods
             methodName
         );
 
-        if (!probMethods.TryGetValue(probMethodEnum, out probMethodProtoDelegate? method))
+        if (!ProbMethods.TryGetValue(probMethodEnum, out ProbMethodProtoDelegate? method))
         {
             return null;
         }

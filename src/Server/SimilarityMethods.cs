@@ -5,16 +5,16 @@ namespace Server;
 
 public class SimilarityMethod
 {
-    public SimilarityMethods.similarityMethodDelegate method;
-    public SimilarityMethodEnum similarityMethodEnum;
-    public string name;
+    public SimilarityMethods.similarityMethodDelegate Method;
+    public SimilarityMethodEnum SimilarityMethodEnum;
+    public string Name;
 
     public SimilarityMethod(SimilarityMethodEnum similarityMethodEnum)
     {
-        this.similarityMethodEnum = similarityMethodEnum;
-        this.name = similarityMethodEnum.ToString();
-        SimilarityMethods.similarityMethodDelegate? probMethod = SimilarityMethods.GetMethod(name) ?? throw new Exception($"Unable to retrieve similarityMethod {name}");
-        method = probMethod;
+        SimilarityMethodEnum = similarityMethodEnum;
+        Name = similarityMethodEnum.ToString();
+        SimilarityMethods.similarityMethodDelegate? probMethod = SimilarityMethods.GetMethod(Name) ?? throw new Exception($"Unable to retrieve similarityMethod {Name}");
+        Method = probMethod;
     }
 }
 
@@ -22,11 +22,11 @@ public static class SimilarityMethods
 {
     public delegate float similarityMethodProtoDelegate(float[] vector1, float[] vector2);
     public delegate float similarityMethodDelegate(float[] vector1, float[] vector2);
-    public static readonly Dictionary<SimilarityMethodEnum, similarityMethodProtoDelegate> probMethods;
+    public static readonly Dictionary<SimilarityMethodEnum, similarityMethodProtoDelegate> ProbMethods;
 
     static SimilarityMethods()
     {
-        probMethods = new Dictionary<SimilarityMethodEnum, similarityMethodProtoDelegate>
+        ProbMethods = new Dictionary<SimilarityMethodEnum, similarityMethodProtoDelegate>
         {
             [SimilarityMethodEnum.Cosine] = CosineSimilarity,
             [SimilarityMethodEnum.Euclidian] = EuclidianDistance,
@@ -44,7 +44,7 @@ public static class SimilarityMethods
             methodName
         );
 
-        if (!probMethods.TryGetValue(probMethodEnum, out similarityMethodProtoDelegate? method))
+        if (!ProbMethods.TryGetValue(probMethodEnum, out similarityMethodProtoDelegate? method))
         {
             return null;
         }

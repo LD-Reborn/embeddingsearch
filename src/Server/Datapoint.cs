@@ -6,36 +6,36 @@ namespace Server;
 
 public class Datapoint
 {
-    public string name;
-    public ProbMethod probMethod;
-    public SimilarityMethod similarityMethod;
-    public List<(string, float[])> embeddings;
-    public string hash;
-    public int id;
+    public string Name;
+    public ProbMethod ProbMethod;
+    public SimilarityMethod SimilarityMethod;
+    public List<(string, float[])> Embeddings;
+    public string Hash;
+    public int Id;
 
     public Datapoint(string name, ProbMethodEnum probMethod, SimilarityMethodEnum similarityMethod, string hash, List<(string, float[])> embeddings, int id)
     {
-        this.name = name;
-        this.probMethod = new ProbMethod(probMethod);
-        this.similarityMethod = new SimilarityMethod(similarityMethod);
-        this.hash = hash;
-        this.embeddings = embeddings;
-        this.id = id;
+        Name = name;
+        ProbMethod = new ProbMethod(probMethod);
+        SimilarityMethod = new SimilarityMethod(similarityMethod);
+        Hash = hash;
+        Embeddings = embeddings;
+        Id = id;
     }
 
     public Datapoint(string name, ProbMethod probMethod, SimilarityMethod similarityMethod, string hash, List<(string, float[])> embeddings, int id)
     {
-        this.name = name;
-        this.probMethod = probMethod;
-        this.similarityMethod = similarityMethod;
-        this.hash = hash;
-        this.embeddings = embeddings;
-        this.id = id;
+        Name = name;
+        ProbMethod = probMethod;
+        SimilarityMethod = similarityMethod;
+        Hash = hash;
+        Embeddings = embeddings;
+        Id = id;
     }
 
     public float CalcProbability(List<(string, float)> probabilities)
     {
-        return probMethod.method(probabilities);
+        return ProbMethod.Method(probabilities);
     }
 
     public static Dictionary<string, float[]> GetEmbeddings(string content, ConcurrentBag<string> models, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)

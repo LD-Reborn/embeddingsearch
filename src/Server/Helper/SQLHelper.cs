@@ -6,18 +6,18 @@ namespace Server.Helper;
 
 public class SQLHelper:IDisposable
 {
-    public MySqlConnection connection;
-    public DbDataReader? dbDataReader;
-    public MySqlConnectionPoolElement[] connectionPool;
-    public string connectionString;
+    public MySqlConnection Connection;
+    public DbDataReader? DbDataReader;
+    public MySqlConnectionPoolElement[] ConnectionPool;
+    public string ConnectionString;
     public SQLHelper(MySqlConnection connection, string connectionString)
     {
-        this.connection = connection;
-        this.connectionString = connectionString;
-        connectionPool = new MySqlConnectionPoolElement[50];
-        for (int i = 0; i < connectionPool.Length; i++)
+        Connection = connection;
+        ConnectionString = connectionString;
+        ConnectionPool = new MySqlConnectionPoolElement[50];
+        for (int i = 0; i < ConnectionPool.Length; i++)
         {
-            connectionPool[i] = new MySqlConnectionPoolElement(new MySqlConnection(connectionString), new(1, 1));
+            ConnectionPool[i] = new MySqlConnectionPoolElement(new MySqlConnection(connectionString), new(1, 1));
         }
     }
 
@@ -28,24 +28,24 @@ public class SQLHelper:IDisposable
 
     public void Dispose()
     {
-        connection.Close();
+        Connection.Close();
         GC.SuppressFinalize(this);
     }
 
     public DbDataReader ExecuteSQLCommand(string query, Dictionary<string, dynamic> parameters)
     {
-        lock (connection)
+        lock (Connection)
         {
             EnsureConnected();
             EnsureDbReaderIsClosed();
-            using MySqlCommand command = connection.CreateCommand();
+            using MySqlCommand command = Connection.CreateCommand();
             command.CommandText = query;
             foreach (KeyValuePair<string, dynamic> parameter in parameters)
             {
                 command.Parameters.AddWithValue($"@{parameter.Key}", parameter.Value);
             }
-            dbDataReader = command.ExecuteReader();
-            return dbDataReader;
+            DbDataReader = command.ExecuteReader();
+            return DbDataReader;
         }
     }
 
@@ -55,7 +55,7 @@ public class SQLHelper:IDisposable
         Func<DbDataReader, T> map)
     {
         var poolElement = await GetMySqlConnectionPoolElement();
-        var connection = poolElement.connection;
+        var connection = poolElement.Connection;
         try
         {
             await using var command = connection.CreateCommand();
@@ -83,7 +83,7 @@ public class SQLHelper:IDisposable
     public async Task<int> ExecuteSQLNonQuery(string query, Dictionary<string, dynamic> parameters)
     {
         var poolElement = await GetMySqlConnectionPoolElement();
-        var connection = poolElement.connection;
+        var connection = poolElement.Connection;
         try
         {
             using MySqlCommand command = connection.CreateCommand();
@@ -103,7 +103,7 @@ public class SQLHelper:IDisposable
     public async Task<int> ExecuteSQLCommandGetInsertedID(string query, Dictionary<string, dynamic> parameters)
     {
         var poolElement = await GetMySqlConnectionPoolElement();
-        var connection = poolElement.connection;
+        var connection = poolElement.Connection;
         try
         {
             using MySqlCommand command = connection.CreateCommand();
@@ -125,7 +125,7 @@ public class SQLHelper:IDisposable
     public async Task<int> BulkExecuteNonQuery(string sql, IEnumerable<object[]> parameterSets)
     {
         var poolElement = await GetMySqlConnectionPoolElement();
-        var connection = poolElement.connection;
+        var connection = poolElement.Connection;
         try
         {
             int affectedRows = 0;
@@ -173,14 +173,14 @@ public class SQLHelper:IDisposable
         int sleepTime = 10;
         do
         {
-            foreach (var element in connectionPool)
+            foreach (var element in ConnectionPool)
             {
                 if (element.Semaphore.Wait(0))
                 {
-                    if (element.connection.State == ConnectionState.Closed)
+                    if (element.Connection.State == ConnectionState.Closed)
                     {
-                        await element.connection.CloseAsync();
-                        await element.connection.OpenAsync();
+                        await element.Connection.CloseAsync();
+                        await element.Connection.OpenAsync();
                     }
                     return element;
                 }
@@ -194,12 +194,12 @@ public class SQLHelper:IDisposable
 
     public bool EnsureConnected()
     {
-        if (connection.State != System.Data.ConnectionState.Open)
+        if (Connection.State != System.Data.ConnectionState.Open)
         {
             try
             {
-                connection.Close();
-                connection.Open();
+                Connection.Close();
+                Connection.Open();
             }
             catch (Exception ex)
             {
@@ -215,7 +215,7 @@ public class SQLHelper:IDisposable
         int counter = 0;
         int sleepTime = 10;
         int timeout = 5000;
-        while (!(dbDataReader?.IsClosed ?? true))
+        while (!(DbDataReader?.IsClosed ?? true))
         {
             if (counter > timeout / sleepTime)
             {
@@ -230,12 +230,12 @@ public class SQLHelper:IDisposable
 
 public struct MySqlConnectionPoolElement
 {
-    public MySqlConnection connection;
+    public MySqlConnection Connection;
     public SemaphoreSlim Semaphore;
 
     public MySqlConnectionPoolElement(MySqlConnection connection, SemaphoreSlim semaphore)
     {
-        this.connection = connection;
-        this.Semaphore = semaphore;
+        Connection = connection;
+        Semaphore = semaphore;
     }
 }

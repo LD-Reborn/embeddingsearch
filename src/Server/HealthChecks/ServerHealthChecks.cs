@@ -17,7 +17,7 @@ public class DatabaseHealthCheck : IHealthCheck
     {
         try
         {
-            DatabaseMigrations.DatabaseGetVersion(_searchdomainManager.helper);
+            DatabaseMigrations.DatabaseGetVersion(_searchdomainManager.Helper);
         }
         catch (Exception ex)
         {
@@ -28,8 +28,8 @@ public class DatabaseHealthCheck : IHealthCheck
 
         try
         {
-            await _searchdomainManager.helper.ExecuteSQLNonQuery("INSERT INTO settings (name, value) VALUES ('test', 'x');", []);
-            await _searchdomainManager.helper.ExecuteSQLNonQuery("DELETE FROM settings WHERE name = 'test';", []);
+            await _searchdomainManager.Helper.ExecuteSQLNonQuery("INSERT INTO settings (name, value) VALUES ('test', 'x');", []);
+            await _searchdomainManager.Helper.ExecuteSQLNonQuery("DELETE FROM settings WHERE name = 'test';", []);
         }
         catch (Exception ex)
         {

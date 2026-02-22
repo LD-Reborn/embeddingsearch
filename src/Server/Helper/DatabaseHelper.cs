@@ -205,7 +205,7 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
         await helper.ExecuteSQLNonQuery("DELETE datapoint.* FROM datapoint JOIN entity ON id_entity = entity.id WHERE entity.name = @name AND entity.id_searchdomain = @searchdomain", parameters);
         await helper.ExecuteSQLNonQuery("DELETE attribute.* FROM attribute JOIN entity ON id_entity = entity.id WHERE entity.name = @name AND entity.id_searchdomain = @searchdomain", parameters);
         await helper.ExecuteSQLNonQuery("DELETE FROM entity WHERE name = @name AND entity.id_searchdomain = @searchdomain", parameters);
-        entityCache.RemoveAll(entity => entity.name == name);
+        entityCache.RemoveAll(entity => entity.Name == name);
     }
 
     public async Task<int> RemoveAllEntities(SQLHelper helper, string searchdomain)
@@ -243,7 +243,7 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
             { "name", name },
             { "searchdomain", await GetSearchdomainID(helper, searchdomain)}
         };
-        lock (helper.connection)
+        lock (helper.Connection)
         {
             DbDataReader reader = helper.ExecuteSQLCommand("SELECT COUNT(*) FROM entity WHERE name = @name AND id_searchdomain = @searchdomain", parameters);
             try
@@ -273,7 +273,7 @@ public class DatabaseHelper(ILogger<DatabaseHelper> logger)
             { "name", name },
             { "searchdomain", await GetSearchdomainID(helper, searchdomain)}
         };
-        lock (helper.connection)
+        lock (helper.Connection)
         {
             DbDataReader reader = helper.ExecuteSQLCommand("SELECT id FROM entity WHERE name = @name AND id_searchdomain = @searchdomain", parameters);
             try

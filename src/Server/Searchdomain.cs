@@ -15,33 +15,33 @@ public class Searchdomain
 {
     private readonly string _connectionString;
     private readonly string _provider;
-    public AIProvider aIProvider;
-    public string searchdomain;
-    public int id;
-    public SearchdomainSettings settings;
-    public EnumerableLruCache<string, DateTimedSearchResult> queryCache; // Key: query, Value: Search results for that query (with timestamp)
-    public ConcurrentDictionary<string, Entity> entityCache;
-    public ConcurrentBag<string> modelsInUse;
-    public EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache;
-    public SQLHelper helper;
+    public AIProvider AiProvider;
+    public string SearchdomainName;
+    public int Id;
+    public SearchdomainSettings Settings;
+    public EnumerableLruCache<string, DateTimedSearchResult> QueryCache; // Key: query, Value: Search results for that query (with timestamp)
+    public ConcurrentDictionary<string, Entity> EntityCache;
+    public ConcurrentBag<string> ModelsInUse;
+    public EnumerableLruCache<string, Dictionary<string, float[]>> EmbeddingCache;
+    public SQLHelper Helper;
     private readonly ILogger _logger;
 
     public Searchdomain(string searchdomain, string connectionString, SQLHelper sqlHelper, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();
-        this.searchdomain = searchdomain;
-        this.aIProvider = aIProvider;
-        this.embeddingCache = embeddingCache;
+        this.SearchdomainName = searchdomain;
+        this.AiProvider = aIProvider;
+        this.EmbeddingCache = embeddingCache;
         this._logger = logger;
-        entityCache = [];
-        helper = sqlHelper;
-        settings = GetSettings();
-        queryCache = new(settings.QueryCacheSize);
-        modelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
+        EntityCache = [];
+        Helper = sqlHelper;
+        Settings = GetSettings();
+        QueryCache = new(Settings.QueryCacheSize);
+        ModelsInUse = []; // To make the compiler shut up - it is set in UpdateSearchDomain() don't worry // yeah, about that...
         if (!runEmpty)
         {
-            id = GetID().Result;
+            Id = GetID().Result;
             UpdateEntityCache();
         }
     }
@@ -51,9 +51,9 @@ public class Searchdomain
         InvalidateSearchCache();
         Dictionary<string, dynamic> parametersIDSearchdomain = new()
         {
-            ["id"] = this.id
+            ["id"] = this.Id
         };
-        DbDataReader embeddingReader = helper.ExecuteSQLCommand("SELECT id, id_datapoint, model, embedding FROM embedding WHERE id_searchdomain = @id", parametersIDSearchdomain);
+        DbDataReader embeddingReader = Helper.ExecuteSQLCommand("SELECT id, id_datapoint, model, embedding FROM embedding WHERE id_searchdomain = @id", parametersIDSearchdomain);
         Dictionary<int, Dictionary<string, float[]>> embedding_unassigned = [];
         try
         {
@@ -90,7 +90,7 @@ public class Searchdomain
             embeddingReader.Close();
         }
 
-        DbDataReader datapointReader = helper.ExecuteSQLCommand("SELECT d.id, d.id_entity, d.name, d.probmethod_embedding, d.similaritymethod, d.hash FROM datapoint d JOIN entity ent ON d.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
+        DbDataReader datapointReader = Helper.ExecuteSQLCommand("SELECT d.id, d.id_entity, d.name, d.probmethod_embedding, d.similaritymethod, d.hash FROM datapoint d JOIN entity ent ON d.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
         Dictionary<int, ConcurrentBag<Datapoint>> datapoint_unassigned = [];
         try
         {
@@ -127,7 +127,7 @@ public class Searchdomain
             datapointReader.Close();
         }
 
-        DbDataReader attributeReader = helper.ExecuteSQLCommand("SELECT a.id, a.id_entity, a.attribute, a.value FROM attribute a JOIN entity ent ON a.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
+        DbDataReader attributeReader = Helper.ExecuteSQLCommand("SELECT a.id, a.id_entity, a.attribute, a.value FROM attribute a JOIN entity ent ON a.id_entity = ent.id JOIN searchdomain s ON ent.id_searchdomain = s.id WHERE s.id = @id", parametersIDSearchdomain);
         Dictionary<int, Dictionary<string, string>> attributes_unassigned = [];
         try
         {
@@ -149,8 +149,8 @@ public class Searchdomain
             attributeReader.Close();
         }
 
-        entityCache = [];
-        DbDataReader entityReader = helper.ExecuteSQLCommand("SELECT entity.id, name, probmethod FROM entity WHERE id_searchdomain=@id", parametersIDSearchdomain);
+        EntityCache = [];
+        DbDataReader entityReader = Helper.ExecuteSQLCommand("SELECT entity.id, name, probmethod FROM entity WHERE id_searchdomain=@id", parametersIDSearchdomain);
         try
         {
             while (entityReader.Read())
@@ -163,26 +163,26 @@ public class Searchdomain
                 {
                     attributes = [];
                 }
-                Probmethods.probMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
+                Probmethods.ProbMethodDelegate? probmethod = Probmethods.GetMethod(probmethodString);
                 if (datapoint_unassigned.TryGetValue(id, out ConcurrentBag<Datapoint>? datapoints) && probmethod is not null)
                 {
-                    Entity entity = new(attributes, probmethod, probmethodString, datapoints, name, searchdomain)
+                    Entity entity = new(attributes, probmethod, probmethodString, datapoints, name, SearchdomainName)
                     {
-                        id = id
+                        Id = id
                     };
-                    entityCache[name] = entity;
+                    EntityCache[name] = entity;
                 }
             }
         } finally
         {
             entityReader.Close();
         }
-        modelsInUse = GetModels(entityCache);
+        ModelsInUse = GetModels(EntityCache);
     }
 
     public List<(float, string)> Search(string query, int? topN = null)
     {
-        if (queryCache.TryGetValue(query, out DateTimedSearchResult cachedResult))
+        if (QueryCache.TryGetValue(query, out DateTimedSearchResult cachedResult))
         {
             cachedResult.AccessDateTimes.Add(DateTime.Now);
             return [.. cachedResult.Results.Select(r => (r.Score, r.Name))];
@@ -191,9 +191,9 @@ public class Searchdomain
         Dictionary<string, float[]> queryEmbeddings = GetQueryEmbeddings(query);
 
         List<(float, string)> result = [];
-        foreach ((string name, Entity entity) in entityCache)
+        foreach ((string name, Entity entity) in EntityCache)
         {
-            result.Add((EvaluateEntityAgainstQueryEmbeddings(entity, queryEmbeddings), entity.name));
+            result.Add((EvaluateEntityAgainstQueryEmbeddings(entity, queryEmbeddings), entity.Name));
         }
         IEnumerable<(float, string)> sortedResults = result.OrderByDescending(s => s.Item1);
         if (topN is not null)
@@ -205,26 +205,26 @@ public class Searchdomain
             [.. sortedResults.Select(r =>
                 new ResultItem(r.Item1, r.Item2 ))]
         );
-        queryCache.Set(query, new DateTimedSearchResult(DateTime.Now, searchResult));
+        QueryCache.Set(query, new DateTimedSearchResult(DateTime.Now, searchResult));
         return results;
     }
 
     public Dictionary<string, float[]> GetQueryEmbeddings(string query)
     {
-        bool hasQuery = embeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings);
-        bool allModelsInQuery = queryEmbeddings is not null && modelsInUse.All(model => queryEmbeddings.ContainsKey(model));
+        bool hasQuery = EmbeddingCache.TryGetValue(query, out Dictionary<string, float[]>? queryEmbeddings);
+        bool allModelsInQuery = queryEmbeddings is not null && ModelsInUse.All(model => queryEmbeddings.ContainsKey(model));
         if (!(hasQuery && allModelsInQuery) || queryEmbeddings is null)
         {
-            queryEmbeddings = Datapoint.GetEmbeddings(query, modelsInUse, aIProvider, embeddingCache);
-            if (!embeddingCache.TryGetValue(query, out var embeddingCacheForCurrentQuery))
+            queryEmbeddings = Datapoint.GetEmbeddings(query, ModelsInUse, AiProvider, EmbeddingCache);
+            if (!EmbeddingCache.TryGetValue(query, out var embeddingCacheForCurrentQuery))
             {
-                embeddingCache.Set(query, queryEmbeddings);
+                EmbeddingCache.Set(query, queryEmbeddings);
             }
             else // embeddingCache already has an entry for this query, so the missing model-embedding pairs have to be filled in
             {
                 foreach (KeyValuePair<string, float[]> kvp in queryEmbeddings) // kvp.Key = model, kvp.Value = embedding
                 {
-                    if (!embeddingCache.TryGetValue(kvp.Key, out var _))
+                    if (!EmbeddingCache.TryGetValue(kvp.Key, out var _))
                     {
                         embeddingCacheForCurrentQuery[kvp.Key] = kvp.Value;
                     }
@@ -236,25 +236,25 @@ public class Searchdomain
 
     public void UpdateModelsInUse()
     {
-        modelsInUse = GetModels(entityCache);
+        ModelsInUse = GetModels(EntityCache);
     }
 
     private static float EvaluateEntityAgainstQueryEmbeddings(Entity entity, Dictionary<string, float[]> queryEmbeddings)
     {
         List<(string, float)> datapointProbs = [];
-        foreach (Datapoint datapoint in entity.datapoints)
+        foreach (Datapoint datapoint in entity.Datapoints)
         {
-            SimilarityMethod similarityMethod = datapoint.similarityMethod;
+            SimilarityMethod similarityMethod = datapoint.SimilarityMethod;
             List<(string, float)> list = [];
-            foreach ((string, float[]) embedding in datapoint.embeddings)
+            foreach ((string, float[]) embedding in datapoint.Embeddings)
             {
                 string key = embedding.Item1;
-                float value = similarityMethod.method(queryEmbeddings[embedding.Item1], embedding.Item2);
+                float value = similarityMethod.Method(queryEmbeddings[embedding.Item1], embedding.Item2);
                 list.Add((key, value));
             }
-            datapointProbs.Add((datapoint.name, datapoint.probMethod.method(list)));
+            datapointProbs.Add((datapoint.Name, datapoint.ProbMethod.Method(list)));
         }
-        return entity.probMethod(datapointProbs);
+        return entity.ProbMethod(datapointProbs);
     }
 
     public static ConcurrentBag<string> GetModels(ConcurrentDictionary<string, Entity> entities)
@@ -265,9 +265,9 @@ public class Searchdomain
             Entity entity = element.Value;
             lock (entity)
             {
-                foreach (Datapoint datapoint in entity.datapoints)
+                foreach (Datapoint datapoint in entity.Datapoints)
                 {
-                    foreach ((string, float[]) tuple in datapoint.embeddings)
+                    foreach ((string, float[]) tuple in datapoint.Embeddings)
                     {
                         string model = tuple.Item1;
                         if (!result.Contains(model))
@@ -285,21 +285,21 @@ public class Searchdomain
     {
         Dictionary<string, object?> parameters = new()
         {
-            { "name", this.searchdomain }
+            { "name", this.SearchdomainName }
         };
-        return (await helper.ExecuteQueryAsync("SELECT id from searchdomain WHERE name = @name", parameters, x => x.GetInt32(0))).First();
+        return (await Helper.ExecuteQueryAsync("SELECT id from searchdomain WHERE name = @name", parameters, x => x.GetInt32(0))).First();
     }
 
     public SearchdomainSettings GetSettings()
     {
-        return DatabaseHelper.GetSearchdomainSettings(helper, searchdomain);
+        return DatabaseHelper.GetSearchdomainSettings(Helper, SearchdomainName);
     }
 
     public void ReconciliateOrInvalidateCacheForNewOrUpdatedEntity(Entity entity)
     {
-        if (settings.CacheReconciliation)
+        if (Settings.CacheReconciliation)
         {
-            foreach (var element in queryCache)
+            foreach (var element in QueryCache)
             {
                 string query = element.Key;
                 DateTimedSearchResult searchResult = element.Value;
@@ -307,9 +307,9 @@ public class Searchdomain
                 Dictionary<string, float[]> queryEmbeddings = GetQueryEmbeddings(query);
                 float evaluationResult = EvaluateEntityAgainstQueryEmbeddings(entity, queryEmbeddings);
 
-                searchResult.Results.RemoveAll(x => x.Name == entity.name); // If entity already exists in that results list: remove it.
+                searchResult.Results.RemoveAll(x => x.Name == entity.Name); // If entity already exists in that results list: remove it.
 
-                ResultItem newItem = new(evaluationResult, entity.name);
+                ResultItem newItem = new(evaluationResult, entity.Name);
                 int index = searchResult.Results.BinarySearch(
                     newItem,
                     Comparer<ResultItem>.Create((a, b) => b.Score.CompareTo(a.Score)) // Invert searching order
@@ -327,13 +327,13 @@ public class Searchdomain
 
     public void ReconciliateOrInvalidateCacheForDeletedEntity(Entity entity)
     {
-        if (settings.CacheReconciliation)
+        if (Settings.CacheReconciliation)
         {
-            foreach (KeyValuePair<string, DateTimedSearchResult> element in queryCache)
+            foreach (KeyValuePair<string, DateTimedSearchResult> element in QueryCache)
             {
                 string query = element.Key;
                 DateTimedSearchResult searchResult = element.Value;
-                searchResult.Results.RemoveAll(x => x.Name == entity.name);
+                searchResult.Results.RemoveAll(x => x.Name == entity.Name);
             }
         }
         else
@@ -344,13 +344,13 @@ public class Searchdomain
 
     public void InvalidateSearchCache()
     {
-        queryCache = new(settings.QueryCacheSize);
+        QueryCache = new(Settings.QueryCacheSize);
     }
 
     public long GetSearchCacheSize()
     {
         long EmbeddingCacheUtilization = 0;
-        foreach (var entry in queryCache)
+        foreach (var entry in QueryCache)
         {
             EmbeddingCacheUtilization += sizeof(int); // string length prefix
             EmbeddingCacheUtilization += entry.Key.Length * sizeof(char); // string characters

@@ -49,34 +49,34 @@ public class EntityController : ControllerBase
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         EntityListResults entityListResults = new() {Results = [], Success = true};
-        foreach ((string _, Entity entity) in searchdomain_.entityCache)
+        foreach ((string _, Entity entity) in searchdomain_.EntityCache)
         {
             List<AttributeResult> attributeResults = [];
-            foreach (KeyValuePair<string, string> attribute in entity.attributes)
+            foreach (KeyValuePair<string, string> attribute in entity.Attributes)
             {
                 attributeResults.Add(new AttributeResult() {Name = attribute.Key, Value = attribute.Value});
             }
             List<DatapointResult> datapointResults = [];
-            foreach (Datapoint datapoint in entity.datapoints)
+            foreach (Datapoint datapoint in entity.Datapoints)
             {
                 if (returnModels)
                 {
                     List<EmbeddingResult> embeddingResults = [];
-                    foreach ((string, float[]) embedding in datapoint.embeddings)
+                    foreach ((string, float[]) embedding in datapoint.Embeddings)
                     {
                         embeddingResults.Add(new EmbeddingResult() {Model = embedding.Item1, Embeddings = returnEmbeddings ? embedding.Item2 : []});
                     }
-                    datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.name, SimilarityMethod = datapoint.similarityMethod.name, Embeddings = embeddingResults});
+                    datapointResults.Add(new DatapointResult() {Name = datapoint.Name, ProbMethod = datapoint.ProbMethod.Name, SimilarityMethod = datapoint.SimilarityMethod.Name, Embeddings = embeddingResults});
                 }
                 else
                 {
-                    datapointResults.Add(new DatapointResult() {Name = datapoint.name, ProbMethod = datapoint.probMethod.name, SimilarityMethod = datapoint.similarityMethod.name, Embeddings = null});
+                    datapointResults.Add(new DatapointResult() {Name = datapoint.Name, ProbMethod = datapoint.ProbMethod.Name, SimilarityMethod = datapoint.SimilarityMethod.Name, Embeddings = null});
                 }
             }
             EntityListResult entityListResult = new()
             {
-                Name = entity.name,
-                ProbMethod = entity.probMethodName,
+                Name = entity.Name,
+                ProbMethod = entity.ProbMethodName,
                 Attributes = attributeResults,
                 Datapoints = datapointResults
             };
@@ -162,20 +162,20 @@ public class EntityController : ControllerBase
 
     private async Task EntityIndexSessionDeleteUnindexedEntities(EntityIndexSessionData session)
     {
-        var entityGroupsBySearchdomain = session.AccumulatedEntities.GroupBy(e => e.searchdomain);
+        var entityGroupsBySearchdomain = session.AccumulatedEntities.GroupBy(e => e.Searchdomain);
 
         foreach (var entityGroup in entityGroupsBySearchdomain)
         {
             string searchdomainName = entityGroup.Key;
-            var entityNamesInRequest = entityGroup.Select(e => e.name).ToHashSet();
+            var entityNamesInRequest = entityGroup.Select(e => e.Name).ToHashSet();
 
             (Searchdomain? searchdomain_, int? httpStatusCode, string? message) =
                 SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomainName, _logger);
 
             if (searchdomain_ is not null && httpStatusCode is null) // If getting searchdomain was successful
             {
-                var entitiesToDelete = searchdomain_.entityCache
-                    .Where(kvp => !entityNamesInRequest.Contains(kvp.Value.name))
+                var entitiesToDelete = searchdomain_.EntityCache
+                    .Where(kvp => !entityNamesInRequest.Contains(kvp.Value.Name))
                     .Select(kvp => kvp.Value)
                     .ToList();
 
@@ -184,11 +184,11 @@ public class EntityController : ControllerBase
                     searchdomain_.ReconciliateOrInvalidateCacheForDeletedEntity(entity);
                     await _databaseHelper.RemoveEntity(
                         [],
-                        _domainManager.helper,
-                        entity.name,
+                        _domainManager.Helper,
+                        entity.Name,
                         searchdomainName);
-                    searchdomain_.entityCache.TryRemove(entity.name, out _);
-                    _logger.LogInformation("Deleted entity {entityName} from {searchdomain}", entity.name, searchdomainName);
+                    searchdomain_.EntityCache.TryRemove(entity.Name, out _);
+                    _logger.LogInformation("Deleted entity {entityName} from {searchdomain}", entity.Name, searchdomainName);
                 }
             }
             else
@@ -209,7 +209,7 @@ public class EntityController : ControllerBase
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
         
-        Entity? entity_ = SearchdomainHelper.CacheGetEntity(searchdomain_.entityCache, entityName);
+        Entity? entity_ = SearchdomainHelper.CacheGetEntity(searchdomain_.EntityCache, entityName);
         if (entity_ is null)
         {
             _logger.LogError("Unable to delete the entity {entityName} in {searchdomain} - it was not found under the specified name", [entityName, searchdomain]);
@@ -221,9 +221,9 @@ public class EntityController : ControllerBase
             return Ok(new EntityDeleteResults() {Success = false, Message = "Entity not found"});
         }
         searchdomain_.ReconciliateOrInvalidateCacheForDeletedEntity(entity_);
-        await _databaseHelper.RemoveEntity([], _domainManager.helper, entityName, searchdomain);
+        await _databaseHelper.RemoveEntity([], _domainManager.Helper, entityName, searchdomain);
         
-        bool success = searchdomain_.entityCache.TryRemove(entityName, out Entity? _);
+        bool success = searchdomain_.EntityCache.TryRemove(entityName, out Entity? _);
         
         return Ok(new EntityDeleteResults() {Success = success});
     }

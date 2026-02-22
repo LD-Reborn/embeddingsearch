@@ -15,50 +15,50 @@ namespace Server;
 
 public class SearchdomainManager : IDisposable
 {
-    private Dictionary<string, Searchdomain> searchdomains = [];
+    private Dictionary<string, Searchdomain> _searchdomains = [];
     private readonly ILogger<SearchdomainManager> _logger;
     private readonly EmbeddingSearchOptions _options;
-    public readonly AIProvider aIProvider;
+    public readonly AIProvider AiProvider;
     private readonly DatabaseHelper _databaseHelper;
     private readonly string connectionString;
-    private MySqlConnection connection;
-    public SQLHelper helper;
-    public EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache;
+    private MySqlConnection _connection;
+    public SQLHelper Helper;
+    public EnumerableLruCache<string, Dictionary<string, float[]>> EmbeddingCache;
     public long EmbeddingCacheMaxCount;
-    private bool disposed = false;
+    private bool _disposed = false;
 
     public SearchdomainManager(ILogger<SearchdomainManager> logger, IOptions<EmbeddingSearchOptions> options, AIProvider aIProvider, DatabaseHelper databaseHelper)
     {
         _logger = logger;
         _options = options.Value;
-        this.aIProvider = aIProvider;
+        this.AiProvider = aIProvider;
         _databaseHelper = databaseHelper;
         EmbeddingCacheMaxCount = _options.Cache.CacheTopN;
         if (options.Value.Cache.StoreEmbeddingCache)
         {
             var stopwatch = Stopwatch.StartNew();
-            embeddingCache = CacheHelper.GetEmbeddingStore(options.Value);
+            EmbeddingCache = CacheHelper.GetEmbeddingStore(options.Value);
             stopwatch.Stop();
             _logger.LogInformation("GetEmbeddingStore completed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
         } else
         {
-            embeddingCache = new((int)EmbeddingCacheMaxCount);
+            EmbeddingCache = new((int)EmbeddingCacheMaxCount);
         }
         connectionString = _options.ConnectionStrings.SQL;
-        connection = new MySqlConnection(connectionString);
-        connection.Open();
-        helper = new SQLHelper(connection, connectionString);
+        _connection = new MySqlConnection(connectionString);
+        _connection.Open();
+        Helper = new SQLHelper(_connection, connectionString);
     }
 
     public Searchdomain GetSearchdomain(string searchdomain)
     {
-        if (searchdomains.TryGetValue(searchdomain, out Searchdomain? value))
+        if (_searchdomains.TryGetValue(searchdomain, out Searchdomain? value))
         {
             return value;
         }
         try
         {
-            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, helper, aIProvider, embeddingCache, _logger));
+            return SetSearchdomain(searchdomain, new Searchdomain(searchdomain, connectionString, Helper, AiProvider, EmbeddingCache, _logger));
         }
         catch (MySqlException)
         {
@@ -81,7 +81,7 @@ public class SearchdomainManager : IDisposable
 
     public async Task<List<string>> ListSearchdomainsAsync()
     {
-        return await helper.ExecuteQueryAsync("SELECT name FROM searchdomain", [], x => x.GetString(0));
+        return await Helper.ExecuteQueryAsync("SELECT name FROM searchdomain", [], x => x.GetString(0));
     }
 
     public async Task<int> CreateSearchdomain(string searchdomain, SearchdomainSettings settings)
@@ -91,7 +91,7 @@ public class SearchdomainManager : IDisposable
 
     public async Task<int> CreateSearchdomain(string searchdomain, string settings = "{}")
     {
-        if (searchdomains.TryGetValue(searchdomain, out Searchdomain? value))
+        if (_searchdomains.TryGetValue(searchdomain, out Searchdomain? value))
         {
             _logger.LogError("Searchdomain {searchdomain} could not be created, as it already exists", [searchdomain]);
             throw new SearchdomainAlreadyExistsException(searchdomain);
@@ -101,30 +101,30 @@ public class SearchdomainManager : IDisposable
             { "name", searchdomain },
             { "settings", settings}
         };
-        int id = await helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
-        searchdomains.Add(searchdomain, new(searchdomain, connectionString, helper, aIProvider, embeddingCache, _logger));
+        int id = await Helper.ExecuteSQLCommandGetInsertedID("INSERT INTO searchdomain (name, settings) VALUES (@name, @settings)", parameters);
+        _searchdomains.Add(searchdomain, new(searchdomain, connectionString, Helper, AiProvider, EmbeddingCache, _logger));
         return id;
     }
 
     public async Task<int> DeleteSearchdomain(string searchdomain)
     {
-        int counter = await _databaseHelper.RemoveAllEntities(helper, searchdomain);
+        int counter = await _databaseHelper.RemoveAllEntities(Helper, searchdomain);
         _logger.LogDebug($"Number of entities deleted as part of deleting the searchdomain \"{searchdomain}\": {counter}");
-        await helper.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
-        searchdomains.Remove(searchdomain);
+        await Helper.ExecuteSQLNonQuery("DELETE FROM searchdomain WHERE name = @name", new() {{"name", searchdomain}});
+        _searchdomains.Remove(searchdomain);
         _logger.LogDebug($"Searchdomain has been successfully removed");
         return counter;
     }
 
     private Searchdomain SetSearchdomain(string name, Searchdomain searchdomain)
     {
-        searchdomains[name] = searchdomain;
+        _searchdomains[name] = searchdomain;
         return searchdomain;
     }
 
     public bool IsSearchdomainLoaded(string name)
     {
-        return searchdomains.ContainsKey(name);
+        return _searchdomains.ContainsKey(name);
     }
 
     // Cleanup procedure
@@ -135,7 +135,7 @@ public class SearchdomainManager : IDisposable
             if (_options.Cache.StoreEmbeddingCache)
             {
                 var stopwatch = Stopwatch.StartNew();
-                await CacheHelper.UpdateEmbeddingStore(embeddingCache, _options);
+                await CacheHelper.UpdateEmbeddingStore(EmbeddingCache, _options);
                 stopwatch.Stop();
                 _logger.LogInformation("UpdateEmbeddingStore completed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
             }
@@ -155,10 +155,10 @@ public class SearchdomainManager : IDisposable
 
     protected virtual async Task Dispose(bool disposing)
     {
-        if (!disposed && disposing)
+        if (!_disposed && disposing)
         {
             await Cleanup();
-            disposed = true;
+            _disposed = true;
         }
     }
 }
