@@ -107,6 +107,8 @@ class Client:
     #    pass
     async def EntityIndexAsync(jsonEntity:str) -> EntityIndexResult:
         pass
+    async def EntityIndexAsync(jsonEntity:str, sessionId:str, sessionComplete:bool) -> EntityIndexResult:
+        pass
     async def EntityIndexAsync(searchdomain:str, jsonEntity:str) -> EntityIndexResult:
         pass
     async def EntityListAsync(returnEmbeddings:bool = False) -> EntityListResults:

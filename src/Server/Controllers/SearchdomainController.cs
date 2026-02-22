@@ -118,18 +118,18 @@ public class SearchdomainController : ControllerBase
             Dictionary<string, dynamic> parameters = new()
             {
                 {"name", newName},
-                {"id", searchdomain_.id}
+                {"id", searchdomain_.Id}
             };
-            await searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name WHERE id = @id", parameters);
+            await searchdomain_.Helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name WHERE id = @id", parameters);
         } else
         {
             Dictionary<string, dynamic> parameters = new()
             {
                 {"name", newName},
                 {"settings", settings},
-                {"id", searchdomain_.id}
+                {"id", searchdomain_.Id}
             };
-            await searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);            
+            await searchdomain_.Helper.ExecuteSQLNonQuery("UPDATE searchdomain set name = @name, settings = @settings WHERE id = @id", parameters);            
         }
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
@@ -143,7 +143,7 @@ public class SearchdomainController : ControllerBase
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.queryCache.AsDictionary();
+        Dictionary<string, DateTimedSearchResult> searchCache = searchdomain_.QueryCache.AsDictionary();
         
         return Ok(new SearchdomainQueriesResults() { Searches = searchCache, Success = true });
     }
@@ -165,7 +165,7 @@ public class SearchdomainController : ControllerBase
         {
             Name = r.Item2,
             Value = r.Item1,
-            Attributes = returnAttributes ? (searchdomain_.entityCache[r.Item2]?.attributes ?? null) : null
+            Attributes = returnAttributes ? (searchdomain_.EntityCache[r.Item2]?.Attributes ?? null) : null
         })];
         return Ok(new EntityQueryResults(){Results = queryResults, Success = true });
     }
@@ -180,7 +180,7 @@ public class SearchdomainController : ControllerBase
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        EnumerableLruCache<string, DateTimedSearchResult> searchCache = searchdomain_.queryCache;
+        EnumerableLruCache<string, DateTimedSearchResult> searchCache = searchdomain_.QueryCache;
         bool containsKey = searchCache.ContainsKey(query);
         if (containsKey)
         {
@@ -201,7 +201,7 @@ public class SearchdomainController : ControllerBase
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        EnumerableLruCache<string, DateTimedSearchResult> searchCache = searchdomain_.queryCache;
+        EnumerableLruCache<string, DateTimedSearchResult> searchCache = searchdomain_.QueryCache;
         bool containsKey = searchCache.ContainsKey(query);
         if (containsKey)
         {
@@ -222,7 +222,7 @@ public class SearchdomainController : ControllerBase
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        SearchdomainSettings settings = searchdomain_.settings;
+        SearchdomainSettings settings = searchdomain_.Settings;
         return Ok(new SearchdomainSettingsResults() { Settings = settings, Success = true });
     }
 
@@ -239,11 +239,11 @@ public class SearchdomainController : ControllerBase
         Dictionary<string, dynamic> parameters = new()
         {
             {"settings", JsonSerializer.Serialize(request)},
-            {"id", searchdomain_.id}
+            {"id", searchdomain_.Id}
         };
-        await searchdomain_.helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
-        searchdomain_.settings = request;
-        searchdomain_.queryCache.Capacity = request.QueryCacheSize;
+        await searchdomain_.Helper.ExecuteSQLNonQuery("UPDATE searchdomain set settings = @settings WHERE id = @id", parameters);
+        searchdomain_.Settings = request;
+        searchdomain_.QueryCache.Capacity = request.QueryCacheSize;
         return Ok(new SearchdomainUpdateResults(){Success = true});
     }
 
@@ -260,8 +260,8 @@ public class SearchdomainController : ControllerBase
         }
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        int elementCount = searchdomain_.queryCache.Count;
-        int ElementMaxCount = searchdomain_.settings.QueryCacheSize;
+        int elementCount = searchdomain_.QueryCache.Count;
+        int ElementMaxCount = searchdomain_.Settings.QueryCacheSize;
         return Ok(new SearchdomainQueryCacheSizeResults() { SizeBytes = searchdomain_.GetSearchCacheSize(), ElementCount = elementCount, ElementMaxCount = ElementMaxCount, Success = true });
     }
 
@@ -287,7 +287,7 @@ public class SearchdomainController : ControllerBase
     {
         (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
         if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
-        long EmbeddingCacheUtilization = DatabaseHelper.GetSearchdomainDatabaseSize(searchdomain_.helper, searchdomain);
+        long EmbeddingCacheUtilization = DatabaseHelper.GetSearchdomainDatabaseSize(searchdomain_.Helper, searchdomain);
         return Ok(new SearchdomainGetDatabaseSizeResult() { SearchdomainDatabaseSizeBytes = EmbeddingCacheUtilization, Success = true });        
     }
 }

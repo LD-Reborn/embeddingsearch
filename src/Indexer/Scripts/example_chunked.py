@@ -1,8 +1,10 @@
+import math
 import os
 from tools import *
 import json
 from dataclasses import asdict
 import time
+import uuid
 
 example_content = "./Scripts/example_content"
 probmethod = "HVEWAvg"
@@ -63,9 +65,21 @@ def index_files(toolset: Toolset):
         ]
         jsonEntity:dict = asdict(JSONEntity(qualified_filepath, probmethod_entity, example_searchdomain, {}, datapoints))
         jsonEntities.append(jsonEntity)
-    jsonstring = json.dumps(jsonEntities)
     timer_start = time.time()
-    # Index all entities in one go. If you need to split it into chunks, use the session attributes! See example_chunked.py
-    result:EntityIndexResult = toolset.Client.EntityIndexAsync(jsonstring).Result
+    chunkSize = 5
+    chunkList = chunk_list(jsonEntities, chunkSize)
+    chunkCount = math.ceil(len(jsonEntities) / chunkSize)
+    sessionId = uuid.uuid4().hex
+    print(f"indexing {len(jsonEntities)} entities")
+    for i, entities in enumerate(chunkList):
+        isLast = i == chunkCount
+        print(f'Processing chunk {i} / {len(jsonEntities) / chunkSize}')
+        jsonstring = json.dumps(entities)
+        result:EntityIndexResult = toolset.Client.EntityIndexAsync(jsonstring, sessionId, isLast).Result
     timer_end = time.time()
     toolset.Logger.LogInformation(f"Update was successful: {result.Success} - and was done in {timer_end - timer_start} seconds.")
+
+
+def chunk_list(lst, chunk_size):
+    for i in range(0, len(lst), chunk_size):
+        yield lst[i: i + chunk_size]

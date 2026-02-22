@@ -13,7 +13,7 @@ public class AIProvider
 {
     private readonly ILogger<AIProvider> _logger;
     private readonly EmbeddingSearchOptions _configuration;
-    public Dictionary<string, AiProvider> aIProvidersConfiguration;
+    public Dictionary<string, AiProvider> AiProvidersConfiguration;
 
     public AIProvider(ILogger<AIProvider> logger, IOptions<EmbeddingSearchOptions> configuration)
     {
@@ -27,7 +27,7 @@ public class AIProvider
         }
         else
         {
-            aIProvidersConfiguration = retrievedAiProvidersConfiguration;
+            AiProvidersConfiguration = retrievedAiProvidersConfiguration;
         }
     }
 
@@ -41,7 +41,7 @@ public class AIProvider
         Uri uri = new(modelUri);
         string provider = uri.Scheme;
         string model = uri.AbsolutePath;
-        AiProvider? aIProvider = aIProvidersConfiguration
+        AiProvider? aIProvider = AiProvidersConfiguration
             .FirstOrDefault(x => string.Equals(x.Key.ToLower(), provider.ToLower()))
             .Value;
         if (aIProvider is null)
@@ -134,7 +134,7 @@ public class AIProvider
 
     public string[] GetModels()
     {
-        var aIProviders = aIProvidersConfiguration;
+        var aIProviders = AiProvidersConfiguration;
         List<string> results = [];
         foreach (KeyValuePair<string, AiProvider> aIProviderKV in aIProviders)
         {

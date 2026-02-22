@@ -47,15 +47,27 @@ public class Client
             return await FetchUrlAndProcessJson<EntityListResults>(HttpMethod.Get, url);
         }
 
-        public async Task<EntityIndexResult> EntityIndexAsync(List<JSONEntity> jsonEntity)
+        public async Task<EntityIndexResult> EntityIndexAsync(List<JSONEntity> jsonEntity, string? sessionId = null, bool? sessionComplete = null)
         {
-            return await EntityIndexAsync(JsonSerializer.Serialize(jsonEntity));
+            return await EntityIndexAsync(JsonSerializer.Serialize(jsonEntity), sessionId, sessionComplete);
         }
 
-        public async Task<EntityIndexResult> EntityIndexAsync(string jsonEntity)
+        public async Task<EntityIndexResult> EntityIndexAsync(string jsonEntity, string? sessionId = null, bool? sessionComplete = null)
         {
             var content = new StringContent(jsonEntity, Encoding.UTF8, "application/json");
-            return await FetchUrlAndProcessJson<EntityIndexResult>(HttpMethod.Put, GetUrl($"{baseUri}", "Entities", []), content);
+            Dictionary<string, string> parameters = [];
+            if (sessionId is not null) parameters.Add("sessionId", sessionId);
+            if (sessionComplete is not null) parameters.Add("sessionComplete", ((bool)sessionComplete).ToString());
+
+            return await FetchUrlAndProcessJson<EntityIndexResult>(
+                HttpMethod.Put,
+                GetUrl(
+                    $"{baseUri}",
+                    $"Entities",
+                    parameters
+                ),
+                content
+            );
         }
 
         public async Task<EntityDeleteResults> EntityDeleteAsync(string entityName)

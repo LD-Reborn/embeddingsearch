@@ -58,7 +58,7 @@ public class ServerController : ControllerBase
             long size = 0;
             long elementCount = 0;
             long embeddingsCount = 0;
-            EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = _searchdomainManager.embeddingCache;
+            EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = _searchdomainManager.EmbeddingCache;
 
             foreach (KeyValuePair<string, Dictionary<string, float[]>> kv in embeddingCache)
             {
@@ -68,7 +68,7 @@ public class ServerController : ControllerBase
                 elementCount++;
                 embeddingsCount += entry.Keys.Count;
             }
-            var sqlHelper = _searchdomainManager.helper;
+            var sqlHelper = _searchdomainManager.Helper;
             var databaseTotalSize = DatabaseHelper.GetTotalDatabaseSize(sqlHelper);
             Task<long> entityCountTask = DatabaseHelper.CountEntities(sqlHelper);
             long queryCacheUtilization = 0;
@@ -82,9 +82,9 @@ public class ServerController : ControllerBase
                     (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_searchdomainManager, searchdomain, _logger);
                     if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new ServerGetStatsResult(){Success = false, Message = message});
                     queryCacheUtilization += searchdomain_.GetSearchCacheSize();
-                    queryCacheElementCount += searchdomain_.queryCache.Count;
-                    queryCacheMaxElementCountAll += searchdomain_.queryCache.Capacity;
-                    queryCacheMaxElementCountLoadedSearchdomainsOnly += searchdomain_.queryCache.Capacity;
+                    queryCacheElementCount += searchdomain_.QueryCache.Count;
+                    queryCacheMaxElementCountAll += searchdomain_.QueryCache.Capacity;
+                    queryCacheMaxElementCountLoadedSearchdomainsOnly += searchdomain_.QueryCache.Capacity;
                 } else
                 {
                     var searchdomainSettings = DatabaseHelper.GetSearchdomainSettings(sqlHelper, searchdomain);
