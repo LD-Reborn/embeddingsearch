@@ -226,6 +226,53 @@ public class SQLHelper:IDisposable
             Thread.Sleep(sleepTime);
         }
     }
+    public async Task ExecuteInTransactionAsync(Func<MySqlConnection, DbTransaction, Task> operation)
+    {
+        var poolElement = await GetMySqlConnectionPoolElement();
+        var connection = poolElement.Connection;
+        try
+        {
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                await operation(connection, transaction);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+        finally
+        {
+            poolElement.Semaphore.Release();
+        }
+    }
+
+    public void ExecuteInTransaction(Action<MySqlConnection, MySqlTransaction> operation)
+    {
+        var poolElement = GetMySqlConnectionPoolElement().Result;
+        var connection = poolElement.Connection;
+        try
+        {
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                operation(connection, transaction);
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+        finally
+        {
+            poolElement.Semaphore.Release();
+        }
+    }
 }
 
 public struct MySqlConnectionPoolElement

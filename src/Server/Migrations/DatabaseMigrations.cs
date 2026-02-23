@@ -29,12 +29,8 @@ public static class DatabaseMigrations
             if (version >= databaseVersion)
             {
                 databaseVersion = (int)method.Invoke(null, new object[] { helper });
+                var _ = helper.ExecuteSQLNonQuery("UPDATE settings SET value = @databaseVersion", new() { ["databaseVersion"] = databaseVersion.ToString() }).Result;
             }
-        }
-
-        if (databaseVersion != initialDatabaseVersion)
-        {
-            var _ = helper.ExecuteSQLNonQuery("UPDATE settings SET value = @databaseVersion", new() { ["databaseVersion"] = databaseVersion.ToString() }).Result;
         }
     }
 
@@ -122,25 +118,41 @@ public static class DatabaseMigrations
     {
         // Add id_entity to embedding
         var _ = helper.ExecuteSQLNonQuery("ALTER TABLE embedding ADD COLUMN id_entity INT NULL", []).Result;
+        return 6;
+    }
+    public static int UpdateFrom6(SQLHelper helper)
+    {
         int count;
         do
         {
             count = helper.ExecuteSQLNonQuery("UPDATE embedding e JOIN datapoint d ON d.id = e.id_datapoint JOIN (SELECT id FROM embedding WHERE id_entity IS NULL LIMIT 10000) x on x.id = e.id SET e.id_entity = d.id_entity;", []).Result;
         } while (count == 10000);
-        
+        return 7;
+    }
+    public static int UpdateFrom7(SQLHelper helper)
+    {       
         _ = helper.ExecuteSQLNonQuery("ALTER TABLE embedding MODIFY id_entity INT NOT NULL;", []).Result;
         _ = helper.ExecuteSQLNonQuery("CREATE INDEX idx_embedding_entity_model ON embedding (id_entity, model)", []).Result;
 
         // Add id_searchdomain to embedding
         _ = helper.ExecuteSQLNonQuery("ALTER TABLE embedding ADD COLUMN id_searchdomain INT NULL", []).Result;
+        return 8;
+    }
+
+    public static int UpdateFrom8(SQLHelper helper)
+    {
+        int count = 0;
         do
         {
             count = helper.ExecuteSQLNonQuery("UPDATE embedding e JOIN entity en ON en.id = e.id_entity JOIN (SELECT id FROM embedding WHERE id_searchdomain IS NULL LIMIT 10000) x on x.id = e.id SET e.id_searchdomain = en.id_searchdomain;", []).Result;
         } while (count == 10000);
-        
+        return 9;
+    }
+
+    public static int UpdateFrom9(SQLHelper helper)
+    {
         _ = helper.ExecuteSQLNonQuery("ALTER TABLE embedding MODIFY id_searchdomain INT NOT NULL;", []).Result;
         _ = helper.ExecuteSQLNonQuery("CREATE INDEX idx_embedding_searchdomain_model ON embedding (id_searchdomain)", []).Result;
-
-        return 6;
+        return 10;
     }
 }
