@@ -160,6 +160,21 @@ public class Client
             return await FetchUrlAndProcessJson<EntityQueryResults>(HttpMethod.Post, GetUrl($"{baseUri}/Searchdomain", "Query", parameters), null);
         }
 
+        public async Task<EntityQueryResults> SearchdomainQueryRerankedAsync(string searchdomain, string query, string rerankerModel, int topN, int topNRetrieval, bool returnAttributes = false)
+        {
+            Dictionary<string, string> parameters = new()
+            {
+                { "searchdomain", searchdomain },
+                { "query", query },
+                { "rerankerModel", (rerankerModel).ToString() },
+                { "topN", (topN).ToString() },
+                { "topNRetrieval", (topNRetrieval).ToString() }
+            };
+            if (returnAttributes) parameters.Add("returnAttributes", returnAttributes.ToString());
+
+            return await FetchUrlAndProcessJson<EntityQueryResults>(HttpMethod.Post, GetUrl($"{baseUri}/Searchdomain", "QueryReranked", parameters), null);
+        }
+
         public async Task<SearchdomainDeleteSearchResult> SearchdomainDeleteQueryAsync(string searchdomain, string query)
         {
             Dictionary<string, string> parameters = new()

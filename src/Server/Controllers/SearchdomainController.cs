@@ -148,6 +148,78 @@ public class SearchdomainController : ControllerBase
         return Ok(new SearchdomainQueriesResults() { Searches = searchCache, Success = true });
     }
 
+
+
+    /// <summary>
+    /// Executes a query in the searchdomain and reranks the result using a specified reranker
+    /// </summary>
+    /// <param name="searchdomain">Name of the searchdomain</param>
+    /// <param name="query">Query to execute</param>
+    /// <param name="topN">Return only the top N results</param>
+    /// <param name="returnAttributes">Return the attributes of the object</param>
+    [HttpPost("QueryReranked")]
+    public ActionResult<EntityRerankResults> QueryReranked([Required]string searchdomain, [Required]string query, [Required]string rerankerModel, int topN, int topNRetrieval, ProbMethodEnum probMethod = ProbMethodEnum.HVEWAvg, bool returnAttributes = false)
+    {
+        
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) = SearchdomainHelper.TryGetSearchdomain(_domainManager, searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null) return StatusCode(httpStatusCode ?? 500, new SearchdomainUpdateResults(){Success = false, Message = message});
+        List<(float, string)> results = searchdomain_.Search(query, topNRetrieval);
+        List<(string Name, Dictionary<string, string> Attributes)> queryResults = [.. results.Select(r => (
+            Name: r.Item2,
+            Attributes: searchdomain_.EntityCache[r.Item2]?.Attributes ?? []
+        ))];
+
+
+        // Key: Attribute name
+        Dictionary<string, List<(string EntityName, string AttributeValue)>> resultsByAttribute = [];
+        queryResults.ForEach(r =>
+        {
+            foreach (var kv in r.Attributes)
+            {
+                if (!resultsByAttribute.TryGetValue(kv.Key, out List<(string EntityName, string AttributeValue)>? values) || values is null)
+                {
+                    values = [];
+                    resultsByAttribute[kv.Key] = values;
+                }
+                values.Add((r.Name, kv.Value));
+            }
+        });
+
+        // Key: EntityName
+        Dictionary<string, List<(string attribute, float score)>> scoresByEntity = [];
+        foreach (var kv in resultsByAttribute)
+        {
+            string attributeName = kv.Key;
+            List<(string EntityName, string AttributeValue)> nameValuePairs = kv.Value;
+            
+            List<string> documents = [.. nameValuePairs.Select(r => r.AttributeValue)];
+            List<(int index, float score)> rerankResults = [.. searchdomain_.AiProvider.Rerank(rerankerModel, query, [.. documents], topN)];
+            List<(string entityName, float score)> rerankedScores = [.. rerankResults.Select(r => (nameValuePairs.ElementAt(r.index).EntityName, r.score))];
+            foreach ((string entityName, float score) in rerankedScores)
+            {
+                if (!scoresByEntity.TryGetValue(entityName, out List<(string attribute, float score)>? values) || values is null)
+                {
+                    values = [];
+                    scoresByEntity[entityName] = values;
+                }
+                values.Add((attributeName, score));
+            }
+        }
+        List<EntityRerankResult> entityRerankResults = [.. scoresByEntity.Select(scoreKV =>
+        {
+            string entityName = scoreKV.Key;
+            float score = new ProbMethod(probMethod).Method(scoreKV.Value);
+            return new EntityRerankResult()
+            {
+                Name = entityName,
+                Value = score,
+                Attributes = returnAttributes ? (searchdomain_.EntityCache[entityName]?.Attributes ?? []) : null
+            };
+        })];
+        
+        return Ok(new EntityRerankResults(){Results = entityRerankResults, Success = true });
+    }
+
     /// <summary>
     /// Executes a query in the searchdomain
     /// </summary>

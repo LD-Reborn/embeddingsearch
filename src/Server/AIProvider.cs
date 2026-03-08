@@ -132,6 +132,107 @@ public class AIProvider
         }
     }
 
+    public IEnumerable<(int index, float score)> Rerank(string modelUri, string input, string[] documents, int topN)
+    {
+        Uri uri = new(modelUri);
+        string provider = uri.Scheme;
+        string model = uri.AbsolutePath;
+        AiProvider? aIProvider = AiProvidersConfiguration
+            .FirstOrDefault(x => string.Equals(x.Key.ToLower(), provider.ToLower()))
+            .Value;
+        if (aIProvider is null)
+        {
+            _logger.LogError("Model provider {provider} not found in configuration. Requested model: {modelUri}", [provider, modelUri]);
+            throw new ServerConfigurationException($"Model provider {provider} not found in configuration. Requested model: {modelUri}");
+        }
+        using var httpClient = new HttpClient();
+        httpClient.Timeout = TimeSpan.FromMinutes(150);
+
+        string indexJsonPath = "";
+        string scoreJsonPath = "";
+        IEnumerable<(string, float)> values = [];
+        Uri baseUri = new(aIProvider.BaseURL);
+        Uri requestUri;
+        IRerankRequestBody rerankRequestBody;
+        string[][] requestHeaders = [];
+        switch (aIProvider.Handler)
+        {
+            case "openai":
+                indexJsonPath = "$.results[*].index";
+                scoreJsonPath = "$.results[*].relevance_score";
+                requestUri = new Uri(baseUri, "/v1/rerank");
+                rerankRequestBody = new OpenAIRerankRequestBody()
+                {
+                    model = model,
+                    query = input,
+                    documents = documents,
+                    top_n = topN
+                };
+                if (aIProvider.ApiKey is not null)
+                {
+                    requestHeaders = [
+                        ["Authorization", $"Bearer {aIProvider.ApiKey}"]
+                    ];
+                }
+                break;
+            default:
+                _logger.LogError("Invalid reranking handler {aIProvider.Handler} in AiProvider {provider}.", [aIProvider.Handler, provider]);
+                throw new ServerConfigurationException($"Unknown handler {aIProvider.Handler} in AiProvider {provider}.");
+        }
+        var requestContent = new StringContent(
+            JsonConvert.SerializeObject(rerankRequestBody),
+            Encoding.UTF8,
+            "application/json"
+        );
+
+        var request = new HttpRequestMessage()
+        {
+            RequestUri = requestUri,
+            Method = HttpMethod.Post,
+            Content = requestContent
+        };
+        
+        foreach (var header in requestHeaders)
+        {
+            request.Headers.Add(header[0], header[1]);
+        }
+        HttpResponseMessage response = httpClient.PostAsync(requestUri, requestContent).Result;
+        string responseContent = response.Content.ReadAsStringAsync().Result;
+        try
+        {
+            JObject responseContentJson = JObject.Parse(responseContent);
+            List<JToken>? responseContentIndexTokens = [.. responseContentJson.SelectTokens(indexJsonPath)];
+            List<JToken>? responseContentScoreTokens = [.. responseContentJson.SelectTokens(scoreJsonPath)];
+            if (responseContentIndexTokens is null || responseContentIndexTokens.Count == 0
+                || responseContentScoreTokens is null || responseContentScoreTokens.Count == 0)
+            {
+                if (responseContentJson.TryGetValue("error", out JToken? errorMessageJson) && errorMessageJson is not null)
+                {
+                    string errorMessage = (string?)errorMessageJson.Value<string>("message") ?? "";
+                    string errorCode = (string?)errorMessageJson.Value<string>("code") ?? "";
+                    string errorType = (string?)errorMessageJson.Value<string>("type") ?? "";
+                    _logger.LogError("Unable to retrieve reranking results due to error: {errorCode} - {errorMessage} - {errorType}", [errorCode, errorMessage, errorType]);
+                    throw new Exception($"Unable to retrieve reranking results due to error: {errorMessage}");
+                    
+                } else
+                {
+                    _logger.LogError("Unable to select tokens using JSONPath {indexJsonPath} for string: {responseContent}.", [indexJsonPath, responseContent]);
+                    throw new JSONPathSelectionException(indexJsonPath, responseContent);
+                }
+            }
+            IEnumerable<int> indices = responseContentIndexTokens.Select(token => token.ToObject<int>());
+            IEnumerable<float> scores = responseContentScoreTokens.Select(token => token.ToObject<float>());
+            IEnumerable<(int index, float score)> zipped = indices.Zip(scores, (index, score) => (index, score));
+            
+            return zipped;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Unable to parse the response to valid embeddings. {ex.Message}", [ex.Message]);
+            throw;
+        }
+    }
+
     public string[] GetModels()
     {
         var aIProviders = AiProvidersConfiguration;
@@ -239,4 +340,16 @@ public class OpenAIEmbedRequestBody : IEmbedRequestBody
 {
     public required string model { get; set; }
     public required string[] input { get; set; }
+}
+
+
+public interface IRerankRequestBody { }
+
+
+public class OpenAIRerankRequestBody : IRerankRequestBody
+{
+    public required string model { get; set; }
+    public required string query { get; set; }
+    public required int top_n { get; set; }
+    public required string[] documents { get; set; }
 }

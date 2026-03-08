@@ -20,6 +20,23 @@ public class EntityQueryResult
     public Dictionary<string, string>? Attributes { get; set; }
 }
 
+public class EntityRerankResults : SuccesMessageBaseModel
+{
+    [JsonPropertyName("Results")]
+    public required List<EntityRerankResult> Results { get; set; }
+}
+
+public class EntityRerankResult
+{
+    [JsonPropertyName("Name")]
+    public required string Name { get; set; }
+    [JsonPropertyName("Value")]
+    public float Value { get; set; }
+    [JsonPropertyName("Attributes")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Attributes { get; set; }
+}
+
 public class EntityIndexResult : SuccesMessageBaseModel {}
 
 public class EntityListResults
