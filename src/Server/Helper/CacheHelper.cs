@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using OllamaSharp.Models;
 using Server.Models;
 using Shared;
+using Shared.Models;
 
 namespace Server.Helper;
 
@@ -237,5 +238,40 @@ public static class CacheHelper
         }
         
         return (positionToEntry, entryToPosition);
+    }
+
+    public static long EstimateEntrySize(string key, Dictionary<string, float[]> value)
+    {
+        int stringOverhead = MemorySizes.Align(MemorySizes.ObjectHeader + sizeof(int));
+        int arrayOverhead = MemorySizes.ArrayHeader;
+        int dictionaryOverhead = MemorySizes.ObjectHeader;
+        long size = 0;
+
+        size += stringOverhead + key.Length * sizeof(char);
+        size += dictionaryOverhead;
+
+        foreach (var kv in value)
+        {
+            size += stringOverhead + kv.Key.Length * sizeof(char);
+            size += arrayOverhead + kv.Value.Length * sizeof(float);
+        }
+
+        return size;
+    }
+
+    public static (long size, long elementCount, long embeddingsCount) EstimateCacheSize(EnumerableLruCache<string, Dictionary<string, float[]>> cache)
+    {
+        long size = 0;
+        long elementCount = 0;
+        long embeddingsCount = 0;
+        foreach (KeyValuePair<string, Dictionary<string, float[]>> kv in cache)
+        {
+            string key = kv.Key;
+            Dictionary<string, float[]> entry = kv.Value;
+            size += EstimateEntrySize(key, entry);
+            elementCount++;
+            embeddingsCount += entry.Keys.Count;
+        }
+        return (size, elementCount, embeddingsCount);
     }
 }

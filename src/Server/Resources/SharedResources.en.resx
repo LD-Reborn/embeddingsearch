@@ -201,9 +201,6 @@
   <data name="Failed to delete search query" xml:space="preserve">
     <value>Failed to delete search query</value>
   </data>
-  <data name="Searchdomain was created successfully" xml:space="preserve">
-    <value>Searchdomain was created successfully</value>
-  </data>
   <data name="Updating search query failed" xml:space="preserve">
     <value>Updating search query failed</value>
   </data>
@@ -335,5 +332,29 @@
   </data>
   <data name="Total Database size" xml:space="preserve">
     <value>Total Database size</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>Cache</value>
+  </data>
+  <data name="Per-Model Statistics" xml:space="preserve">
+    <value>Per-Model Statistics</value>
+  </data>
+  <data name="Entries" xml:space="preserve">
+    <value>Entries</value>
+  </data>
+  <data name="Embedding Cache Statistics" xml:space="preserve">
+    <value>Embedding Cache Statistics</value>
+  </data>
+  <data name="Cache Entries" xml:space="preserve">
+    <value>Cache Entries</value>
+  </data>
+  <data name="Embedding Count" xml:space="preserve">
+    <value>Embedding Count</value>
+  </data>
+  <data name="Tools" xml:space="preserve">
+    <value>Tools</value>
+  </data>
+  <data name="Memory Size" xml:space="preserve">
+    <value>Memory Size</value>
   </data>
 </root>

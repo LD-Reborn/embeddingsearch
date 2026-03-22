@@ -188,8 +188,8 @@ public class EntityController : ControllerBase
                         entity.Name,
                         searchdomainName);
                     searchdomain_.EntityCache.TryRemove(entity.Name, out _);
-                    _logger.LogInformation("Deleted entity {entityName} from {searchdomain}", entity.Name, searchdomainName);
                 }
+                _logger.LogInformation("Deleted entities {entitiesToDelete.Count} from {searchdomainName}", entitiesToDelete.Count, searchdomainName);
             }
             else
             {

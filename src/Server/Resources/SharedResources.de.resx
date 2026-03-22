@@ -61,7 +61,7 @@
     <value>Leeren</value>
   </data>
   <data name="Database size" xml:space="preserve">
-    <value>Größe in der Datenbank</value>
+    <value>Datenbankgröße</value>
   </data>
   <data name="Add new entity" xml:space="preserve">
     <value>Neue Entity erstellen</value>
@@ -201,9 +201,6 @@
   <data name="Failed to delete search query" xml:space="preserve">
     <value>Suchanfrage konnte nicht gelöscht werden</value>
   </data>
-  <data name="Searchdomain was created successfully" xml:space="preserve">
-    <value>Searchdomain wurde erfolgreich erstellt</value>
-  </data>
   <data name="Updating search query failed" xml:space="preserve">
     <value>Suchanfrage konnte nicht angepasst werden</value>
   </data>
@@ -335,5 +332,29 @@
   </data>
   <data name="Total Database size" xml:space="preserve">
     <value>Datenbankgröße insgesamt</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>Cache</value>
+  </data>
+  <data name="Per-Model Statistics" xml:space="preserve">
+    <value>Statistiken pro Modell</value>
+  </data>
+  <data name="Entries" xml:space="preserve">
+    <value>Einträge</value>
+  </data>
+  <data name="Embedding Cache Statistics" xml:space="preserve">
+    <value>Embedding-Cache Statistiken</value>
+  </data>
+  <data name="Cache Entries" xml:space="preserve">
+    <value>Cache-Einträge</value>
+  </data>
+  <data name="Embedding Count" xml:space="preserve">
+    <value>Embedding-Anzahl</value>
+  </data>
+  <data name="Tools" xml:space="preserve">
+    <value>Tools</value>
+  </data>
+  <data name="Memory Size" xml:space="preserve">
+    <value>Speicher Größe</value>
   </data>
 </root>

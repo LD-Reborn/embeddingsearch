@@ -1,0 +1,238 @@
+@using Server.Models
+@using System.Web
+@using Shared.Models
+@using Server.Services
+@using Server
+
+@inject LocalizationService T
+@model HomeCacheViewModel
+@{
+    ViewData["Title"] = @T["Cache"];
+    (double cacheSizeInUnit, string cacheSizeUnit) = FormatBytesSizeAndUnit(Model.EmbeddingCacheDatabaseSize);
+}
+<div class="container mt-4">
+    <h1 class="visually-hidden">@T["Cache"]</h1>
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="fs-4">@T["Actions"]</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col md-6">
+                            <form class="mb-4" asp-controller="Server" asp-action="EvictEmbeddingCacheToSize" method="POST" onsubmit="return handleEvictToSize(event)">
+                                <h3 class="fs-5">@T["Evict to size"]</h3>
+                                <div class="row mb-2">
+                                    <div class="col-md-4 mb-1" style="min-width: 10rem;">
+                                        <input class="form-control" type="number" id="evictToSizeValue" name="value" value="@($"{cacheSizeInUnit:0.##}")" step="0.01" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" name="unit">
+                                            @foreach (string size in sizes)
+                                            {
+                                                if (size == cacheSizeUnit)
+                                                {
+                                                    <option value="@size" selected>@size</option>
+                                                } else
+                                                {
+                                                    <option value="@size">@size</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4" style="min-width: fit-content">
+                                        <button class="btn btn-warning" type="submit">@T["Evict to size"]</button>
+                                    </div>
+                                </div>
+                                <small>@T["Evicts the least-recently utilized cache entries until the specified memory threshold is met"]</small>
+                            </form>
+                        </div>
+                        <div class="col md-6">
+                            <form action="Cache/SetEmbeddingCacheSize" method="POST">
+                                <h3 class="fs-5">@T["Set EmbeddingCache Size"]</h3>
+                                <div class="row mb-2">
+                                    <div class="col-md-6 mb-1">
+                                        <input class="form-control" type="number" id="setEmbeddingCacheSize" value="@Model.EmbeddingCacheDatabaseMaxSize" />
+                                    </div>
+                                    <div class="col-md-6" style="min-width: 19rem;">
+                                        <button class="btn btn-warning" type="submit">@T["Set EmbeddingCache Size"]</button>
+                                    </div>
+                                </div>
+                                <small>@T["Updates the EmbeddingCache size and (if necessary) evicts least-recently utilized cache entries to fit the new size"]</small>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col md-6">
+                            <form action="Cache/RemoveModel" method="POST">
+                                <h3 class="fs-5">@T["Remove model from EmbeddingCache"]</h3>
+                                <div class="row mb-2">
+                                    <div class="col-md-6 mb-1">
+                                        TODO Remove/Evict all embeddings for a specific model or model combination (e.g. "bge-m3, qwen3-embedding")
+                                    </div>
+                                    <div class="col-md-6" style="min-width: 19rem;">
+                                        <button class="btn btn-warning" type="submit">@T["Remove from cache"]</button>
+                                    </div>
+                                </div>
+                                <small>@T["TODO"]</small>
+                            </form>
+                        </div>
+                        <div class="col md-6">
+                            <form action="Cache/EvictModelCombination" method="POST">
+                                <h3 class="fs-5">@T["Evict model combination from EmbeddingCache"]</h3>
+                                <div class="row mb-2">
+                                    <div class="col-md-6 mb-1">
+                                        TODO Remove/Evict all embeddings for a specific model or model combination (e.g. "bge-m3, qwen3-embedding")
+                                    </div>
+                                    <div class="col-md-6" style="min-width: 19rem;">
+                                        <button class="btn btn-warning" type="submit">@T["Evict from cache"]</button>
+                                    </div>
+                                </div>
+                                <small>@T["TODO"]</small>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col md-6">
+                            <form action="Cache/EvictEntryFromCache" method="POST">
+                                <h3 class="fs-5">@T["Evict entry from EmbeddingCache"]</h3>
+                                <div class="row mb-2">
+                                    <div class="col-md-6 mb-1">
+                                        TODO View entries per regex selector and remove single model / evict entry
+                                    </div>
+                                    <div class="col-md-6" style="min-width: 19rem;">
+                                        <button class="btn btn-warning" type="submit">@T["Evict from cache"]</button>
+                                    </div>
+                                </div>
+                                <small>@T["TODO"]</small>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="fs-4">@T["Per-Model Statistics"]</h2>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>@T["Model"]</th>
+                                <th>@T["Entries"]</th>
+                                <th>@T["Memory Size"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var modelStats in Model.PerModelStats)
+                            {
+                                <tr>
+                                    <td>@modelStats.Key</td>
+                                    <td>@modelStats.Value.entryCount.ToString("N0")</td>
+                                    <td>@FormatBytes(modelStats.Value.databaseSize)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="fs-4">@T["Embedding Cache Statistics"]</h2>
+                </div>
+                <div class="card-body">
+                    <p><strong>@T["Cache Entries"]:</strong> @Model.EmbeddingCacheCount.ToString("N0")</p>
+                    <p><strong>@T["Memory Size"]:</strong> @FormatBytes(Model.EmbeddingCacheDatabaseSize)</p>
+                    <p><strong>@T["Embedding Count"]:</strong> @Model.EmbeddingCacheEmbeddingCount.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    var units = { "B": 1, "KB": 1024, "MB": 1024 * 1024, "GB": 1024 * 1024 * 1024 };
+    function getSizeFromValueAndUnit(value, unit)
+    {
+        return Math.round(value * units[unit]);
+    }
+
+    async function handleEvictToSize(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const value = formData.get('value');
+        const unit = formData.get('unit');
+
+        if (!value || value < 0) {
+            showToast('@T["Please enter a valid non-negative size"]', "danger");
+            return false;
+        }
+
+        if (!unit) {
+            showToast('@T["Please select a valid unit"]', "danger");
+            return false;
+        }
+
+        var targetValue = getSizeFromValueAndUnit(value, unit);
+
+
+        // Optional: Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(form.action || "@Url.Action("EvictEmbeddingCacheToSize", "Server")", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: targetValue
+            });
+
+            if (response.ok) {
+                showToast('@T["Cache evicted successfully!"]', "success")
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger")
+            }
+        } catch (error) {
+            console.error('Evict to size error:', error);
+            showToast('@T["Network or server error"]', "danger")
+        } finally {
+            submitBtn.disabled = false;
+        }
+
+        return false; // Prevent default
+    }
+</script>
+
+@functions {
+    string[] sizes = { "B", "KB", "MB", "GB" };
+    private string FormatBytes(long bytes)
+    {
+        (double size, string unit) = FormatBytesSizeAndUnit(bytes);
+        return $"{size:0.##} {unit}";
+    }
+    private (double size, string unit) FormatBytesSizeAndUnit(long bytes)
+    {
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return (len, sizes[order]);
+    }
+}

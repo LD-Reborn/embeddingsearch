@@ -2,13 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace Shared.Models;
 
-public class ServerGetModelsResult : SuccesMessageBaseModel
+public class ServerGetModelsResult : SuccessMessageBaseModel
 {
     [JsonPropertyName("Models")]
     public string[]? Models { get; set; }    
 }
 
-public class ServerGetStatsResult : SuccesMessageBaseModel
+public class ServerGetStatsResult : SuccessMessageBaseModel
 {
     [JsonPropertyName("EmbeddingCacheUtilization")]
     public long? EmbeddingCacheUtilization { get; set; }
@@ -32,4 +32,16 @@ public class ServerGetStatsResult : SuccesMessageBaseModel
     public long? DatabaseTotalSize { get; set; }
     [JsonPropertyName("RamTotalSize")]
     public long? RamTotalSize { get; set; }
+}
+
+public class ServerGetEmbeddingCacheResult : SuccessMessageBaseModel
+{
+    [JsonPropertyName("EmbeddingCache")]
+    public required List<KeyValuePair<string, List<string>>> EmbeddingCache { get; set;}
+}
+
+public class ServerEvictEmbeddingCacheToSizeResult : SuccessMessageBaseModel
+{
+    [JsonPropertyName("EvictedElements")]
+    public required long EvictedElements { get; set; }
 }

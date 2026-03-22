@@ -1,6 +1,8 @@
 namespace Server.Controllers;
 
+using System.Globalization;
 using ElmahCore;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Server.Helper;
@@ -55,19 +57,9 @@ public class ServerController : ControllerBase
     {
         try
         {
-            long size = 0;
-            long elementCount = 0;
-            long embeddingsCount = 0;
             EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = _searchdomainManager.EmbeddingCache;
+            (long embeddingCacheUtilization, long embeddingCacheElementCount, long embeddingCacheEmbeddingsCount) = CacheHelper.EstimateCacheSize(embeddingCache);
 
-            foreach (KeyValuePair<string, Dictionary<string, float[]>> kv in embeddingCache)
-            {
-                string key = kv.Key;
-                Dictionary<string, float[]> entry = kv.Value;
-                size += EstimateEntrySize(key, entry);
-                elementCount++;
-                embeddingsCount += entry.Keys.Count;
-            }
             var sqlHelper = _searchdomainManager.Helper;
             var databaseTotalSize = DatabaseHelper.GetTotalDatabaseSize(sqlHelper);
             Task<long> entityCountTask = DatabaseHelper.CountEntities(sqlHelper);
@@ -104,10 +96,10 @@ public class ServerController : ControllerBase
                 QueryCacheElementCount = queryCacheElementCount,
                 QueryCacheMaxElementCountAll = queryCacheMaxElementCountAll,
                 QueryCacheMaxElementCountLoadedSearchdomainsOnly = queryCacheMaxElementCountLoadedSearchdomainsOnly,
-                EmbeddingCacheUtilization = size,
+                EmbeddingCacheUtilization = embeddingCacheUtilization,
                 EmbeddingCacheMaxElementCount = _searchdomainManager.EmbeddingCacheMaxCount,
-                EmbeddingCacheElementCount = elementCount,
-                EmbeddingsCount = embeddingsCount,
+                EmbeddingCacheElementCount = embeddingCacheElementCount,
+                EmbeddingsCount = embeddingCacheEmbeddingsCount,
                 DatabaseTotalSize = databaseTotalSize,
                 RamTotalSize = ramTotalSize
             };
@@ -118,22 +110,48 @@ public class ServerController : ControllerBase
         }
     }
 
-    private static long EstimateEntrySize(string key, Dictionary<string, float[]> value)
+    /// <summary>
+    /// Evicts elements from the EmbeddingCache until it conforms to the given size
+    /// </summary>
+    /// <param name="targetSize">Target size in bytes</param>
+    [Authorize]
+    [HttpPost("EvictEmbeddingCacheToSize")]
+    public ActionResult<ServerEvictEmbeddingCacheToSizeResult> EvictEmbeddingCacheToSize([FromBody] long targetSize)
     {
-        int stringOverhead = MemorySizes.Align(MemorySizes.ObjectHeader + sizeof(int));
-        int arrayOverhead = MemorySizes.ArrayHeader;
-        int dictionaryOverhead = MemorySizes.ObjectHeader;
-        long size = 0;
-
-        size += stringOverhead + key.Length * sizeof(char);
-        size += dictionaryOverhead;
-
-        foreach (var kv in value)
+        EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = _searchdomainManager.EmbeddingCache;
+        (long embeddingCacheUtilization, long embeddingCacheElementCount, long _) = CacheHelper.EstimateCacheSize(embeddingCache);
+        if (embeddingCacheUtilization <= targetSize)
         {
-            size += stringOverhead + kv.Key.Length * sizeof(char);
-            size += arrayOverhead + kv.Value.Length * sizeof(float);
+            return Ok(new ServerEvictEmbeddingCacheToSizeResult() {Success = true, EvictedElements = 0});
         }
+        foreach (KeyValuePair<string, Dictionary<string, float[]>> element in embeddingCache)
+        {
+            string key = element.Key;
+            Dictionary<string, float[]> entry = element.Value;
+            embeddingCacheUtilization -= CacheHelper.EstimateEntrySize(key, entry);
+            embeddingCacheElementCount--;
+            if (embeddingCacheUtilization <= targetSize)
+            {
+                break;
+            }
+        }
+        long evictedElements = embeddingCache.Count - embeddingCacheElementCount;
+        embeddingCache.Capacity = (int)embeddingCacheElementCount;
+        return Ok(new ServerEvictEmbeddingCacheToSizeResult() {Success = true, EvictedElements = evictedElements});
+    }
 
-        return size;
+    /// <summary>
+    /// Outputs the EmbeddingCache
+    /// </summary>
+    [HttpGet("EmbeddingCache")]
+    public ActionResult<ServerGetEmbeddingCacheResult> EmbeddingCache()
+    {
+        List<KeyValuePair<string, List<string>>> result = [];
+        foreach (KeyValuePair<string, Dictionary<string, float[]>> element in _searchdomainManager.EmbeddingCache)
+        {
+            List<string> elements = [.. element.Value.Select(x => x.Key)];
+            result.Add(new(element.Key, elements));
+        }
+        return new ServerGetEmbeddingCacheResult() {Success = true, EmbeddingCache = result};
     }
 }

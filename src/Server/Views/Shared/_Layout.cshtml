@@ -69,6 +69,9 @@
                             <li class="nav-item">
                                 <a class="nav-link text" asp-area="" asp-controller="Home" asp-action="Searchdomains">@T["Searchdomains"]</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link text" asp-area="" asp-controller="Home" asp-action="Cache">@T["Cache"]</a>
+                            </li>
                             @if (User.IsInRole("Admin") || User.IsInRole("Swagger"))
                             {
                                 <li class="nav-item dropdown">

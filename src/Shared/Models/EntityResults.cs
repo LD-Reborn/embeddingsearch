@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Shared.Models;
 
 
-public class EntityQueryResults : SuccesMessageBaseModel
+public class EntityQueryResults : SuccessMessageBaseModel
 {
     [JsonPropertyName("Results")]
     public required List<EntityQueryResult> Results { get; set; }
@@ -20,7 +20,7 @@ public class EntityQueryResult
     public Dictionary<string, string>? Attributes { get; set; }
 }
 
-public class EntityIndexResult : SuccesMessageBaseModel {}
+public class EntityIndexResult : SuccessMessageBaseModel {}
 
 public class EntityListResults
 {
@@ -72,5 +72,5 @@ public class EmbeddingResult
     public required float[] Embeddings { get; set; }
 }
 
-public class EntityDeleteResults : SuccesMessageBaseModel {}
+public class EntityDeleteResults : SuccessMessageBaseModel {}
 
