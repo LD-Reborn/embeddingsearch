@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Shared.Models;
 
-public class SuccesMessageBaseModel
+public class SuccessMessageBaseModel
 {
     [JsonPropertyName("Success")]
     public required bool Success { get; set; }

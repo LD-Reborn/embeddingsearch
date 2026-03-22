@@ -1,4 +1,5 @@
 
+using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace Shared.Models;
@@ -114,4 +115,38 @@ public static class MemorySizes
 
     public static int Align(int size)
         => (size + PointerSize - 1) & ~(PointerSize - 1);
+    
+    public static long GetFloatArraySize(float[] floats)
+        => Align(ArrayHeader + floats.Length * sizeof(float));
+    
+    public static long GetStringSize(string value)
+        => Align(
+            ObjectHeader +
+            sizeof(int) +
+            sizeof(char) * (value.Length + 1) // calculate the length including the null terminator
+        );
+
+    public static long EstimateKeyValuePairContainerSize<TKey, TValue>(this KeyValuePair<TKey, TValue> kv, Dictionary<TKey, TValue> dict) where TKey : notnull
+    { // Estimates size of container only! Calculate TKey and TValue separately!
+        return Align(
+                    sizeof(int) + // hashCode
+                    sizeof(int) + // next
+                    Reference + // string reference
+                    Reference // float[] reference
+                ) + (sizeof(int) * GetBucketCount(dict) / dict.Count); // Spread allocated bucket size across actually used dict element count.
+    }                                                                  // Floor rounding could cause compounding errors (+-1 every time), but good enough for an estimation.
+    
+    public static int GetBucketCount<TKey, TValue>(this Dictionary<TKey, TValue> dict) where TKey : notnull
+    {
+        ArgumentNullException.ThrowIfNull(dict);
+        // Try to get the private field that stores the bucket array
+        var bucketsField = (typeof(Dictionary<TKey, TValue>)
+            .GetField("_buckets", BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? typeof(Dictionary<TKey, TValue>)
+            .GetField("buckets", BindingFlags.NonPublic | BindingFlags.Instance))
+            ?? throw new NotSupportedException("Cannot find the internal bucket field.");
+        var buckets = bucketsField.GetValue(dict) as int[];
+        return buckets?.Length ?? 0;
+    }
+
 }

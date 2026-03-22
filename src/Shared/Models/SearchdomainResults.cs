@@ -12,37 +12,37 @@ public class SearchdomainListResults
     public string? Message { get; set; }
 }
 
-public class SearchdomainCreateResults : SuccesMessageBaseModel
+public class SearchdomainCreateResults : SuccessMessageBaseModel
 {
     [JsonPropertyName("Id")]
     public int? Id { get; set; }
 }
 
-public class SearchdomainUpdateResults : SuccesMessageBaseModel {}
+public class SearchdomainUpdateResults : SuccessMessageBaseModel {}
 
-public class SearchdomainDeleteResults : SuccesMessageBaseModel
+public class SearchdomainDeleteResults : SuccessMessageBaseModel
 {
     [JsonPropertyName("DeletedEntities")]
     public required int DeletedEntities { get; set; }
 }
 
-public class SearchdomainQueriesResults : SuccesMessageBaseModel
+public class SearchdomainQueriesResults : SuccessMessageBaseModel
 {
     [JsonPropertyName("Searches")]
     public required Dictionary<string, DateTimedSearchResult> Searches { get; set; }
 }
 
-public class SearchdomainDeleteSearchResult : SuccesMessageBaseModel {}
+public class SearchdomainDeleteSearchResult : SuccessMessageBaseModel {}
 
-public class SearchdomainUpdateSearchResult : SuccesMessageBaseModel {}
+public class SearchdomainUpdateSearchResult : SuccessMessageBaseModel {}
 
-public class SearchdomainSettingsResults : SuccesMessageBaseModel
+public class SearchdomainSettingsResults : SuccessMessageBaseModel
 {
     [JsonPropertyName("Settings")]
     public required SearchdomainSettings? Settings { get; set; }
 }
 
-public class SearchdomainQueryCacheSizeResults : SuccesMessageBaseModel
+public class SearchdomainQueryCacheSizeResults : SuccessMessageBaseModel
 {
     [JsonPropertyName("ElementCount")]
     public required int? ElementCount { get; set; }
@@ -52,9 +52,9 @@ public class SearchdomainQueryCacheSizeResults : SuccesMessageBaseModel
     public required long? SizeBytes { get; set; }
 }
 
-public class SearchdomainInvalidateCacheResults : SuccesMessageBaseModel {}
+public class SearchdomainInvalidateCacheResults : SuccessMessageBaseModel {}
 
-public class SearchdomainGetDatabaseSizeResult : SuccesMessageBaseModel
+public class SearchdomainGetDatabaseSizeResult : SuccessMessageBaseModel
 {
     [JsonPropertyName("SearchdomainDatabaseSizeBytes")]
     public required long? SearchdomainDatabaseSizeBytes { get; set; }    

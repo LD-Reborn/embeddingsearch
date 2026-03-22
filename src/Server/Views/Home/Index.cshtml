@@ -5,7 +5,6 @@
 @using Server
 
 @inject LocalizationService T
-@model HomeIndexViewModel
 @{
     ViewData["Title"] = "Home Page";
     bool hasName = User.Identity?.Name is not null;

@@ -1,0 +1,442 @@
+@using Server.Models
+@using System.Web
+@using Shared.Models
+@using Server.Services
+@using Server
+
+@inject LocalizationService T
+@model HomeCacheViewModel
+@{
+    ViewData["Title"] = @T["Cache"];
+    (double cacheSizeInUnit, string cacheSizeUnit) = FormatBytesSizeAndUnit(Model.EmbeddingCacheDatabaseSize);
+}
+<div class="container mt-4">
+    <h1 class="visually-hidden">@T["Cache"]</h1>
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="fs-4 m-1">@T["Actions"]</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col md-6">
+                            <form class="mb-4" asp-controller="Server" asp-action="EvictEmbeddingCacheToSize" method="POST" onsubmit="return handleEvictToSize(event)">
+                                <h3 class="fs-5">@T["Evict to size"]</h3>
+                                <div class="row mb-2">
+                                    <div class="col-md-4 mb-1" style="min-width: 10rem;">
+                                        <input class="form-control" type="number" id="evictToSizeValue" name="value" value="@($"{cacheSizeInUnit:0.##}")" step="0.01" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" name="unit">
+                                            @foreach (string size in sizes)
+                                            {
+                                                if (size == cacheSizeUnit)
+                                                {
+                                                    <option value="@size" selected>@size</option>
+                                                } else
+                                                {
+                                                    <option value="@size">@size</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4" style="min-width: fit-content">
+                                        <button class="btn btn-warning" type="submit">@T["Evict to size"]</button>
+                                    </div>
+                                </div>
+                                <small>@T["Evicts the least-recently utilized cache entries until the specified memory threshold is met"]</small>
+                            </form>
+                        </div>
+                        <div class="col md-6">
+                            <form asp-controller="Server" asp-action="SetEmbeddingCacheSize" method="POST" onsubmit="return handleSetEmbeddingCacheSize(event)">
+                                <h3 class="fs-5">@T["Set EmbeddingCache Size"]</h3>
+                                <div class="row mb-2">
+                                    <div class="col-md-6 mb-1">
+                                        <input class="form-control" type="number" id="setEmbeddingCacheSize" name="value" value="@Model.EmbeddingCacheDatabaseMaxSize" />
+                                    </div>
+                                    <div class="col-md-6" style="min-width: 19rem;">
+                                        <button class="btn btn-warning" type="submit">@T["Set EmbeddingCache Size"]</button>
+                                    </div>
+                                </div>
+                                <small>@T["Updates the EmbeddingCache size and (if necessary) evicts least-recently utilized cache entries to fit the new size"]</small>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col md-6">
+                            <form asp-controller="Server" asp-action="RemoveModelFromEmbeddingCache" method="POST" onsubmit="return handleRemoveModelFromEmbeddingCache(event)">
+                                <h3 class="fs-5">@T["Remove model from EmbeddingCache"]</h3>
+                                <div class="row mb-2">
+                                    <div class="col-md-6 mb-1">
+                                        <select class="form-select" name="model">
+                                            @foreach (string model in Model.Models)
+                                            {
+                                                <option value="@(model)">@(model)</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6" style="min-width: 19rem;">
+                                        <button class="btn btn-warning" type="submit">@T["Remove from cache"]</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col md-6">
+                            <form id="evictModelsForm" asp-controller="Server" asp-action="EvictFromEmbeddingCacheByModels" method="POST" onsubmit="return handleEvictModels(event);">
+                                <h3 class="fs-5">@T["Evict model combination from EmbeddingCache"]</h3>
+                                <div class="form-group">
+                                    <label for="modelSelect">@T["Select model combination to evict (multiselect)"]:</label>
+                                    <select id="modelSelect" class="form-select" name="models" multiple size="5" style="width: 100%; min-height: 100px;">
+                                        @foreach (var model in Model.Models)
+                                        {
+                                            <option value="@(model)">@(model)</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="form-group mt-2">
+                                    <button type="button" id="dryRunBtn" class="btn btn-primary" onclick="handleDryRun(event)">@T["Dry-run"]</button>
+                                    <button type="submit" id="evictBtn" class="btn btn-warning">@T["Evict selected model combination"]</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <h3 class="fs-5">@T["Evict entry from EmbeddingCache"]</h3>
+                            <form id="filterForm" class="mb-3" asp-controller="Server" asp-action="EmbeddingCache" method="GET" onsubmit="return handleGetEmbeddingCache(event)">
+                                <div class="input-group">
+                                    <input type="text" id="regexInput" name="regexInput" class="form-control" placeholder="@T["Enter regex filter (check out https://regex101.com/ for help)"]" value=".*" />
+                                    <button type="submit" id="showEntries" class="btn btn-primary">@T["Show entries"]</button>
+                                    <button type="submit" id="evictEntries" class="btn btn-warning">@T["Evict entries"]</button>
+                                </div>
+                            </form>
+                            <form id="evictFromCacheForm" asp-controller="Server" asp-action="EvictEntryFromCache" method="POST">
+                                <div class="row mb-2">
+                                    <div class="col-md-12 mb-1">
+                                        <div class="mb-3">
+                                            <label for="entrySelect">@T["Entries in EmbeddingCache"]:</label>
+                                            <select id="entrySelect" class="form-select" multiple size="5">
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="fs-4 m-1">@T["Per-Model Statistics"]</h2>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>@T["Model"]</th>
+                                <th>@T["Entries"]</th>
+                                <th>@T["Memory Size"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var modelStats in Model.PerModelStats)
+                            {
+                                <tr>
+                                    <td>@modelStats.Key</td>
+                                    <td>@modelStats.Value.entryCount.ToString("N0")</td>
+                                    <td>@FormatBytes(modelStats.Value.databaseSize)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="fs-4 m-1">@T["Embedding Cache Statistics"]</h2>
+                </div>
+                <div class="card-body">
+                    <p><strong>@T["Cache Entries"]:</strong> @Model.EmbeddingCacheCount.ToString("N0")</p>
+                    <p><strong>@T["Memory Size"]:</strong> @FormatBytes(Model.EmbeddingCacheDatabaseSize)</p>
+                    <p><strong>@T["Embedding Count"]:</strong> @Model.EmbeddingCacheEmbeddingCount.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    var units = { "B": 1, "KB": 1024, "MB": 1024 * 1024, "GB": 1024 * 1024 * 1024 };
+    function getSizeFromValueAndUnit(value, unit)
+    {
+        return Math.round(value * units[unit]);
+    }
+
+    async function handleEvictToSize(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const value = formData.get('value');
+        const unit = formData.get('unit');
+
+        if (!value || value < 0) {
+            showToast('@T["Please enter a valid non-negative size"]', "danger");
+            return false;
+        }
+
+        if (!unit) {
+            showToast('@T["Please select a valid unit"]', "danger");
+            return false;
+        }
+
+        var targetValue = getSizeFromValueAndUnit(value, unit);
+
+
+        // Optional: Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(form.action || "@Url.Action("EvictEmbeddingCacheToSize", "Server")", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: targetValue
+            });
+
+            if (response.ok) {
+                showToast('@T["Cache evicted successfully!"]', "success")
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger")
+            }
+        } catch (error) {
+            console.error('Evict to size error:', error);
+            showToast('@T["Network or server error"]', "danger")
+        } finally {
+            submitBtn.disabled = false;
+        }
+
+        return false; // Prevent default
+    }
+
+    async function handleSetEmbeddingCacheSize(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const value = formData.get('value');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        try {
+            const response = await fetch(form.action || "@Url.Action("SetEmbeddingCacheSize", "Server")", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: value
+            });
+
+            if (response.ok) {
+                showToast('@T["Cache resized successfully!"]', "success")
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger")
+            }
+        } catch (error) {
+            console.error('Set EmbeddingCache size error:', error);
+            showToast('@T["Network or server error"]', "danger")
+        } finally {
+            submitBtn.disabled = false;
+        }
+        return false; // Prevent default
+    }
+
+    async function handleRemoveModelFromEmbeddingCache(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const value = formData.get('model');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const selectOption = form.querySelector('option[value="' + value + '"]');
+        submitBtn.disabled = true;
+        try {
+            const response = await fetch(form.action || "@Url.Action("RemoveModelFromEmbeddingCache", "Server")", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(value)
+            });
+
+            if (response.ok) {
+                selectOption.remove();
+                showToast('@T["Model removed successfully!"]', "success")
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger")
+            }
+        } catch (error) {
+            console.error('Model removal error:', error);
+            showToast('@T["Network or server error"]', "danger")
+        } finally {
+            submitBtn.disabled = false;
+        }
+        return false; // Prevent default
+    }
+
+    async function handleGetEmbeddingCache(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const value = formData.get('regexInput');
+        const submitter = event.submitter;
+        const submitBtn = submitter;
+        const entrySelect = document.querySelector('#entrySelect');
+        var isEvict = submitter.id == "evictEntries";
+        submitBtn.disabled = true;
+        try {
+            const response = await fetch((form.action || "@Url.Action("EmbeddingCache", "Server")") + "?filter=" + value, {
+                method: isEvict ? 'DELETE' : 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                var result = await response.json();
+                var results = result.EmbeddingCache;
+                entrySelect.innerHTML = '';
+                if (isEvict) {
+                    var evictedEntries = result.EvictedElements;
+                    showToast(`@T["Evicted entries"]: ${evictedEntries}`, "success");
+                } else {
+                    results.forEach(element => {
+                        const option = document.createElement('option');
+                        option.value = element.key;
+                        option.textContent = element.key;
+                        entrySelect.appendChild(option);
+                    });
+                }
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger")
+            }
+        } catch (error) {
+            console.error('EmbeddingCache selection/eviction error:', error);
+            showToast('@T["Network or server error"]', "danger")
+        } finally {
+            submitBtn.disabled = false;
+        }
+        return false; // Prevent default
+    }
+
+    async function handleDryRun(event) {
+        event.preventDefault();
+        const form = document.getElementById('evictModelsForm');
+        const select = document.getElementById('modelSelect');
+        const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+        const dryRunBtn = document.getElementById('dryRunBtn');
+        
+        if (selectedOptions.length === 0) {
+            showToast('@T["Please select at least one model."]', "danger");
+            return;
+        }
+
+        dryRunBtn.disabled = true;
+
+        try {
+            const url = form.action + "?dryRun=true";
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(selectedOptions)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const count = result.EvictedElements ?? 0;
+                showToast(`@T["Dry-run completed:"] ${count} @T["entries would be evicted."]`, "info");
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Dry-run error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger");
+            }
+        } catch (error) {
+            console.error('Dry-run error:', error);
+            showToast('@T["Network or server error"]', "danger");
+        } finally {
+            dryRunBtn.disabled = false;
+        }
+    }
+
+    async function handleEvictModels(event) {
+        event.preventDefault();
+        const form = event.target;
+        const select = document.getElementById('modelSelect');
+        const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+        const submitBtn = document.getElementById('evictBtn');
+
+        if (selectedOptions.length === 0) {
+            showToast('@T["Please select at least one model."]', "warning");
+            return false;
+        }
+
+        submitBtn.disabled = true;
+        try {
+            const response = await fetch(form.action, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(selectedOptions)
+            });
+
+            if (response.ok) {
+                showToast('@T["Models evicted successfully!"]', "success");
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger");
+            }
+        } catch (error) {
+            console.error('Evict error:', error);
+            showToast('@T["Network or server error"]', "danger");
+        } finally {
+            submitBtn.disabled = false;
+        }
+        return false;
+    }
+
+</script>
+
+@functions {
+    string[] sizes = { "B", "KB", "MB", "GB" };
+    private string FormatBytes(long bytes)
+    {
+        (double size, string unit) = FormatBytesSizeAndUnit(bytes);
+        return $"{size:0.##} {unit}";
+    }
+    private (double size, string unit) FormatBytesSizeAndUnit(long bytes)
+    {
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return (len, sizes[order]);
+    }
+}

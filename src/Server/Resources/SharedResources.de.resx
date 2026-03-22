@@ -61,7 +61,7 @@
     <value>Leeren</value>
   </data>
   <data name="Database size" xml:space="preserve">
-    <value>Größe in der Datenbank</value>
+    <value>Datenbankgröße</value>
   </data>
   <data name="Add new entity" xml:space="preserve">
     <value>Neue Entity erstellen</value>
@@ -201,9 +201,6 @@
   <data name="Failed to delete search query" xml:space="preserve">
     <value>Suchanfrage konnte nicht gelöscht werden</value>
   </data>
-  <data name="Searchdomain was created successfully" xml:space="preserve">
-    <value>Searchdomain wurde erfolgreich erstellt</value>
-  </data>
   <data name="Updating search query failed" xml:space="preserve">
     <value>Suchanfrage konnte nicht angepasst werden</value>
   </data>
@@ -335,5 +332,113 @@
   </data>
   <data name="Total Database size" xml:space="preserve">
     <value>Datenbankgröße insgesamt</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>Cache</value>
+  </data>
+  <data name="Per-Model Statistics" xml:space="preserve">
+    <value>Statistiken pro Modell</value>
+  </data>
+  <data name="Entries" xml:space="preserve">
+    <value>Einträge</value>
+  </data>
+  <data name="Embedding Cache Statistics" xml:space="preserve">
+    <value>Embedding-Cache Statistiken</value>
+  </data>
+  <data name="Cache Entries" xml:space="preserve">
+    <value>Cache-Einträge</value>
+  </data>
+  <data name="Embedding Count" xml:space="preserve">
+    <value>Embedding-Anzahl</value>
+  </data>
+  <data name="Tools" xml:space="preserve">
+    <value>Tools</value>
+  </data>
+  <data name="Memory Size" xml:space="preserve">
+    <value>Speicher Größe</value>
+  </data>
+  <data name="Evict to size" xml:space="preserve">
+    <value>Auf Größe reduzieren</value>
+  </data>
+  <data name="Evicts the least-recently utilized cache entries until the specified memory threshold is met" xml:space="preserve">
+    <value>Entfernt die am wenigsten genutzten Cache-Einträge, bis die angegebene Speichergröße erreicht ist</value>
+  </data>
+  <data name="Set EmbeddingCache Size" xml:space="preserve">
+    <value>EmbeddingCache Größe ändern</value>
+  </data>
+  <data name="Updates the EmbeddingCache size and (if necessary) evicts least-recently utilized cache entries to fit the new size" xml:space="preserve">
+    <value>Aktualisiert die EmbeddingCache-Größe und entfernt bei Bedarf die am wenigsten genutzten Einträge, um die neue Größe einzuhalten</value>
+  </data>
+  <data name="Remove model from EmbeddingCache" xml:space="preserve">
+    <value>Modell aus EmbeddingCache entfernen</value>
+  </data>
+  <data name="Remove from cache" xml:space="preserve">
+    <value>Aus Cache entfernen</value>
+  </data>
+  <data name="Evict model combination from EmbeddingCache" xml:space="preserve">
+    <value>Modellkombination aus EmbeddingCache entfernen</value>
+  </data>
+  <data name="Select model combination to evict (multiselect)" xml:space="preserve">
+    <value>Modellkombination zum Entfernen auswählen (Mehrfachauswahl)</value>
+  </data>
+  <data name="Dry-run" xml:space="preserve">
+    <value>Probelauf</value>
+  </data>
+  <data name="Evict selected model combination" xml:space="preserve">
+    <value>Ausgewählte Modellkombination entfernen</value>
+  </data>
+  <data name="Evict entry from EmbeddingCache" xml:space="preserve">
+    <value>Eintrag aus EmbeddingCache entfernen</value>
+  </data>
+  <data name="Enter regex filter (check out https://regex101.com/ for help)" xml:space="preserve">
+    <value>Regex-Filter eingeben (siehe https://regex101.com/ für Hilfe)</value>
+  </data>
+  <data name="Show entries" xml:space="preserve">
+    <value>Einträge anzeigen</value>
+  </data>
+  <data name="Evict entries" xml:space="preserve">
+    <value>Einträge entfernen</value>
+  </data>
+  <data name="Entries in EmbeddingCache" xml:space="preserve">
+    <value>Einträge im EmbeddingCache</value>
+  </data>
+  <data name="Please enter a valid non-negative size" xml:space="preserve">
+    <value>Bitte geben Sie eine gültige nicht-negative Größe ein</value>
+  </data>
+  <data name="Please select a valid unit" xml:space="preserve">
+    <value>Bitte wählen Sie eine gültige Einheit aus</value>
+  </data>
+  <data name="Cache evicted successfully!" xml:space="preserve">
+    <value>Cache erfolgreich geleert!</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Fehler</value>
+  </data>
+  <data name="Network or server error" xml:space="preserve">
+    <value>Netzwerk- oder Serverfehler</value>
+  </data>
+  <data name="Cache resized successfully!" xml:space="preserve">
+    <value>Cache erfolgreich vergrößert/verkleinert!</value>
+  </data>
+  <data name="Model removed successfully!" xml:space="preserve">
+    <value>Modell erfolgreich entfernt!</value>
+  </data>
+  <data name="Evicted entries" xml:space="preserve">
+    <value>Einträge entfernt</value>
+  </data>
+  <data name="Please select at least one model." xml:space="preserve">
+    <value>Bitte wählen Sie mindestens ein Modell aus.</value>
+  </data>
+  <data name="Dry-run completed:" xml:space="preserve">
+    <value>Trockentest abgeschlossen:</value>
+  </data>
+  <data name="entries would be evicted." xml:space="preserve">
+    <value>Einträge würden entfernt.</value>
+  </data>
+  <data name="Dry-run error" xml:space="preserve">
+    <value>Trockentest-Fehler</value>
+  </data>
+  <data name="Models evicted successfully!" xml:space="preserve">
+    <value>Modelle erfolgreich entfernt!</value>
   </data>
 </root>
