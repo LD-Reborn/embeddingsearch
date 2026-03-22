@@ -65,11 +65,16 @@
                     </div>
                     <div class="row mb-2">
                         <div class="col md-6">
-                            <form action="Cache/RemoveModel" method="POST">
+                            <form asp-controller="Server" asp-action="RemoveModelFromEmbeddingCache" method="POST" onsubmit="return handleRemoveModelFromEmbeddingCache(event)">
                                 <h3 class="fs-5">@T["Remove model from EmbeddingCache"]</h3>
                                 <div class="row mb-2">
                                     <div class="col-md-6 mb-1">
-                                        TODO Remove/Evict all embeddings for a specific model or model combination (e.g. "bge-m3, qwen3-embedding")
+                                        <select class="form-select" name="model">
+                                            @foreach (string model in Model.Models)
+                                            {
+                                                <option value="@(model)">@(model)</option>
+                                            }
+                                        </select>
                                     </div>
                                     <div class="col-md-6" style="min-width: 19rem;">
                                         <button class="btn btn-warning" type="submit">@T["Remove from cache"]</button>
@@ -240,6 +245,39 @@
             }
         } catch (error) {
             console.error('Set EmbeddingCache size error:', error);
+            showToast('@T["Network or server error"]', "danger")
+        } finally {
+            submitBtn.disabled = false;
+        }
+        return false; // Prevent default
+    }
+
+    async function handleRemoveModelFromEmbeddingCache(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const value = formData.get('model');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const selectOption = form.querySelector('option[value="' + value + '"]');
+        submitBtn.disabled = true;
+        try {
+            const response = await fetch(form.action || "@Url.Action("RemoveModelFromEmbeddingCache", "Server")", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(value)
+            });
+
+            if (response.ok) {
+                selectOption.remove();
+                showToast('@T["Model removed successfully!"]', "success")
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger")
+            }
+        } catch (error) {
+            console.error('Model removal error:', error);
             showToast('@T["Network or server error"]', "danger")
         } finally {
             submitBtn.disabled = false;

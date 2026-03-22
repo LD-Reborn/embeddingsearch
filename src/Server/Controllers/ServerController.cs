@@ -160,6 +160,26 @@ public class ServerController : ControllerBase
     }
 
     /// <summary>
+    /// Removes a given model from all elements in the EmbeddingCache
+    /// </summary>
+    /// <param name="model">Model to remove from Embeddingcache</param>
+    [Authorize]
+    [HttpPost("RemoveModelFromEmbeddingCache")]
+    public ActionResult<ServerRemoveModelFromEmbeddingCacheResult> RemoveModelFromEmbeddingCache([FromBody] string model)
+    {
+        long evictedCount = 0;
+        foreach (KeyValuePair<string, Dictionary<string, float[]>> element in _searchdomainManager.EmbeddingCache)
+        {
+            Dictionary<string, float[]> entry = element.Value;
+            if (entry.Remove(model))
+            {
+                evictedCount += 1;
+            }
+        }
+        return Ok(new ServerRemoveModelFromEmbeddingCacheResult() { Success = true, EvictedElements = evictedCount });
+    }
+
+    /// <summary>
     /// Outputs the EmbeddingCache
     /// </summary>
     [HttpGet("EmbeddingCache")]
