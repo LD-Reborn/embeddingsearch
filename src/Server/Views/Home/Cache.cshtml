@@ -16,7 +16,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="fs-4">@T["Actions"]</h2>
+                    <h2 class="fs-4 m-1">@T["Actions"]</h2>
                 </div>
                 <div class="card-body">
                     <div class="row mb-2">
@@ -134,7 +134,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="fs-4">@T["Per-Model Statistics"]</h2>
+                    <h2 class="fs-4 m-1">@T["Per-Model Statistics"]</h2>
                 </div>
                 <div class="card-body">
                     <table class="table table-striped">
@@ -162,7 +162,7 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="fs-4">@T["Embedding Cache Statistics"]</h2>
+                    <h2 class="fs-4 m-1">@T["Embedding Cache Statistics"]</h2>
                 </div>
                 <div class="card-body">
                     <p><strong>@T["Cache Entries"]:</strong> @Model.EmbeddingCacheCount.ToString("N0")</p>
@@ -369,7 +369,7 @@
             if (response.ok) {
                 const result = await response.json();
                 const count = result.EvictedElements ?? 0;
-                showToast(`@T["Dry-run completed: "]${count} @T["entries would be evicted."]`, "info");
+                showToast(`@T["Dry-run completed:"] ${count} @T["entries would be evicted."]`, "info");
             } else {
                 const errorText = await response.text();
                 showToast(`@T["Dry-run error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger");
