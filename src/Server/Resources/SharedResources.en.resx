@@ -357,4 +357,88 @@
   <data name="Memory Size" xml:space="preserve">
     <value>Memory Size</value>
   </data>
+  <data name="Evict to size" xml:space="preserve">
+    <value>Evict to size</value>
+  </data>
+  <data name="Evicts the least-recently utilized cache entries until the specified memory threshold is met" xml:space="preserve">
+    <value>Evicts the least-recently utilized cache entries until the specified memory threshold is met</value>
+  </data>
+  <data name="Set EmbeddingCache Size" xml:space="preserve">
+    <value>Set EmbeddingCache Size</value>
+  </data>
+  <data name="Updates the EmbeddingCache size and (if necessary) evicts least-recently utilized cache entries to fit the new size" xml:space="preserve">
+    <value>Updates the EmbeddingCache size and (if necessary) evicts least-recently utilized cache entries to fit the new size</value>
+  </data>
+  <data name="Remove model from EmbeddingCache" xml:space="preserve">
+    <value>Remove model from EmbeddingCache</value>
+  </data>
+  <data name="Remove from cache" xml:space="preserve">
+    <value>Remove from cache</value>
+  </data>
+  <data name="Evict model combination from EmbeddingCache" xml:space="preserve">
+    <value>Evict model combination from EmbeddingCache</value>
+  </data>
+  <data name="Select model combination to evict (multiselect)" xml:space="preserve">
+    <value>Select model combination to evict (multiselect)</value>
+  </data>
+  <data name="Dry-run" xml:space="preserve">
+    <value>Dry-run</value>
+  </data>
+  <data name="Evict selected model combination" xml:space="preserve">
+    <value>Evict selected model combination</value>
+  </data>
+  <data name="Evict entry from EmbeddingCache" xml:space="preserve">
+    <value>Evict entry from EmbeddingCache</value>
+  </data>
+  <data name="Enter regex filter (check out https://regex101.com/ for help)" xml:space="preserve">
+    <value>Enter regex filter (check out https://regex101.com/ for help)</value>
+  </data>
+  <data name="Show entries" xml:space="preserve">
+    <value>Show entries</value>
+  </data>
+  <data name="Evict entries" xml:space="preserve">
+    <value>Evict entries</value>
+  </data>
+  <data name="Entries in EmbeddingCache" xml:space="preserve">
+    <value>Entries in EmbeddingCache</value>
+  </data>
+  <data name="Please enter a valid non-negative size" xml:space="preserve">
+    <value>Please enter a valid non-negative size</value>
+  </data>
+  <data name="Please select a valid unit" xml:space="preserve">
+    <value>Please select a valid unit</value>
+  </data>
+  <data name="Cache evicted successfully!" xml:space="preserve">
+    <value>Cache evicted successfully!</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Network or server error" xml:space="preserve">
+    <value>Network or server error</value>
+  </data>
+  <data name="Cache resized successfully!" xml:space="preserve">
+    <value>Cache resized successfully!</value>
+  </data>
+  <data name="Model removed successfully!" xml:space="preserve">
+    <value>Model removed successfully!</value>
+  </data>
+  <data name="Evicted entries" xml:space="preserve">
+    <value>Evicted entries</value>
+  </data>
+  <data name="Please select at least one model." xml:space="preserve">
+    <value>Please select at least one model.</value>
+  </data>
+  <data name="Dry-run completed:" xml:space="preserve">
+    <value>Dry-run completed:</value>
+  </data>
+  <data name="entries would be evicted." xml:space="preserve">
+    <value>entries would be evicted.</value>
+  </data>
+  <data name="Dry-run error" xml:space="preserve">
+    <value>Dry-run error</value>
+  </data>
+  <data name="Models evicted successfully!" xml:space="preserve">
+    <value>Models evicted successfully!</value>
+  </data>
 </root>
