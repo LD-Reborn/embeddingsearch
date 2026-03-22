@@ -1,5 +1,6 @@
 namespace Server.Controllers;
 
+using System.Text.RegularExpressions;
 using ElmahCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -182,15 +183,42 @@ public class ServerController : ControllerBase
     /// <summary>
     /// Outputs the EmbeddingCache
     /// </summary>
+    /// <param name="filter">Regex filter (case-insensitive) to restrict the selection</param>
     [HttpGet("EmbeddingCache")]
-    public ActionResult<ServerGetEmbeddingCacheResult> EmbeddingCache()
+    public ActionResult<ServerGetEmbeddingCacheResult> EmbeddingCache(string? filter)
     {
+        filter ??= ".*";
+        var regex = new Regex(filter, RegexOptions.IgnoreCase);
         List<KeyValuePair<string, List<string>>> result = [];
         foreach (KeyValuePair<string, Dictionary<string, float[]>> element in _searchdomainManager.EmbeddingCache)
         {
-            List<string> elements = [.. element.Value.Select(x => x.Key)];
-            result.Add(new(element.Key, elements));
+            if (regex.IsMatch(element.Key))
+            {
+                List<string> elements = [.. element.Value.Select(x => x.Key)];
+                result.Add(new(element.Key, elements));
+            }
         }
         return new ServerGetEmbeddingCacheResult() {Success = true, EmbeddingCache = result};
+    }
+
+    /// <summary>
+    /// Evicts entries from the EmbeddingCache
+    /// </summary>
+    /// <param name="filter">Regex filter (case-insensitive) to select which entries to evict</param>
+    [HttpDelete("EmbeddingCache")]
+    public ActionResult<ServerEvictEmbeddingCacheResult> EvictEmbeddingCache(string? filter)
+    {
+        filter ??= ".*";
+        var regex = new Regex(filter, RegexOptions.IgnoreCase);
+        List<string> toBeDeleted = [];
+        foreach (KeyValuePair<string, Dictionary<string, float[]>> element in _searchdomainManager.EmbeddingCache)
+        {
+            if (regex.IsMatch(element.Key))
+            {
+                toBeDeleted.Add(element.Key);
+            }
+        }
+        toBeDeleted.ForEach(element => _searchdomainManager.EmbeddingCache.Remove(element));
+        return new ServerEvictEmbeddingCacheResult() {Success = true, EvictedElements = toBeDeleted.Count};
     }
 }

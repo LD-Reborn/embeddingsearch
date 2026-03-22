@@ -48,3 +48,5 @@ public class ServerEvictEmbeddingCacheToSizeResult : SuccessMessageBaseModel
 
 public class ServerSetEmbeddingCacheSizeResult : ServerEvictEmbeddingCacheToSizeResult {}
 public class ServerRemoveModelFromEmbeddingCacheResult : ServerEvictEmbeddingCacheToSizeResult {}
+
+public class ServerEvictEmbeddingCacheResult : ServerEvictEmbeddingCacheToSizeResult {}
