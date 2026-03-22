@@ -609,6 +609,8 @@
     var queries = null;
     var models = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(models))');
 
+    let isLoadingDomain = false;
+
     let draggedRow = null;
     document.addEventListener("dragstart", e => {
       if (e.target.tagName === "TR") {
@@ -1075,6 +1077,17 @@
     }
 
     function selectDomain(domainKey) {
+        if (isLoadingDomain) {
+            return;
+        }
+
+        isLoadingDomain = true;
+        document.querySelectorAll('.domain-item').forEach(item => {
+            item.setAttribute('disabled', 'disabled');
+            item.style.cursor = 'not-allowed';
+            item.style.opacity = '0.6';
+        });
+
         document.querySelectorAll('.domain-item').forEach(item => {
             item.classList.remove('active');
         });
@@ -1170,6 +1183,19 @@
                 showToast("@T["Unable to fetch searchdomain database utilization"]", "danger");
                 console.error('Failed to fetch searchdomain database utilization');
             }
+        });
+
+        Promise.all([
+            searchdomainConfigPromise.catch(() => null),
+            cacheUtilizationPromise.catch(() => null),
+            databaseUtilizationPromise.catch(() => null)
+        ]).then(() => {
+            isLoadingDomain = false;
+            document.querySelectorAll('.domain-item').forEach(item => {
+                item.removeAttribute('disabled');
+                item.style.cursor = 'pointer';
+                item.style.opacity = '1';
+            });
         });
     }
 
