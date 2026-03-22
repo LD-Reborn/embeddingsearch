@@ -1,13 +1,14 @@
 namespace Server.Controllers;
 
-using System.Globalization;
 using ElmahCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Server.Helper;
 using Server.Models;
 using Shared;
+using Shared.Helper;
 using Shared.Models;
 
 [ApiController]
@@ -19,14 +20,16 @@ public class ServerController : ControllerBase
     private AIProvider _aIProvider;
     private readonly SearchdomainManager _searchdomainManager;
     private readonly IOptions<EmbeddingSearchOptions> _options;
+    private readonly IHostEnvironment _hostEnvironment;
 
-    public ServerController(ILogger<ServerController> logger, IConfiguration config, AIProvider aIProvider, SearchdomainManager searchdomainManager, IOptions<EmbeddingSearchOptions> options)
+    public ServerController(ILogger<ServerController> logger, IConfiguration config, AIProvider aIProvider, SearchdomainManager searchdomainManager, IOptions<EmbeddingSearchOptions> options, IHostEnvironment hostEnvironment)
     {
         _logger = logger;
         _config = config;
         _aIProvider = aIProvider;
         _searchdomainManager = searchdomainManager;
         _options = options;
+        _hostEnvironment = hostEnvironment;
     }
 
     /// <summary>
@@ -138,6 +141,22 @@ public class ServerController : ControllerBase
         long evictedElements = embeddingCache.Count - embeddingCacheElementCount;
         embeddingCache.Capacity = (int)embeddingCacheElementCount;
         return Ok(new ServerEvictEmbeddingCacheToSizeResult() {Success = true, EvictedElements = evictedElements});
+    }
+
+    /// <summary>
+    /// Sets the EmbeddingCache size and auto-evict superfluous elements
+    /// </summary>
+    /// <param name="size">Target size in element count</param>
+    [Authorize]
+    [HttpPost("SetEmbeddingCacheSize")]
+    public ActionResult<ServerSetEmbeddingCacheSizeResult> SetEmbeddingCacheSize([FromBody] long size)
+    {
+        _searchdomainManager.EmbeddingCacheMaxCount = size;
+        long evictedCount = Math.Max(0, _searchdomainManager.EmbeddingCache.Capacity - size);
+        _searchdomainManager.EmbeddingCache.Capacity = (int)size;
+        _options.Value.Cache.CacheTopN = size;
+        ConfigHelper.UpdateSetting(_hostEnvironment, "Embeddingsearch:Cache:CacheTopN", size);
+        return Ok(new ServerSetEmbeddingCacheSizeResult() { Success = true, EvictedElements = evictedCount });
     }
 
     /// <summary>

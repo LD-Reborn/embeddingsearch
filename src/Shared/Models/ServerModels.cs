@@ -45,3 +45,5 @@ public class ServerEvictEmbeddingCacheToSizeResult : SuccessMessageBaseModel
     [JsonPropertyName("EvictedElements")]
     public required long EvictedElements { get; set; }
 }
+
+public class ServerSetEmbeddingCacheSizeResult : ServerEvictEmbeddingCacheToSizeResult {}

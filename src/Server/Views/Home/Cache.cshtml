@@ -49,11 +49,11 @@
                             </form>
                         </div>
                         <div class="col md-6">
-                            <form action="Cache/SetEmbeddingCacheSize" method="POST">
+                            <form asp-controller="Server" asp-action="SetEmbeddingCacheSize" method="POST" onsubmit="return handleSetEmbeddingCacheSize(event)">
                                 <h3 class="fs-5">@T["Set EmbeddingCache Size"]</h3>
                                 <div class="row mb-2">
                                     <div class="col-md-6 mb-1">
-                                        <input class="form-control" type="number" id="setEmbeddingCacheSize" value="@Model.EmbeddingCacheDatabaseMaxSize" />
+                                        <input class="form-control" type="number" id="setEmbeddingCacheSize" name="value" value="@Model.EmbeddingCacheDatabaseMaxSize" />
                                     </div>
                                     <div class="col-md-6" style="min-width: 19rem;">
                                         <button class="btn btn-warning" type="submit">@T["Set EmbeddingCache Size"]</button>
@@ -213,6 +213,37 @@
             submitBtn.disabled = false;
         }
 
+        return false; // Prevent default
+    }
+
+    async function handleSetEmbeddingCacheSize(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const value = formData.get('value');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        try {
+            const response = await fetch(form.action || "@Url.Action("SetEmbeddingCacheSize", "Server")", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: value
+            });
+
+            if (response.ok) {
+                showToast('@T["Cache resized successfully!"]', "success")
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger")
+            }
+        } catch (error) {
+            console.error('Set EmbeddingCache size error:', error);
+            showToast('@T["Network or server error"]', "danger")
+        } finally {
+            submitBtn.disabled = false;
+        }
         return false; // Prevent default
     }
 </script>
