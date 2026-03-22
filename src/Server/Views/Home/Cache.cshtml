@@ -83,17 +83,22 @@
                             </form>
                         </div>
                         <div class="col md-6">
-                            <form action="Cache/EvictModelCombination" method="POST">
+                            <form id="evictModelsForm" asp-controller="Server" asp-action="EvictFromEmbeddingCacheByModels" method="POST" onsubmit="return handleEvictModels(event);">
                                 <h3 class="fs-5">@T["Evict model combination from EmbeddingCache"]</h3>
-                                <div class="row mb-2">
-                                    <div class="col-md-6 mb-1">
-                                        TODO Remove/Evict all embeddings for a specific model or model combination (e.g. "bge-m3, qwen3-embedding")
-                                    </div>
-                                    <div class="col-md-6" style="min-width: 19rem;">
-                                        <button class="btn btn-warning" type="submit">@T["Evict from cache"]</button>
-                                    </div>
+                                <div class="form-group">
+                                    <label for="modelSelect">@T["Select model combination to evict (multiselect)"]:</label>
+                                    <select id="modelSelect" class="form-select" name="models" multiple size="5" style="width: 100%; min-height: 100px;">
+                                        @foreach (var model in Model.Models)
+                                        {
+                                            <option value="@(model)">@(model)</option>
+                                        }
+                                    </select>
                                 </div>
-                                <small>@T["TODO"]</small>
+
+                                <div class="form-group mt-2">
+                                    <button type="button" id="dryRunBtn" class="btn btn-primary" onclick="handleDryRun(event)">@T["Dry-run"]</button>
+                                    <button type="submit" id="evictBtn" class="btn btn-warning">@T["Evict selected model combination"]</button>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -335,6 +340,83 @@
             submitBtn.disabled = false;
         }
         return false; // Prevent default
+    }
+
+    async function handleDryRun(event) {
+        event.preventDefault();
+        const form = document.getElementById('evictModelsForm');
+        const select = document.getElementById('modelSelect');
+        const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+        const dryRunBtn = document.getElementById('dryRunBtn');
+        
+        if (selectedOptions.length === 0) {
+            showToast('@T["Please select at least one model."]', "danger");
+            return;
+        }
+
+        dryRunBtn.disabled = true;
+
+        try {
+            const url = form.action + "?dryRun=true";
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(selectedOptions)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const count = result.EvictedElements ?? 0;
+                showToast(`@T["Dry-run completed: "]${count} @T["entries would be evicted."]`, "info");
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Dry-run error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger");
+            }
+        } catch (error) {
+            console.error('Dry-run error:', error);
+            showToast('@T["Network or server error"]', "danger");
+        } finally {
+            dryRunBtn.disabled = false;
+        }
+    }
+
+    async function handleEvictModels(event) {
+        event.preventDefault();
+        const form = event.target;
+        const select = document.getElementById('modelSelect');
+        const selectedOptions = Array.from(select.selectedOptions).map(opt => opt.value);
+        const submitBtn = document.getElementById('evictBtn');
+
+        if (selectedOptions.length === 0) {
+            showToast('@T["Please select at least one model."]', "warning");
+            return false;
+        }
+
+        submitBtn.disabled = true;
+        try {
+            const response = await fetch(form.action, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(selectedOptions)
+            });
+
+            if (response.ok) {
+                showToast('@T["Models evicted successfully!"]', "success");
+            } else {
+                const errorText = await response.text();
+                showToast(`@T["Error"]: ${response.status} ${response.statusText}\n${errorText}`, "danger");
+            }
+        } catch (error) {
+            console.error('Evict error:', error);
+            showToast('@T["Network or server error"]', "danger");
+        } finally {
+            submitBtn.disabled = false;
+        }
+        return false;
     }
 
 </script>

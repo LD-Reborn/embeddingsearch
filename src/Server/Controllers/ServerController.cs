@@ -221,4 +221,37 @@ public class ServerController : ControllerBase
         toBeDeleted.ForEach(element => _searchdomainManager.EmbeddingCache.Remove(element));
         return new ServerEvictEmbeddingCacheResult() {Success = true, EvictedElements = toBeDeleted.Count};
     }
+
+    /// <summary>
+    /// Evicts entries from the EmbeddingCache that contain the listed models (and only them)
+    /// </summary>
+    /// <param name="dryRun">if set to true, the number of affected elements is returned without actually evicting them</param>
+    /// <param name="models">model combination</param>
+    [HttpDelete("EvictFromEmbeddingCacheByModels")]
+    public ActionResult<ServerEvictEmbeddingCacheResult> EvictFromEmbeddingCacheByModels(bool? dryRun, [FromBody]List<string> models)
+    {
+        if (models.Count == 0)
+        {
+            return BadRequest(new ServerEvictEmbeddingCacheResult() {Success = false, EvictedElements = 0});
+        }
+
+        List<string> toBeDeleted = [];
+
+        foreach (KeyValuePair<string, Dictionary<string, float[]>> element in _searchdomainManager.EmbeddingCache)
+        {
+            string cacheKey = element.Key;
+            var modelDict = element.Value;
+            if (modelDict.Count == models.Count
+                && modelDict.Keys.All(models.Contains)
+                && models.All(modelDict.Keys.Contains))
+            {
+                toBeDeleted.Add(element.Key);
+            }
+        }
+        if (dryRun != true)
+        {
+            toBeDeleted.ForEach(key => _searchdomainManager.EmbeddingCache.Remove(key));
+        }
+        return new ServerEvictEmbeddingCacheResult() {Success = true, EvictedElements = toBeDeleted.Count};
+    }
 }
