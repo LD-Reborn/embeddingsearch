@@ -293,7 +293,7 @@ public class AIProviderService
 
             if (!string.IsNullOrEmpty(resultText))
             {
-                results.Add(provider + ":" + resultText);
+                results.Add(resultText);
             }
         }
         catch (Exception ex)
