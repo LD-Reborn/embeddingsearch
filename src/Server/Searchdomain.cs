@@ -15,7 +15,7 @@ public class Searchdomain
 {
     private readonly string _connectionString;
     private readonly string _provider;
-    public AIProvider AiProvider;
+    public AIProviderService AiProvider;
     public string SearchdomainName;
     public int Id;
     public SearchdomainSettings Settings;
@@ -26,7 +26,7 @@ public class Searchdomain
     public SQLHelper Helper;
     private readonly ILogger _logger;
 
-    public Searchdomain(string searchdomain, string connectionString, SQLHelper sqlHelper, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
+    public Searchdomain(string searchdomain, string connectionString, SQLHelper sqlHelper, AIProviderService aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache, ILogger logger, string provider = "sqlserver", bool runEmpty = false)
     {
         _connectionString = connectionString;
         _provider = provider.ToLower();

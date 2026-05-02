@@ -38,7 +38,7 @@ public class Datapoint
         return ProbMethod.Method(probabilities);
     }
 
-    public static Dictionary<string, float[]> GetEmbeddings(string content, ConcurrentBag<string> models, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
+    public static Dictionary<string, float[]> GetEmbeddings(string content, ConcurrentBag<string> models, AIProviderService aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
     {
         Dictionary<string, float[]> embeddings = [];
         bool embeddingCacheHasContent = embeddingCache.TryGetValue(content, out var embeddingCacheForContent);
@@ -64,7 +64,7 @@ public class Datapoint
         return embeddings;
     }
 
-    public static Dictionary<string, Dictionary<string, float[]>> GetEmbeddings(string[] content, List<string> models, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
+    public static Dictionary<string, Dictionary<string, float[]>> GetEmbeddings(string[] content, List<string> models, AIProviderService aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
     {
         Dictionary<string, Dictionary<string, float[]>> embeddings = [];
         foreach (string model in models)
@@ -109,7 +109,7 @@ public class Datapoint
         return embeddings;
     }
 
-    public static IEnumerable<float[]> GenerateEmbeddings(string[] content, string model, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
+    public static IEnumerable<float[]> GenerateEmbeddings(string[] content, string model, AIProviderService aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
     {
         IEnumerable<float[]> embeddings = aIProvider.GenerateEmbeddings(model, content);
         if (embeddings.Count() != content.Length)
@@ -128,7 +128,7 @@ public class Datapoint
     }
 
 
-    public static float[] GenerateEmbeddings(string content, string model, AIProvider aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
+    public static float[] GenerateEmbeddings(string content, string model, AIProviderService aIProvider, EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache)
     {
         float[] embeddings = aIProvider.GenerateEmbeddings(model, content);
         if (!embeddingCache.ContainsKey(content))

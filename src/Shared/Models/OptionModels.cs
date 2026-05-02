@@ -1,6 +1,11 @@
 namespace Shared.Models;
 
-public class ApiKeyOptions
+public interface IApiKeyOptions
+{
+    public string[]? ApiKeys { get; set; }
+}
+
+public class ApiKeyOptions : IApiKeyOptions
 {
     public string[]? ApiKeys { get; set; }
 }

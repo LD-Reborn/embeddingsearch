@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using AdaptiveExpressions;
+using Microsoft.IdentityModel.Tokens;
 using Server.Exceptions;
 using Shared;
 using Shared.Models;
@@ -50,7 +51,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
     public async Task<List<Entity>?> EntitiesFromJSON(SearchdomainManager searchdomainManager, ILogger logger, string json)
     {
         EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = searchdomainManager.EmbeddingCache;
-        AIProvider aIProvider = searchdomainManager.AiProvider;
+        AIProviderService aIProvider = searchdomainManager.AiProvider;
         SQLHelper helper = searchdomainManager.Helper;
 
         List<JSONEntity>? jsonEntities = JsonSerializer.Deserialize<List<JSONEntity>>(json);
@@ -58,6 +59,11 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         {
             return null;
         }
+
+        // Filter out empty datapoints
+        jsonEntities.ForEach(jsonEntity =>
+                jsonEntity.Datapoints = [.. jsonEntity.Datapoints.Where(datapoint => !datapoint.Text.IsNullOrEmpty())]
+            );
 
         // Prefetch embeddings
         Dictionary<string, List<string>> toBeCached = [];
@@ -130,7 +136,7 @@ public class SearchdomainHelper(ILogger<SearchdomainHelper> logger, DatabaseHelp
         Searchdomain searchdomain = searchdomainManager.GetSearchdomain(jsonEntity.Searchdomain);
         int id_searchdomain = searchdomain.Id;
         ConcurrentDictionary<string, Entity> entityCache = searchdomain.EntityCache;
-        AIProvider aIProvider = searchdomain.AiProvider;
+        AIProviderService aIProvider = searchdomain.AiProvider;
         EnumerableLruCache<string, Dictionary<string, float[]>> embeddingCache = searchdomain.EmbeddingCache;
         bool invalidateSearchCache = false;
 

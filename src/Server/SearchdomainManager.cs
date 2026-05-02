@@ -18,7 +18,7 @@ public class SearchdomainManager : IDisposable
     private Dictionary<string, Searchdomain> _searchdomains = [];
     private readonly ILogger<SearchdomainManager> _logger;
     private readonly EmbeddingSearchOptions _options;
-    public readonly AIProvider AiProvider;
+    public readonly AIProviderService AiProvider;
     private readonly DatabaseHelper _databaseHelper;
     private readonly string connectionString;
     private MySqlConnection _connection;
@@ -27,7 +27,7 @@ public class SearchdomainManager : IDisposable
     public long EmbeddingCacheMaxCount;
     private bool _disposed = false;
 
-    public SearchdomainManager(ILogger<SearchdomainManager> logger, IOptions<EmbeddingSearchOptions> options, AIProvider aIProvider, DatabaseHelper databaseHelper)
+    public SearchdomainManager(ILogger<SearchdomainManager> logger, IOptions<EmbeddingSearchOptions> options, AIProviderService aIProvider, DatabaseHelper databaseHelper)
     {
         _logger = logger;
         _options = options.Value;
