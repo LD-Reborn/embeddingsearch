@@ -162,6 +162,7 @@ public class DocumentProcessor
         List<string> textBoxResults = [];
         List<string> tableResults = [];
         List<string> commentResults = [];
+        List<string> imageResults = [];
         WordprocessingCommentsPart? commentsPart;
         try
         {
@@ -212,7 +213,7 @@ public class DocumentProcessor
                 return new DocumentProcessingWordDocumentResultModel(
                     fullTextTextBuilder.ToString(),
                     paragraphResults, headerResults, footerResults,
-                    textBoxResults, tableResults, commentResults);
+                    textBoxResults, tableResults, commentResults, imageResults);
             }
             if (mainDocumentPart.Document is null) throw new Exception("mainDocumentPart.Document is null");
 
@@ -287,10 +288,33 @@ public class DocumentProcessor
                     fullTextTextBuilder.AppendLine();
                 }
             }
-            
+
+            // Remove "<mc:Fallback>" elements. This removes duplicate TextBox and Image elements.
             mainDocumentPart.Document.Descendants<AlternateContent>().ToList().ForEach(e => e.Remove());
             mainDocumentPart.Document.Descendants<AlternateContentChoice>().ToList().ForEach(e => e.Remove());
+            var images = mainDocumentPart.ImageParts.DistinctBy(p => p.Uri.ToString());
+            foreach (var imagePart in images)
+            {
+                using var stream = imagePart.GetStream();
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
 
+                var base64 = Convert.ToBase64String(ms.ToArray());
+
+                string ocrPrompt = "Please extract and return all the text visible in this image.";
+
+                var result = _aIProviderService.GenerateResponse(
+                    documentProcessingRequest.visionModel ?? _defaultVisionModel!,
+                    ocrPrompt,
+                    [base64],
+                    think: false,
+                    system: "You are a OCR tool that extracts text from images."
+                );
+
+                imageResults.Add(result);
+                fullTextTextBuilder.AppendLine(result);
+            }
+            
             var paragraphs = package.MainDocumentPart?.Document?.Descendants<Paragraph>();
             if (paragraphs != null)
             {
@@ -319,7 +343,8 @@ public class DocumentProcessor
                 [.. footerResults.Where(x => !x.IsNullOrWhiteSpace())],
                 [.. textBoxResults.Where(x => !x.IsNullOrWhiteSpace())],
                 [.. tableResults.Where(x => !x.IsNullOrWhiteSpace())],
-                [.. commentResults.Where(x => !x.IsNullOrWhiteSpace())]
+                [.. commentResults.Where(x => !x.IsNullOrWhiteSpace())],
+                [.. imageResults.Where(x => !x.IsNullOrWhiteSpace())]
             );
         }
         catch (Exception ex)
