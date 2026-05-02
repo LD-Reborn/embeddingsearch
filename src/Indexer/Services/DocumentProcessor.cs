@@ -1,0 +1,484 @@
+using System.Text;
+using OllamaSharp;
+using OllamaSharp.Models;
+using Shared.Models;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+using Indexer.Models;
+using Server;
+using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Office.CustomUI;
+using Quartz.Util;
+using Indexer.Helper;
+using DocumentFormat.OpenXml.Vml;
+
+namespace Indexer.Services;
+
+public class DocumentProcessor
+{
+    private readonly ILogger _logger;
+    private readonly AIProviderService _aIProviderService;
+    private readonly string? _defaultVisionModel;
+    private readonly Dictionary<string, Func<DocumentProcessingRequest, Task<IDocumentProcessingResultModel>>> _extractors;
+    public DocumentProcessor(ILogger logger, AIProviderService aIProviderService, string? defaultVisionModel = null)
+    {
+        _logger = logger;
+        _aIProviderService = aIProviderService;
+        _defaultVisionModel = defaultVisionModel;
+        List<(Func<DocumentProcessingRequest, Task<IDocumentProcessingResultModel>> Handler, List<string> Extensions)> extractorGroups = new List<(Func<DocumentProcessingRequest, Task<IDocumentProcessingResultModel>> Handler, List<string> Extensions)>
+        {
+            // Text-based documents (simple text)
+            (ExtractTextFromTextfileAsync, new() { ".txt", ".json" }),
+
+            // PDF
+            (ExtractTextFromPdfAsync, new() { ".pdf" }),
+
+            // Word documents
+            (ExtractTextFromWordDocumentAsync, new() { ".docx", ".odt" }),
+
+            // Spreadsheets (not yet implemented)
+            (ExtractTextFromSpreadsheetAsync, new() { ".ods", ".xls", ".xlsx" }),
+
+            // Presentations (not yet implemented)
+            (ExtractTextFromPresentationAsync, new() { ".odp", ".ppt", ".pptx" }),
+
+            // Images (OCR via vision model)
+            (ExtractTextFromImageAsync, new() { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff", ".tif" })
+        };
+
+        _extractors = extractorGroups
+            .SelectMany(g => g.Extensions.Select(ext => (Key: ext, Value: g.Handler)))
+            .ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value,
+                StringComparer.OrdinalIgnoreCase
+            );
+    }
+
+    public async Task<IDocumentProcessingResultModel> GetTextContentAsync(string filePath)
+    {
+        return await GetTextContentAsync(new DocumentProcessingRequest(filePath, _defaultVisionModel));
+    }
+
+    public async Task<IDocumentProcessingResultModel> GetTextContentAsync(string filePath, string? visionModel)
+    {
+        return await GetTextContentAsync(new DocumentProcessingRequest(filePath, visionModel));
+    }
+
+    public async Task<IDocumentProcessingResultModel> GetTextContentAsync(DocumentProcessingRequest documentProcessingRequest)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        var extension = System.IO.Path.GetExtension(filePath);
+        Func<DocumentProcessingRequest, Task<IDocumentProcessingResultModel>> extractor;
+        try
+        {
+            extractor = _extractors.First(x => extension.Equals(x.Key)).Value;
+        } catch (Exception)
+        {
+            throw new Exception($"Unable to retrieve extractor for extension: {extension}");
+        }
+        
+        return await GetTextContentAsync(documentProcessingRequest, extractor);
+    }
+
+    public async Task<IDocumentProcessingResultModel> GetTextContentAsync(DocumentProcessingRequest documentProcessingRequest, Func<DocumentProcessingRequest, Task<IDocumentProcessingResultModel>> extractor)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException($"File not found: {filePath}");
+        }
+        
+        return await extractor(documentProcessingRequest);
+    }
+
+    public async Task<IDocumentProcessingResultModel> ExtractTextFromTextfileAsync(DocumentProcessingRequest documentProcessingRequest)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        try
+        {
+            var fileContent = await File.ReadAllTextAsync(filePath);
+            return new DocumentProcessingTextResultModel(fileContent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error extracting text from text file: {FilePath}, {Exception}", filePath, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<IDocumentProcessingResultModel> ExtractTextFromPdfAsync(DocumentProcessingRequest documentProcessingRequest)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        try
+        {
+            _logger.LogInformation("Extracting text from PDF: {FilePath}", filePath);
+
+            var textBuilder = new StringBuilder();
+            var pageResults = new List<string>();
+
+            using (var reader = new iText.Kernel.Pdf.PdfReader(filePath))
+            using (var pdfDoc = new iText.Kernel.Pdf.PdfDocument(reader))
+            {
+                var pdfTextExtractor = new iText.Kernel.Pdf.Canvas.Parser.Listener.LocationTextExtractionStrategy();
+
+                for (int i = 1; i <= pdfDoc.GetNumberOfPages(); i++)
+                {
+                    var pageText = iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor.GetTextFromPage(
+                        pdfDoc.GetPage(i), 
+                        pdfTextExtractor);
+
+                    // Approximate paragraphs (split by double newline or line breaks)
+                    var paragraphs = Regex.Split(pageText, @"\r?\n\r?\n+")
+                        .Select(p => p.Trim())
+                        .Where(p => !string.IsNullOrWhiteSpace(p))
+                        .ToList();
+
+                    pageResults.AddRange(string.Join('\n', paragraphs));
+                    textBuilder.AppendLine(pageText);
+                    textBuilder.AppendLine("--- Page " + i + " ---");
+                }
+            }
+
+            return new DocumentProcessingPdfResultModel(
+                textBuilder.ToString(),
+                pageResults
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error extracting text from PDF file {FilePath}: {Exception}", filePath, ex);
+            throw;
+        }
+    }
+
+    public async Task<IDocumentProcessingResultModel> ExtractTextFromWordDocumentAsync(DocumentProcessingRequest documentProcessingRequest)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        List<string> paragraphResults = [];
+        List<string> headerResults = [];
+        List<string> footerResults = [];
+        List<string> textBoxResults = [];
+        List<string> tableResults = [];
+        List<string> commentResults = [];
+        WordprocessingCommentsPart? commentsPart;
+        try
+        {
+            _logger.LogInformation("Extracting text from word document: {FilePath}", filePath);
+
+            using var package = WordprocessingDocument.Open(filePath, false) ?? throw new Exception("package is null");
+            MainDocumentPart? mainDocumentPart = package.MainDocumentPart;
+            var fullTextTextBuilder = new StringBuilder();
+
+            if (mainDocumentPart is null)
+            {
+                _logger.LogWarning("MainDocumentPart is null for {FilePath}. Attempting fallback extraction from parts.", filePath);
+                IEnumerable<OpenXmlPart> parts = package.GetAllParts();
+
+                // Fallback: Scan all parts for text (headers, footers, comments, etc.)
+                foreach (IdPartPair idPartPair in package.Parts)
+                {
+                    OpenXmlPart part = idPartPair.OpenXmlPart;
+                    if (part is HeaderPart headerPart)
+                    {
+                        var headerText = ExtractTextFromPart(headerPart);
+                        headerResults.Add(headerText);
+                        fullTextTextBuilder.AppendLine($"[HEADER: {headerPart.Uri}]").AppendLine(headerText);
+                    }
+                    else if (part is FooterPart footerPart)
+                    {
+                        var footerText = ExtractTextFromPart(footerPart);
+                        footerResults.Add(footerText);
+                        fullTextTextBuilder.AppendLine($"[FOOTER: {footerPart.Uri}]").AppendLine(footerText);
+                    }
+                }
+
+                // Try to read comments
+                commentsPart = package.MainDocumentPart?.WordprocessingCommentsPart;
+                if (commentsPart?.Comments != null)
+                {
+                    foreach (var comment in commentsPart.Comments.Elements<Comment>())
+                    {
+                        var commentText = ExtractTextFromElement(comment);
+                        commentResults.Add(commentText);
+                        fullTextTextBuilder.AppendLine($"[COMMENT: {comment.Id?.Value}] {commentText}");
+                    }
+                }
+
+                if (fullTextTextBuilder.Length == 0)
+                    throw new InvalidDataException($"No text found in DOCX. File may be empty or malformed: {filePath}");
+
+                return new DocumentProcessingWordDocumentResultModel(
+                    fullTextTextBuilder.ToString(),
+                    paragraphResults, headerResults, footerResults,
+                    textBoxResults, tableResults, commentResults);
+            }
+            if (mainDocumentPart.Document is null) throw new Exception("mainDocumentPart.Document is null");
+
+            package.MainDocumentPart?.ExtractTextFromParts(p => p.HeaderParts, str => {
+                if (str != "\n") headerResults.Add(str);
+            });
+            
+            package.MainDocumentPart?.ExtractTextFromParts(p => p.FooterParts, str => {
+                if (str != "\n") footerResults.Add(str);
+            });
+            
+            var textBoxes = package.MainDocumentPart?.Document?.Descendants<TextBoxContent>()
+                .Where(t => !t.Ancestors<AlternateContentFallback>().Any());
+            if (textBoxes != null)
+            {
+                foreach (var textBox in textBoxes)
+                {
+                    var runs = textBox.Descendants<Text>();
+                    foreach (var run in runs)
+                    {
+                        fullTextTextBuilder.Append(run.Text);
+                        textBoxResults.Add(run.Text);
+                    }
+                    fullTextTextBuilder.AppendLine();
+                }
+            }
+            
+            var tables = package.MainDocumentPart?.Document?.Descendants<Table>();
+            if (tables != null)
+            {
+                foreach (var table in tables)
+                {
+                    StringBuilder tableString = new();
+                    var rows = table.Descendants<TableRow>();
+                    foreach (var row in rows)
+                    {
+                        var cells = row.Descendants<TableCell>();
+                        foreach (var cell in cells)
+                        {
+                            var cellParagraphs = cell.Descendants<Paragraph>();
+                            foreach (var paragraph in cellParagraphs)
+                            {
+                                var runs = paragraph.Descendants<Text>();
+                                foreach (var run in runs)
+                                {
+                                    tableString.Append(run.Text);
+                                }
+                                tableString.Append('\t');
+                            }
+                        }
+                        tableString.AppendLine();
+                    }
+                    fullTextTextBuilder.Append(tableString);
+                    tableResults.Add(tableString.ToString());
+                    fullTextTextBuilder.AppendLine();
+                }
+            }
+            
+            commentsPart = package.MainDocumentPart?.WordprocessingCommentsPart;
+            if (commentsPart?.Comments?.Elements<Comment>() != null)
+            {
+                foreach (var comment in commentsPart.Comments.Elements<Comment>())
+                {
+                    var commentText = comment.Descendants<Text>();
+                    var commentTextBuilder = new StringBuilder();
+                    foreach (var text in commentText)
+                    {
+                        commentTextBuilder.Append(text.Text);
+                    }
+                    commentResults.Add(commentTextBuilder.ToString());
+                    fullTextTextBuilder.Append(commentTextBuilder);
+                    fullTextTextBuilder.AppendLine();
+                }
+            }
+            
+            mainDocumentPart.Document.Descendants<AlternateContent>().ToList().ForEach(e => e.Remove());
+            mainDocumentPart.Document.Descendants<AlternateContentChoice>().ToList().ForEach(e => e.Remove());
+
+            var paragraphs = package.MainDocumentPart?.Document?.Descendants<Paragraph>();
+            if (paragraphs != null)
+            {
+                foreach (var paragraph in paragraphs)
+                {
+                    bool includeInParagraphList = !paragraph.Ancestors<Table>().Any()
+                        && !paragraph.Ancestors<Comment>().Any()
+                        && !paragraph.Ancestors<Header>().Any()
+                        && !paragraph.Ancestors<Footer>().Any();
+                    var paragraphTextBuilder = new StringBuilder();
+                    var runs = paragraph.Descendants<Text>();
+                    foreach (var run in runs)
+                    {
+                        fullTextTextBuilder.Append(run.Text);
+                        paragraphTextBuilder.Append(run.Text);
+                    }
+                    if (includeInParagraphList) paragraphResults.Add(paragraphTextBuilder.ToString());
+                    fullTextTextBuilder.AppendLine();
+                }
+            }
+
+            return new DocumentProcessingWordDocumentResultModel(
+                fullTextTextBuilder.ToString(),
+                [.. paragraphResults.Where(x => !x.IsNullOrWhiteSpace())],
+                [.. headerResults.Where(x => !x.IsNullOrWhiteSpace())],
+                [.. footerResults.Where(x => !x.IsNullOrWhiteSpace())],
+                [.. textBoxResults.Where(x => !x.IsNullOrWhiteSpace())],
+                [.. tableResults.Where(x => !x.IsNullOrWhiteSpace())],
+                [.. commentResults.Where(x => !x.IsNullOrWhiteSpace())]
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error extracting text from DOCX file {FilePath}: {Exception}", filePath, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<IDocumentProcessingResultModel> ExtractTextFromSpreadsheetAsync(DocumentProcessingRequest documentProcessingRequest)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        try
+        {
+            _logger.LogInformation("Extracting text from Excel: {FilePath}", filePath);
+            // Excel extraction would require ClosedXML or EPPlus
+            // For now, delegate to Python which has openpyxl/pandas
+            throw new NotImplementedException("Excel extraction requires calling Python. Use Python's openpyxl or pandas in your script for best results.");
+        }
+        catch (NotImplementedException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error extracting text from Excel: {FilePath}, {Exception}", filePath, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<IDocumentProcessingResultModel> ExtractTextFromPresentationAsync(DocumentProcessingRequest documentProcessingRequest)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        try
+        {
+            _logger.LogInformation("Extracting text from PowerPoint: {FilePath}", filePath);
+            // PowerPoint extraction would require a specific library
+            // For now, delegate to Python which has python-pptx
+            throw new NotImplementedException("PowerPoint extraction requires calling Python. Use Python's python-pptx library in your script for best results.");
+        }
+        catch (NotImplementedException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error extracting text from PowerPoint: {FilePath}, {Exception}", filePath, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<IDocumentProcessingResultModel> ExtractTextFromImageAsync(DocumentProcessingRequest documentProcessingRequest)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        string? visionModel = documentProcessingRequest.visionModel;
+        string? modelToUse = visionModel ?? _defaultVisionModel;
+
+        if (string.IsNullOrWhiteSpace(modelToUse))
+        {
+            throw new InvalidOperationException($"Cannot extract text from image '{filePath}' without a vision model. Either provide a vision model parameter (e.g., 'ollama:qwen3-vl:latest') or configure a default vision model in settings.");
+        }
+
+        try
+        {
+            _logger.LogInformation("Extracting text from image {FilePath} using model {Model}", filePath, modelToUse);
+
+            var fileBytes = await File.ReadAllBytesAsync(filePath);
+            var base64Image = Convert.ToBase64String(fileBytes);
+            var mediaType = GetImageMediaType(filePath);
+
+            var ocrPrompt = "Please extract and return all the text visible in this image.";
+            
+            string response = _aIProviderService.GenerateResponse(modelToUse, ocrPrompt, [base64Image], think: false, system: "You are a OCR tool that extracts text from images. When it makes sense to do so, use markdown");
+
+            _logger.LogInformation("Successfully extracted text from image: {FilePath}", filePath);
+            return new DocumentProcessingImageResultModel(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error extracting text from image {FilePath}: {Exception}", filePath, ex.Message);
+            throw;
+        }
+    }
+
+    private string GetImageMediaType(string filePath)
+    {
+        return System.IO.Path.GetExtension(filePath).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            ".webp" => "image/webp",
+            ".tiff" or ".tif" => "image/tiff",
+            _ => "image/jpeg"
+        };
+    }
+
+    private string ExtractTextFromParagraph(Paragraph paragraph)
+    {
+        // Handle runs, including line breaks (`<w:br/>`)
+        var text = new StringBuilder();
+
+        foreach (var run in paragraph.Descendants<Run>())
+        {
+            // Normal text
+            foreach (var t in run.Descendants<Text>())
+            {
+                text.Append(t.Text);
+            }
+
+            // Handle line breaks (w:br)
+            var breaks = run.Descendants<Break>();
+            foreach (var br in breaks)
+            {
+                text.Append('\n');
+            }
+
+            // Handle tab
+            var tabs = run.Descendants<Tab>();
+            foreach (var tab in tabs)
+            {
+                text.Append('\t');
+            }
+        }
+
+        // Clean up excessive whitespace but preserve paragraph structure
+        return text.ToString().TrimEnd('\r', '\n', ' ', '\t');
+    }
+
+    private string ExtractTextFromPart(OpenXmlPart part)
+    {
+        return part switch
+        {
+            HeaderPart hp => ExtractTextFromElement(hp.Header ?? throw new Exception("Header was null")),
+            FooterPart fp => ExtractTextFromElement(fp.Footer ?? throw new Exception("Footer was null")),
+            // Add other part types if needed (e.g., CommentParts, etc.)
+            _ => string.Empty
+        };
+    }
+
+
+    private string ExtractTextFromElement(OpenXmlElement element)
+    {
+        var sb = new StringBuilder();
+        foreach (var child in element.Descendants<Text>())
+        {
+            sb.Append(child.Text);
+        }
+        // Handle breaks/tabs in generic elements
+        foreach (var br in element.Descendants<Break>()) sb.Append('\n');
+        foreach (var tab in element.Descendants<Tab>()) sb.Append('\t');
+        return sb.ToString();
+    }
+
+}
+
+public class DocumentProcessingRequest(string filePath, string? visionModel)
+{
+    public readonly string filePath = filePath;
+    public readonly string? visionModel = visionModel;
+}

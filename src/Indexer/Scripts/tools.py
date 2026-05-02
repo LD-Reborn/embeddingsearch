@@ -186,4 +186,77 @@ class Toolset:
     CancellationToken: CancellationToken
     Name:str
     CallbackInfos: Optional[ICallbackInfos] = None
+    DocumentProcessor: Optional['DocumentProcessor'] = None
+
+@dataclass
+class DocumentProcessor:
+    """
+    Processes documents and images to extract text content.
+    
+    Supports:
+    - Images (PNG, JPG, GIF, BMP, WebP, TIFF) - uses OCR if vision model is configured
+    - Text files (TXT, CSV, JSON, XML)
+    - Documents (PDF, DOCX, XLSX, PPTX) - best handled via Python libraries
+    
+    Usage examples:
+        # Extract text from any file (with vision model for images if configured)
+        text = await toolset.DocumentProcessor.GetTextContentAsync("./path/to/file.pdf")
+        
+        # Extract text from image using specific vision model for OCR
+        text = await toolset.DocumentProcessor.GetTextContentAsync(
+            "./image.png", 
+            "ollama:qwen3-vl:latest"
+        )
+        
+        # Check if file type is supported
+        if toolset.DocumentProcessor.IsImageFile("./photo.jpg"):
+            # Handle as image
+            pass
+        
+        # Get raw file bytes
+        raw_bytes = await toolset.DocumentProcessor.GetFileContentAsync("./file.bin")
+    """
+    
+    async def GetTextContentAsync(file_path: str, vision_model: Optional[str] = None) -> str:
+        """
+        Extracts text content from a file.
+        
+        Args:
+            file_path: Path to the file to process
+            vision_model: Optional vision model for OCR (e.g., "ollama:qwen3-vl:latest")
+                         Overrides the default vision model from configuration
+        
+        Returns:
+            Extracted text content
+        
+        For document files (PDF, DOCX, XLSX):
+            - Returns NotImplementedError with guidance to use Python libraries
+            - Use Python's PyPDF, python-docx, openpyxl, pandas libraries instead
+            - This allows better control and performance for complex documents
+        
+        For text files (TXT, CSV, JSON, XML):
+            - Returns file contents as-is
+        
+        For image files (PNG, JPG, GIF, BMP, WebP, TIFF):
+            - Uses OCR if vision_model is provided or default is configured
+            - Returns extracted text from image
+            - Raises error if no vision model available
+        """
+        pass
+    
+    async def GetTextContentAsync(file_path: str) -> str:
+        """Gets text content using the default vision model from configuration."""
+        pass
+    
+    async def GetFileContentAsync(file_path: str) -> bytearray:
+        """Gets raw file bytes."""
+        pass
+    
+    def IsImageFile(file_path: str) -> bool:
+        """Checks if a file is an image that might require OCR."""
+        pass
+    
+    def IsDocumentFile(file_path: str) -> bool:
+        """Checks if a document file format is supported."""
+        pass
 

@@ -1,7 +1,9 @@
 using Indexer.Exceptions;
 using Indexer.Models;
 using Indexer.ScriptContainers;
+using Indexer.Services;
 using Microsoft.Extensions.Options;
+using Server;
 
 public class WorkerManager
 {
@@ -10,14 +12,16 @@ public class WorkerManager
     private readonly ILogger<WorkerManager> _logger;
     private readonly IndexerOptions _configuration;
     private readonly Client.Client client;
+    private readonly AIProviderService _aIProviderService;
 
-    public WorkerManager(ILogger<WorkerManager> logger, IOptions<IndexerOptions> configuration, Client.Client client)
+    public WorkerManager(ILogger<WorkerManager> logger, IOptions<IndexerOptions> configuration, Client.Client client, AIProviderService aIProviderService)
     {
         Workers = [];
         types = [typeof(PythonScriptable), typeof(CSharpScriptable)];
         _logger = logger;
         _configuration = configuration.Value;
         this.client = client;
+        _aIProviderService = aIProviderService;
     }
 
     public void InitializeWorkers()
@@ -28,7 +32,9 @@ public class WorkerManager
         foreach (WorkerConfig workerConfig in _configuration.Workers)
         {
             CancellationTokenSource cancellationTokenSource = new();
-            ScriptToolSet toolSet = new(workerConfig.Script, client, _logger, _configuration, cancellationTokenSource.Token, workerConfig.Name);
+            ILogger loggerForProcessor = _logger;
+            DocumentProcessor documentProcessor = new(loggerForProcessor, _aIProviderService, _configuration.DefaultVisionModel);
+            ScriptToolSet toolSet = new(workerConfig.Script, client, _logger, _configuration, cancellationTokenSource.Token, workerConfig.Name, documentProcessor);
             InitializeWorker(toolSet, workerConfig, cancellationTokenSource);
         }
         _logger.LogInformation("Initialized workers");
