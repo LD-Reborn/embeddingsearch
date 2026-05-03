@@ -394,10 +394,14 @@ public class DocumentProcessor
             {
                 await SpreadsheetProcessorHelper.ExtractFromXlsxAsync(filePath, modelToUse, fullTextBuilder, pageResults, imageResults, _aIProviderService, _logger);
             }
-            else if (extension == ".xls" || extension == ".ods")
+            else if (extension == ".ods")
             {
-                _logger.LogWarning("Format {Extension} is not yet supported with native libraries. ODS/XLS support requires additional dependencies.", extension);
-                throw new NotImplementedException($"Format {extension} requires additional library support. Only .xlsx is currently supported via DocumentFormat.OpenXml.");
+                await SpreadsheetProcessorHelper.ExtractFromOdsAsync(filePath, modelToUse, fullTextBuilder, pageResults, imageResults, _aIProviderService, _logger);
+            }
+            else if (extension == ".xls")
+            {
+                _logger.LogWarning("Format {Extension} is not yet supported with native libraries. XLS support requires additional dependencies.", extension);
+                throw new NotImplementedException($"Format {extension} requires additional library support. Only .xlsx and .ods are currently supported.");
             }
             else
             {

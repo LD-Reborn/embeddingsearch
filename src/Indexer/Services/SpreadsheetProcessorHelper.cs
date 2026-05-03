@@ -1,4 +1,6 @@
 using System.Text;
+using System.Xml.Linq;
+using System.IO.Compression;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Server;
@@ -125,6 +127,154 @@ public static class SpreadsheetProcessorHelper
             imageResults.Add(result);
             fullTextBuilder.AppendLine($"[IMAGE: {imagePart.Uri}]");
             fullTextBuilder.AppendLine(result);
+        }
+    }
+
+    public static async Task ExtractFromOdsAsync(string filePath, string? modelToUse, StringBuilder fullTextBuilder, List<string> pageResults, List<string> imageResults, AIProviderService aiProviderService, ILogger logger)
+    {
+        try
+        {
+            // ODS files are ZIP archives containing XML
+            using (var archive = ZipFile.OpenRead(filePath))
+            {
+                var contentEntry = archive.GetEntry("content.xml") ?? throw new InvalidOperationException("content.xml not found in ODS file");
+                
+                using (var stream = contentEntry.Open())
+                using (var reader = new StreamReader(stream))
+                {
+                    var contentXml = await reader.ReadToEndAsync();
+                    var xdoc = XDocument.Parse(contentXml);
+
+                    // ODS namespaces
+                    var tableNs = XNamespace.Get("urn:oasis:names:tc:opendocument:xmlns:table:1.0");
+                    var textNs = XNamespace.Get("urn:oasis:names:tc:opendocument:xmlns:text:1.0");
+                    var drawNs = XNamespace.Get("urn:oasis:names:tc:opendocument:xmlns:drawing:1.0");
+                    var xLinkNs = XNamespace.Get("http://www.w3.org/1999/xlink");
+
+                    var tables = xdoc.Descendants(tableNs + "table");
+                    bool isFirstSheet = true;
+
+                    foreach (var table in tables)
+                    {
+                        if (!isFirstSheet)
+                            fullTextBuilder.AppendLine(); // Blank line between sheets
+
+                        var sheetName = table.Attribute(tableNs + "name")?.Value ?? "Sheet";
+                        fullTextBuilder.AppendLine($"Sheet: {sheetName}");
+                        var sheetText = new StringBuilder();
+
+                        var rows = table.Descendants(tableNs + "table-row");
+
+                        foreach (var row in rows)
+                        {
+                            var cells = row.Descendants(tableNs + "table-cell")
+                                .Concat(row.Descendants(tableNs + "covered-table-cell"));
+                            var cellValues = new List<string>();
+
+                            foreach (var cell in cells)
+                            {
+                                string cellValue = ExtractOdsCellValue(cell, textNs);
+                                cellValues.Add(cellValue);
+                            }
+
+                            string rowText = string.Join("\t", cellValues);
+                            sheetText.AppendLine(rowText);
+                            fullTextBuilder.AppendLine(rowText);
+                        }
+
+                        if (sheetText.Length > 0)
+                            pageResults.Add(sheetText.ToString().Trim());
+
+                        isFirstSheet = false;
+                    }
+
+                    // Extract images from ODS if vision model is available
+                    if (!string.IsNullOrWhiteSpace(modelToUse))
+                    {
+                        await ExtractImagesFromOdsAsync(archive, modelToUse, imageResults, fullTextBuilder, aiProviderService);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("Error extracting text from ODS file {FilePath}: {Exception}", filePath, ex.Message);
+            throw;
+        }
+    }
+
+    private static string ExtractOdsCellValue(XElement cell, XNamespace textNs)
+    {
+        var sb = new StringBuilder();
+
+        // Extract all text from paragraphs and text spans within the cell
+        var textElements = cell.Descendants(textNs + "p")
+            .SelectMany(p => p.Descendants(textNs + "span"))
+            .Union(cell.Descendants(textNs + "span"));
+
+        foreach (var textElement in textElements)
+        {
+            var textNodes = textElement.Nodes().OfType<XText>();
+            foreach (var textNode in textNodes)
+            {
+                sb.Append(textNode.Value);
+            }
+        }
+
+        // Also check for direct text content in paragraphs (without span)
+        var paragraphs = cell.Descendants(textNs + "p");
+        foreach (var para in paragraphs)
+        {
+            // Get text nodes that are direct children of paragraph (not wrapped in spans)
+            foreach (var node in para.Nodes().OfType<XText>())
+            {
+                sb.Append(node.Value);
+            }
+        }
+
+        return sb.ToString().Trim();
+    }
+
+    private static async Task ExtractImagesFromOdsAsync(ZipArchive archive, string modelToUse, List<string> imageResults, StringBuilder fullTextBuilder, AIProviderService aiProviderService)
+    {
+        // In ODS, images are typically stored in Pictures/ folder
+        var imageExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff", ".tif" };
+        
+        var imageEntries = archive.Entries
+            .Where(e => e.FullName.StartsWith("Pictures/", StringComparison.OrdinalIgnoreCase) && 
+                       imageExtensions.Contains(Path.GetExtension(e.Name).ToLowerInvariant()))
+            .ToList();
+
+        foreach (var imageEntry in imageEntries)
+        {
+            try
+            {
+                using (var stream = imageEntry.Open())
+                using (var ms = new MemoryStream())
+                {
+                    await stream.CopyToAsync(ms);
+                    var base64 = Convert.ToBase64String(ms.ToArray());
+
+                    string ocrPrompt = "Please extract and return all the text visible in this image.";
+
+                    var result = aiProviderService.GenerateResponse(
+                        modelToUse,
+                        ocrPrompt,
+                        [base64],
+                        think: false,
+                        system: "You are a OCR tool that extracts text from images."
+                    );
+
+                    imageResults.Add(result);
+                    fullTextBuilder.AppendLine($"[IMAGE: {imageEntry.FullName}]");
+                    fullTextBuilder.AppendLine(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail on individual image extraction errors
+                fullTextBuilder.AppendLine($"[IMAGE EXTRACTION ERROR: {imageEntry.FullName} - {ex.Message}]");
+            }
         }
     }
 }
