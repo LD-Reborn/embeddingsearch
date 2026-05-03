@@ -5,7 +5,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Server;
 
-namespace Indexer.Services;
+namespace Indexer.Helper;
 
 public static class SpreadsheetProcessorHelper
 {
