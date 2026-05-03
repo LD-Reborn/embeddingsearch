@@ -40,12 +40,14 @@ public class DocumentProcessingWordDocumentResultModel(string fullText, List<str
     public List<string> Images { get; set; } = images;
 }
 
-public class DocumentProcessingPdfResultModel(string fullText, List<string> pages) : IDocumentProcessingResultModel
+public class DocumentProcessingPdfResultModel(string fullText, List<string> pages, List<string>? images = null) : IDocumentProcessingResultModel
 {
     public string FullText { get; set; } = fullText;
     public Dictionary<string, dynamic> AsDictionary { get; set; } = new Dictionary<string, dynamic> {
         { "FullText", fullText},
-        { "Pages", pages}
+        { "Pages", pages},
+        { "Images", images ?? []}
     };
     public List<string> Pages { get; set; } = pages;
+    public List<string> Images { get; set; } = images ?? new List<string>();
 }

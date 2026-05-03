@@ -80,7 +80,8 @@ def index_files(toolset: Toolset):
         elif str(content) == "Indexer.Models.DocumentProcessingPdfResultModel":
             #content = DocumentProcessingPdfResultModel(content)
             collections = [
-                ("pages", content.AsDictionary["Pages"])
+                ("page", content.AsDictionary["Pages"]),
+                ("image", content.AsDictionary["Images"])
             ]
         else:
             print(f"Unknown content {str(content)}")
