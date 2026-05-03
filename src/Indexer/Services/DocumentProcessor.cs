@@ -421,17 +421,36 @@ public class DocumentProcessor
         }
     }
 
-
-
     public async Task<IDocumentProcessingResultModel> ExtractTextFromPresentationAsync(DocumentProcessingRequest documentProcessingRequest)
     {
         string filePath = documentProcessingRequest.filePath;
+        string? visionModel = documentProcessingRequest.visionModel;
+        string? modelToUse = visionModel ?? _defaultVisionModel;
+        
         try
         {
-            _logger.LogInformation("Extracting text from PowerPoint: {FilePath}", filePath);
-            // PowerPoint extraction would require a specific library
-            // For now, delegate to Python which has python-pptx
-            throw new NotImplementedException("PowerPoint extraction requires calling Python. Use Python's python-pptx library in your script for best results.");
+            _logger.LogInformation("Extracting text from presentation: {FilePath}", filePath);
+            
+            var extension = Path.GetExtension(filePath).ToLowerInvariant();
+            
+            if (extension == ".pptx")
+            {
+                return await ExtractFromPptxAsync(filePath, modelToUse);
+            }
+            else if (extension == ".odp")
+            {
+                _logger.LogWarning("Format {Extension} is not yet supported with native libraries. ODP support requires additional dependencies.", extension);
+                throw new NotImplementedException($"Format {extension} requires additional library support. Only .pptx is currently supported.");
+            }
+            else if (extension == ".ppt")
+            {
+                _logger.LogWarning("Format {Extension} is not yet supported. PPT (binary format) requires additional dependencies.", extension);
+                throw new NotImplementedException($"Format {extension} requires additional library support. Only .pptx is currently supported.");
+            }
+            else
+            {
+                throw new ArgumentException($"Unsupported presentation extension: {extension}");
+            }
         }
         catch (NotImplementedException)
         {
@@ -439,9 +458,158 @@ public class DocumentProcessor
         }
         catch (Exception ex)
         {
-            _logger.LogError("Error extracting text from PowerPoint: {FilePath}, {Exception}", filePath, ex.Message);
+            _logger.LogError("Error extracting text from presentation: {FilePath}, {Exception}", filePath, ex.Message);
             throw;
         }
+    }
+
+    private async Task<IDocumentProcessingResultModel> ExtractFromPptxAsync(string filePath, string? visionModel)
+    {
+        var fullTextBuilder = new StringBuilder();
+        var slideResults = new List<string>();
+        var imageResults = new List<string>();
+
+        try
+        {
+            using var presentationDocument = PresentationDocument.Open(filePath, false);
+            
+            if (presentationDocument?.PresentationPart is null)
+            {
+                throw new InvalidDataException($"Invalid PPTX file or unable to access presentation part: {filePath}");
+            }
+
+            var presentationPart = presentationDocument.PresentationPart;
+            var presentation = presentationPart.Presentation;
+            
+            if (presentation?.SlideIdList is null)
+            {
+                throw new InvalidDataException($"No slides found in PPTX file: {filePath}");
+            }
+
+            int slideNumber = 0;
+            foreach (var slideId in presentation.SlideIdList.Elements<DocumentFormat.OpenXml.Presentation.SlideId>())
+            {
+                slideNumber++;
+
+                if (presentationPart.GetPartById(slideId.RelationshipId!) is not SlidePart slidePart) continue;
+
+                var slideTextBuilder = new StringBuilder();
+                var slideContent = slidePart.Slide;
+
+                // Extract text from shapes on the slide
+                if (slideContent?.CommonSlideData?.ShapeTree != null)
+                {
+                    // Process all shape-like elements (Shape, GraphicFrame, etc.)
+                    foreach (var shapeLikeElement in slideContent.CommonSlideData.ShapeTree.Elements())
+                    {
+                        // Handle regular Shape elements
+                        if (shapeLikeElement is DocumentFormat.OpenXml.Presentation.Shape shape)
+                        {
+                            var textBody = shape.TextBody;
+                            if (textBody != null)
+                            {
+                                // Extract all text from the text body using InnerText
+                                var text = textBody.InnerText;
+                                if (!string.IsNullOrWhiteSpace(text))
+                                {
+                                    slideTextBuilder.Append(text);
+                                    fullTextBuilder.Append(text);
+                                }
+                                slideTextBuilder.AppendLine();
+                                fullTextBuilder.AppendLine();
+                            }
+
+                        }
+                    }
+                    // Extract images from shapes (if vision model available)
+                    if (!string.IsNullOrWhiteSpace(visionModel))
+                    {
+                        var imageTexts = await ExtractImagesFromShapeAsync(slidePart, visionModel, slideNumber);
+                        foreach (var imageText in imageTexts)
+                        {
+                            imageResults.Add(imageText);
+                            slideTextBuilder.AppendLine($"[IMAGE] {imageText}");
+                            fullTextBuilder.AppendLine($"[IMAGE SLIDE {slideNumber}] {imageText}");
+                        }
+                    }
+                }
+
+                var slideText = slideTextBuilder.ToString().Trim();
+                if (!string.IsNullOrWhiteSpace(slideText))
+                {
+                    slideResults.Add(slideText);
+                }
+                
+                fullTextBuilder.AppendLine($"\n--- Slide {slideNumber} ---\n");
+            }
+
+            _logger.LogInformation("Successfully extracted text from {SlideCount} slides in PPTX: {FilePath}", slideNumber, filePath);
+            
+            return new DocumentProcessingPresentationResultModel(
+                fullTextBuilder.ToString(),
+                slideResults,
+                imageResults.Count > 0 ? imageResults : null
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error extracting text from PPTX file {FilePath}: {Exception}", filePath, ex.Message);
+            throw;
+        }
+    }
+
+    private async Task<List<string>> ExtractImagesFromShapeAsync(SlidePart slidePart, string visionModel, int slideNumber)
+    {
+        var imageTexts = new List<string>();
+
+        try
+        {
+            foreach (var imagePart in slidePart.ImageParts)
+            {
+                var extracted = await ExtractImagesFromImagePartAsync(imagePart, visionModel, slideNumber);
+                imageTexts.AddRange(extracted);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Error processing BlipFill elements from slide {SlideNumber}: {Exception}", slideNumber, ex.Message);
+        }
+
+        return imageTexts;
+    }
+
+    private async Task<List<string>> ExtractImagesFromImagePartAsync(
+        ImagePart imagePart,
+        string visionModel,
+        int slideNumber)
+    {
+        var imageTexts = new List<string>();
+
+        try
+        {
+            using var stream = imagePart.GetStream();
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            var ocrPrompt = "Please extract and return all the text visible in this image.";
+            
+            var result = _aIProviderService.GenerateResponse(
+                visionModel,
+                ocrPrompt,
+                [base64],
+                think: false,
+                system: "You are a OCR tool that extracts text from images."
+            );
+
+            imageTexts.Add(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Error processing imagePart from slide {SlideNumber}: {Exception}", slideNumber, ex.Message);
+        }
+
+        return imageTexts;
     }
 
     public async Task<IDocumentProcessingResultModel> ExtractTextFromImageAsync(DocumentProcessingRequest documentProcessingRequest)

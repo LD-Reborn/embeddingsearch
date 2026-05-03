@@ -86,7 +86,12 @@ def index_files(toolset: Toolset):
         elif str(content) == "Indexer.Models.DocumentProcessingSpreadsheetResultModel":
             collections = [
                 ("pages", content.AsDictionary["Pages"]),
-                ("images", content.AsDictionary["Images"])
+                ("image", content.AsDictionary["Images"])
+            ]
+        elif str(content) == "Indexer.Models.DocumentProcessingPresentationResultModel":
+            collections = [
+                ("slide", content.AsDictionary["Slides"]),
+                ("image", content.AsDictionary["Images"])
             ]
         else:
             print(f"Unknown content {str(content)}")

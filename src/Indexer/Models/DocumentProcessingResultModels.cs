@@ -63,3 +63,15 @@ public class DocumentProcessingSpreadsheetResultModel(string fullText, List<stri
     public List<string> Pages { get; set; } = pages ?? new List<string>();
     public List<string> Images { get; set; } = images ?? new List<string>();
 }
+
+public class DocumentProcessingPresentationResultModel(string fullText, List<string>? slides = null, List<string>? images = null) : IDocumentProcessingResultModel
+{
+    public string FullText { get; set; } = fullText;
+    public Dictionary<string, dynamic> AsDictionary { get; set; } = new Dictionary<string, dynamic> {
+        { "FullText", fullText},
+        { "Slides", slides ?? []},
+        { "Images", images ?? []}
+    };
+    public List<string> Slides { get; set; } = slides ?? new List<string>();
+    public List<string> Images { get; set; } = images ?? new List<string>();
+}
