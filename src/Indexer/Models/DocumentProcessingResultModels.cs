@@ -51,3 +51,15 @@ public class DocumentProcessingPdfResultModel(string fullText, List<string> page
     public List<string> Pages { get; set; } = pages;
     public List<string> Images { get; set; } = images ?? new List<string>();
 }
+
+public class DocumentProcessingSpreadsheetResultModel(string fullText, List<string>? pages = null, List<string>? images = null) : IDocumentProcessingResultModel
+{
+    public string FullText { get; set; } = fullText;
+    public Dictionary<string, dynamic> AsDictionary { get; set; } = new Dictionary<string, dynamic> {
+        { "FullText", fullText},
+        { "Pages", pages ?? []},
+        { "Images", images ?? []}
+    };
+    public List<string> Pages { get; set; } = pages ?? new List<string>();
+    public List<string> Images { get; set; } = images ?? new List<string>();
+}
