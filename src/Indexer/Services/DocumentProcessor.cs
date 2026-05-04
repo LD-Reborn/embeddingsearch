@@ -631,14 +631,10 @@ public class DocumentProcessor
             await stream.CopyToAsync(ms);
             
             var base64 = Convert.ToBase64String(ms.ToArray());
-            var ocrPrompt = "Please extract and return all the text visible in this image.";
-            
-            var result = _aIProviderService.GenerateResponse(
+            var result = OcrProcessorHelper.ProcessImageForOcr(
+                base64,
                 visionModel,
-                ocrPrompt,
-                [base64],
-                think: false,
-                system: "You are a OCR tool that extracts text from images."
+                _aIProviderService
             );
 
             imageTexts.Add(result);
@@ -668,11 +664,12 @@ public class DocumentProcessor
 
             var fileBytes = await File.ReadAllBytesAsync(filePath);
             var base64Image = Convert.ToBase64String(fileBytes);
-            var mediaType = GetImageMediaType(filePath);
 
-            var ocrPrompt = "Please extract and return all the text visible in this image.";
-            
-            string response = _aIProviderService.GenerateResponse(modelToUse, ocrPrompt, [base64Image], think: false, system: "You are a OCR tool that extracts text from images. When it makes sense to do so, use markdown");
+            string response = OcrProcessorHelper.ProcessImageForOcr(
+                base64Image,
+                modelToUse,
+                _aIProviderService
+            );
 
             _logger.LogInformation("Successfully extracted text from image: {FilePath}", filePath);
             return new DocumentProcessingImageResultModel(response);
