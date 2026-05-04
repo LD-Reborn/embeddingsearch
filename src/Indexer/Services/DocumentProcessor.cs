@@ -71,7 +71,7 @@ public class DocumentProcessor
     public async Task<IDocumentProcessingResultModel> GetTextContentAsync(DocumentProcessingRequest documentProcessingRequest)
     {
         string filePath = documentProcessingRequest.filePath;
-        var extension = System.IO.Path.GetExtension(filePath);
+        var extension = Path.GetExtension(filePath);
         Func<DocumentProcessingRequest, Task<IDocumentProcessingResultModel>> extractor;
         try
         {
@@ -481,13 +481,13 @@ public class DocumentProcessor
             }
             else if (extension == ".odp")
             {
-                _logger.LogWarning("Format {Extension} is not yet supported with native libraries. ODP support requires additional dependencies.", extension);
-                throw new NotImplementedException($"Format {extension} requires additional library support. Only .pptx is currently supported.");
+                _logger.LogInformation("Extracting text from ODP presentation using native libraries: {FilePath}", filePath);
+                return await PresentationProcessorHelper.ExtractFromOdpAsync(filePath, modelToUse, _aIProviderService, _logger);
             }
             else if (extension == ".ppt")
             {
                 _logger.LogWarning("Format {Extension} is not yet supported. PPT (binary format) requires additional dependencies.", extension);
-                throw new NotImplementedException($"Format {extension} requires additional library support. Only .pptx is currently supported.");
+                throw new NotImplementedException($"Format {extension} requires additional library support. Only .pptx and .odp are currently supported.");
             }
             else
             {
