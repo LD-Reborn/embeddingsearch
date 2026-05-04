@@ -323,15 +323,10 @@ public class DocumentProcessor
                 await stream.CopyToAsync(ms);
 
                 var base64 = Convert.ToBase64String(ms.ToArray());
-
-                string ocrPrompt = "Please extract and return all the text visible in this image.";
-
-                var result = _aIProviderService.GenerateResponse(
+                var result = OcrProcessorHelper.ProcessImageForOcr(
+                    base64,
                     documentProcessingRequest.visionModel ?? _defaultVisionModel!,
-                    ocrPrompt,
-                    [base64],
-                    think: false,
-                    system: "You are a OCR tool that extracts text from images."
+                    _aIProviderService
                 );
 
                 imageResults.Add(result);

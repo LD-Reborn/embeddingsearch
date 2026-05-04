@@ -42,16 +42,14 @@ public class PdfProcessorHelper
                         continue;
 
                     var base64Image = Convert.ToBase64String(imageData);
-                    var ocrPrompt = "Please extract and return all the text visible in this image.";
 
                     _logger.LogDebug("Sending {Bytes} bytes to vision model for OCR", imageData.Length);
 
-                    var result = _aIProviderService.GenerateResponse(
+                    var result = OcrProcessorHelper.ProcessImageForOcr(
+                        base64Image,
                         visionModel,
-                        ocrPrompt,
-                        [base64Image],
-                        think: false,
-                        system: "You are a OCR tool that extracts text from images. When it makes sense to do so, use markdown"
+                        _aIProviderService,
+                        "You are a OCR tool that extracts text from images. When it makes sense to do so, use markdown"
                     );
 
                     if (!string.IsNullOrWhiteSpace(result))

@@ -113,20 +113,7 @@ public static class SpreadsheetProcessorHelper
             await stream.CopyToAsync(ms);
 
             var base64 = Convert.ToBase64String(ms.ToArray());
-
-            string ocrPrompt = "Please extract and return all the text visible in this image.";
-
-            var result = aiProviderService.GenerateResponse(
-                modelToUse,
-                ocrPrompt,
-                [base64],
-                think: false,
-                system: "You are a OCR tool that extracts text from images."
-            );
-
-            imageResults.Add(result);
-            fullTextBuilder.AppendLine($"[IMAGE: {imagePart.Uri}]");
-            fullTextBuilder.AppendLine(result);
+            await OcrProcessorHelper.ProcessImageForOcrAsync(base64, imagePart.Uri.ToString(), modelToUse, imageResults, fullTextBuilder, aiProviderService);
         }
     }
 
@@ -254,20 +241,7 @@ public static class SpreadsheetProcessorHelper
                 {
                     await stream.CopyToAsync(ms);
                     var base64 = Convert.ToBase64String(ms.ToArray());
-
-                    string ocrPrompt = "Please extract and return all the text visible in this image.";
-
-                    var result = aiProviderService.GenerateResponse(
-                        modelToUse,
-                        ocrPrompt,
-                        [base64],
-                        think: false,
-                        system: "You are a OCR tool that extracts text from images."
-                    );
-
-                    imageResults.Add(result);
-                    fullTextBuilder.AppendLine($"[IMAGE: {imageEntry.FullName}]");
-                    fullTextBuilder.AppendLine(result);
+                    await OcrProcessorHelper.ProcessImageForOcrAsync(base64, imageEntry.FullName, modelToUse, imageResults, fullTextBuilder, aiProviderService);
                 }
             }
             catch (Exception ex)
