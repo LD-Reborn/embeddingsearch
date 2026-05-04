@@ -772,15 +772,15 @@
                 var probMethod = document.getElementById('createEntityProbMethod').value;
                 var attributes = getEntityAttributes();
                 var datapoints = getEntityDatapoints();
-                var data = [{
+                var data = {
                   "name": name,
                   "probmethod": probMethod,
                   "searchdomain": encodeURIComponent(domains[getSelectedDomainKey()]),
                   "attributes": attributes,
                   "datapoints": datapoints
-                }];
+                };
                 showToast("@T["Creating entity"]", "primary");
-                fetch(`/Entities`, {
+                fetch(`/Entity`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -902,15 +902,15 @@
                 var probMethod = document.getElementById('updateEntityProbMethod').value;
                 var attributes = getEntityAttributes('updateEntityAttributesContainer');
                 var datapoints = getEntityDatapoints('updateEntityDatapointsContainer');
-                var data = [{
+                var data = {
                   "name": name,
                   "probmethod": probMethod,
                   "searchdomain": domains[getSelectedDomainKey()],
                   "attributes": attributes,
                   "datapoints": datapoints
-                }];
+                };
                 showToast("@T["Updating entity"]", "primary");
-                fetch(`/Entities`, {
+                fetch(`/Entity`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'

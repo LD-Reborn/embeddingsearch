@@ -108,6 +108,7 @@ Log.Logger = new LoggerConfiguration()
 builder.Logging.AddSerilog();
 builder.Services.AddSingleton<DatabaseHelper>();
 builder.Services.AddSingleton<SearchdomainHelper>();
+builder.Services.AddScoped<EntityIndexHelper>();
 builder.Services.AddSingleton<SearchdomainManager>();
 builder.Services.AddSingleton<AIProviderService>();
 builder.Services.AddHealthChecks()

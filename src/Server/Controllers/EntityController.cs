@@ -14,17 +14,19 @@ public class EntityController : ControllerBase
     private SearchdomainManager _domainManager;
     private readonly SearchdomainHelper _searchdomainHelper;
     private readonly DatabaseHelper _databaseHelper;
+    private readonly EntityIndexHelper _entityIndexHelper;
     private readonly Dictionary<string, EntityIndexSessionData> _sessions = [];
     private readonly object _sessionLock = new();
     private const int SessionTimeoutMinutes = 60; // TODO: remove magic number; add an optional configuration option
 
-    public EntityController(ILogger<EntityController> logger, IConfiguration config, SearchdomainManager domainManager, SearchdomainHelper searchdomainHelper, DatabaseHelper databaseHelper)
+    public EntityController(ILogger<EntityController> logger, IConfiguration config, SearchdomainManager domainManager, SearchdomainHelper searchdomainHelper, DatabaseHelper databaseHelper, EntityIndexHelper entityIndexHelper)
     {
         _logger = logger;
         _config = config;
         _domainManager = domainManager;
         _searchdomainHelper = searchdomainHelper;
         _databaseHelper = databaseHelper;
+        _entityIndexHelper = entityIndexHelper;
     }
 
     /// <summary>
@@ -86,6 +88,36 @@ public class EntityController : ControllerBase
     }
 
     /// <summary>
+    /// Create or update a single entity
+    /// </summary>
+    /// <remarks>
+    /// Behavior: Creates a new entity if it doesn't exist, or updates an existing entity with the same name.
+    /// Unlike the PUT /Entities endpoint, this does NOT delete any other entities.
+    /// </remarks>
+    /// <param name="jsonEntity">Entity to create or update</param>
+    [HttpPut("/Entity")]
+    public async Task<ActionResult<EntityIndexResult>> UpsertEntity([FromBody] JSONEntity jsonEntity)
+    {
+        if (jsonEntity is null)
+        {
+            return BadRequest(new EntityIndexResult() { Success = false, Message = "Entity cannot be null" });
+        }
+
+        // Validate searchdomain
+        (Searchdomain? searchdomain_, int? httpStatusCode, string? message) =
+            SearchdomainHelper.TryGetSearchdomain(_domainManager, jsonEntity.Searchdomain, _logger);
+        if (searchdomain_ is null || httpStatusCode is not null)
+            return StatusCode(httpStatusCode ?? 500, new EntityIndexResult() { Success = false, Message = message });
+
+        // Deserialize and process the entity
+        (List<Entity>? entities, bool success, string? errorMessage) = await _entityIndexHelper.DeserializeAndIndexEntitiesAsync(
+            [jsonEntity],
+            "single entity upsert");
+
+        return Ok(new EntityIndexResult() { Success = success, Message = errorMessage });
+    }
+
+    /// <summary>
     /// Index entities
     /// </summary>
     /// <remarks>
@@ -129,11 +161,11 @@ public class EntityController : ControllerBase
             }
 
             // Standard entity indexing (upsert behavior)
-            List<Entity>? entities = await _searchdomainHelper.EntitiesFromJSON(
-                _domainManager,
-                _logger,
-                JsonSerializer.Serialize(jsonEntities));
-            if (entities is not null && jsonEntities is not null)
+            (List<Entity>? entities, bool success, string? errorMessage) = await _entityIndexHelper.DeserializeAndIndexEntitiesAsync(
+                jsonEntities,
+                "batch entity indexing");
+
+            if (success && entities is not null)
             {
                 session.AccumulatedEntities.AddRange(entities);
 
@@ -146,14 +178,13 @@ public class EntityController : ControllerBase
             }
             else
             {
-                _logger.LogError("Unable to deserialize an entity");
-                ElmahCore.ElmahExtensions.RaiseError(new Exception("Unable to deserialize an entity"));
-                return Ok(new EntityIndexResult() { Success = false, Message = "Unable to deserialize an entity"});
+                return Ok(new EntityIndexResult() { Success = false, Message = errorMessage ?? "Unable to deserialize entities" });
             }
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             if (ex.InnerException is not null) ex = ex.InnerException;
-            _logger.LogError("Unable to index the provided entities. {ex.Message} - {ex.StackTrace}", [ex.Message, ex.StackTrace]);
+            _logger.LogError("Unexpected error during entity indexing. {ex.Message} - {ex.StackTrace}", ex.Message, ex.StackTrace);
             ElmahCore.ElmahExtensions.RaiseError(ex);
             return Ok(new EntityIndexResult() { Success = false, Message = ex.Message });
         }
