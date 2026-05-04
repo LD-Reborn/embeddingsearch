@@ -4,24 +4,16 @@ using Shared.Models;
 
 namespace Server.Models;
 
-public class EmbeddingSearchOptions : ApiKeyOptions
+public class EmbeddingSearchOptions : IApiKeyOptions
 {
     public required ConnectionStringsOptions ConnectionStrings { get; set; }
     public ElmahOptions? Elmah { get; set; }
-    public required Dictionary<string, AiProvider> AiProviders { get; set; }
+    public required Dictionary<string, AiProviderOptions> AiProviders { get; set; }
     public required SimpleAuthOptions SimpleAuth { get; set; }
     public required CacheOptions Cache { get; set; }
     public required bool UseHttpsRedirection { get; set; }
     public int? MaxRequestBodySize { get; set; }
-}
-
-public class AiProvider
-{
-    public required string Handler { get; set; }
-    public required string BaseURL { get; set; }
-    public string? ApiKey { get; set; }
-    public required string[] Allowlist { get; set; }
-    public required string[] Denylist { get; set; }
+    public string[]? ApiKeys { get; set; }
 }
 
 public class SimpleAuthOptions

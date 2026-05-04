@@ -1,4 +1,5 @@
 using System.Timers;
+using Indexer.Services;
 
 namespace Indexer.Models;
 
@@ -18,8 +19,9 @@ public class ScriptToolSet
     public IndexerOptions Configuration;
     public CancellationToken CancellationToken;
     public string Name;
+    public DocumentProcessor DocumentProcessor;
 
-    public ScriptToolSet(string filePath, Client.Client client, ILogger<WorkerManager> logger, IndexerOptions configuration, CancellationToken cancellationToken, string name)
+    public ScriptToolSet(string filePath, Client.Client client, ILogger<WorkerManager> logger, IndexerOptions configuration, CancellationToken cancellationToken, string name, DocumentProcessor documentProcessor)
     {
         Configuration = configuration;
         Name = name;
@@ -27,6 +29,7 @@ public class ScriptToolSet
         Client = client;
         Logger = new LoggerWrapper(logger);
         CancellationToken = cancellationToken;
+        DocumentProcessor = documentProcessor;
     }
 }
 

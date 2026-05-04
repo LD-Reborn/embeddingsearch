@@ -8,6 +8,7 @@ using Serilog;
 using Quartz;
 using System.Configuration;
 using Shared.Models;
+using Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,9 +29,11 @@ IConfigurationSection configurationSection = builder.Configuration.GetSection("I
 IndexerOptions configuration = configurationSection.Get<IndexerOptions>() ?? throw new ConfigurationErrorsException("Unable to start server due to an invalid configration");
 builder.Services.Configure<IndexerOptions>(configurationSection);
 builder.Services.Configure<ServerOptions>(configurationSection.GetSection("Server"));
+builder.Services.Configure<AiProviderCollectionOptions>(configurationSection);
 builder.Services.Configure<ApiKeyOptions>(configurationSection);
 builder.Services.AddSingleton<Client.Client>();
 builder.Services.AddSingleton<WorkerManager>();
+builder.Services.AddSingleton<AIProviderService>();
 builder.Services.AddHostedService<IndexerService>();
 builder.Services.AddHealthChecks()
     .AddCheck<WorkerHealthCheck>("WorkerHealthCheck");

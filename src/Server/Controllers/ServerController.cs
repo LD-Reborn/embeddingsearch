@@ -18,12 +18,12 @@ public class ServerController : ControllerBase
 {
     private readonly ILogger<ServerController> _logger;
     private readonly IConfiguration _config;
-    private AIProvider _aIProvider;
+    private AIProviderService _aIProvider;
     private readonly SearchdomainManager _searchdomainManager;
     private readonly IOptions<EmbeddingSearchOptions> _options;
     private readonly IHostEnvironment _hostEnvironment;
 
-    public ServerController(ILogger<ServerController> logger, IConfiguration config, AIProvider aIProvider, SearchdomainManager searchdomainManager, IOptions<EmbeddingSearchOptions> options, IHostEnvironment hostEnvironment)
+    public ServerController(ILogger<ServerController> logger, IConfiguration config, AIProviderService aIProvider, SearchdomainManager searchdomainManager, IOptions<EmbeddingSearchOptions> options, IHostEnvironment hostEnvironment)
     {
         _logger = logger;
         _config = config;

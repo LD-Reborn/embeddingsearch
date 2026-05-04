@@ -33,6 +33,7 @@ builder.Services.AddControllersWithViews()
 IConfigurationSection configurationSection = builder.Configuration.GetSection("Embeddingsearch");
 EmbeddingSearchOptions configuration = configurationSection.Get<EmbeddingSearchOptions>() ?? throw new ConfigurationErrorsException("Unable to start server due to an invalid configration");
 builder.Services.Configure<EmbeddingSearchOptions>(configurationSection);
+builder.Services.Configure<AiProviderCollectionOptions>(configurationSection);
 builder.Services.Configure<ApiKeyOptions>(configurationSection);
 
 // Configure Kestrel
@@ -108,7 +109,7 @@ builder.Logging.AddSerilog();
 builder.Services.AddSingleton<DatabaseHelper>();
 builder.Services.AddSingleton<SearchdomainHelper>();
 builder.Services.AddSingleton<SearchdomainManager>();
-builder.Services.AddSingleton<AIProvider>();
+builder.Services.AddSingleton<AIProviderService>();
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("DatabaseHealthCheck", tags: ["Database"])
     .AddCheck<AIProviderHealthCheck>("AIProviderHealthCheck", tags: ["AIProvider"]);
@@ -120,7 +121,7 @@ builder.Services.AddElmah<XmlFileErrorLog>(Options =>
             claim.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase)
             || claim.Value.Equals("Elmah", StringComparison.OrdinalIgnoreCase)
     );
-    Options.LogPath = configuration.Elmah?.LogPath ?? "~/logs";
+    Options.LogPath = configuration.Elmah?.LogPath ?? "./logs";
 });
 
 builder.Services
