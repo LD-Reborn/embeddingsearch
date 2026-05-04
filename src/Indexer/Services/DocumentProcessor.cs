@@ -538,6 +538,8 @@ public class DocumentProcessor
                 var slideTextBuilder = new StringBuilder();
                 var slideContent = slidePart.Slide;
 
+                fullTextBuilder.AppendLine($"--- Slide {slideNumber} ---");
+
                 // Extract text from shapes on the slide
                 if (slideContent?.CommonSlideData?.ShapeTree != null)
                 {
@@ -582,7 +584,7 @@ public class DocumentProcessor
                     slideResults.Add(slideText);
                 }
                 
-                fullTextBuilder.AppendLine($"\n--- Slide {slideNumber} ---\n");
+                fullTextBuilder.AppendLine();
             }
 
             _logger.LogInformation("Successfully extracted text from {SlideCount} slides in PPTX: {FilePath}", slideNumber, filePath);
