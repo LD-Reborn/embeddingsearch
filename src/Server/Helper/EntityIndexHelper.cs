@@ -25,7 +25,7 @@ public class EntityIndexHelper
     /// <param name="jsonEntities">List of entities to deserialize</param>
     /// <param name="operationName">Name of the operation for logging</param>
     /// <returns>Tuple of (entities, success, errorMessage)</returns>
-    public async Task<(List<Entity>? Entities, bool Success, string? ErrorMessage)> DeserializeEntitiesAsync(
+    public async Task<(List<Entity>? Entities, bool Success, string? ErrorMessage)> DeserializeAndIndexEntitiesAsync(
         List<JSONEntity>? jsonEntities,
         string operationName = "entity deserialization")
     {
