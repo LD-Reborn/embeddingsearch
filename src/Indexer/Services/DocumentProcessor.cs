@@ -34,7 +34,10 @@ public class DocumentProcessor
             (ExtractTextFromPdfAsync, new() { ".pdf" }),
 
             // Word documents
-            (ExtractTextFromWordDocumentAsync, new() { ".docx", ".odt" }),
+            (ExtractTextFromWordDocumentAsync, new() { ".docx" }),
+
+            // OpenDocument Text (ODT)
+            (ExtractTextFromOdtAsync, new() { ".odt" }),
 
             // Spreadsheets (not yet implemented)
             (ExtractTextFromSpreadsheetAsync, new() { ".ods", ".xls", ".xlsx" }),
@@ -370,6 +373,45 @@ public class DocumentProcessor
         catch (Exception ex)
         {
             _logger.LogError("Error extracting text from DOCX file {FilePath}: {Exception}", filePath, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<IDocumentProcessingResultModel> ExtractTextFromOdtAsync(DocumentProcessingRequest documentProcessingRequest)
+    {
+        string filePath = documentProcessingRequest.filePath;
+        string? visionModel = documentProcessingRequest.visionModel;
+        string? modelToUse = visionModel ?? _defaultVisionModel;
+        
+        try
+        {
+            _logger.LogInformation("Extracting text from ODT file: {FilePath}", filePath);
+
+            var fullTextBuilder = new StringBuilder();
+            var paragraphResults = new List<string>();
+            var headerResults = new List<string>();
+            var footerResults = new List<string>();
+            var imageResults = new List<string>();
+            var textBoxResults = new List<string>();
+            var tableResults = new List<string>();
+            var commentResults = new List<string>();
+
+            await OdtProcessorHelper.ExtractFromOdtAsync(filePath, modelToUse, fullTextBuilder, paragraphResults, imageResults, textBoxResults, tableResults, commentResults, headerResults, footerResults, _aIProviderService, _logger);
+
+            return new DocumentProcessingWordDocumentResultModel(
+                fullTextBuilder.ToString(),
+                paragraphResults,
+                headerResults,
+                footerResults,
+                textBoxResults,
+                tableResults,
+                commentResults,
+                imageResults
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error extracting text from ODT file {FilePath}: {Exception}", filePath, ex.Message);
             throw;
         }
     }
