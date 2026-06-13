@@ -1,7 +1,7 @@
 FROM ubuntu:25.10 AS ubuntu
 WORKDIR /app
 RUN apt-get update
-RUN apt-get install -y python3.13 python3.13-venv python3.13-dev dotnet-sdk-10.0
+RUN apt-get install -y python3.14 python3.14-venv python3.14-dev dotnet-sdk-10.0
 RUN apt-get clean
 COPY . /src/
 ENV ASPNETCORE_ENVIRONMENT Docker

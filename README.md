@@ -48,7 +48,7 @@ This repository comes with a:
 # Known issues
 | Issue | Solution |
 | --- | --- |
-| System.DllNotFoundException: Could not load libpython3.13.so with flags RTLD_NOW \| RTLD_GLOBAL: libpython3.12.so: cannot open shared object file: No such file or directory | Install python3.13-dev via apt. Also: try running the indexer using `/usr/bin/dotnet` instead of `dotnet` (to make sure dotnet is not running as a snap) |
+| System.DllNotFoundException: Could not load libpython3.14.so with flags RTLD_NOW \| RTLD_GLOBAL: libpython3.12.so: cannot open shared object file: No such file or directory | Install python3.14-dev via apt. Also: try running the indexer using `/usr/bin/dotnet` instead of `dotnet` (to make sure dotnet is not running as a snap) |
 
 # Planned features and support
 - Document processor with automatic chunking (e.g.: .md, .pdf, .docx, .xlsx, .png, .mp4)
