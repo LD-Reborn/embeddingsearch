@@ -16,7 +16,7 @@ The indexer by default
 ## Installing the dependencies
 ## Ubuntu 24.04
 1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-10.0 -y`
-2. Install the python SDK: `sudo apt install python3 python3.13 python3.13-dev`
+2. Install the python SDK: `sudo apt install python3 python3.14 python3.14-dev`
     - Note: Python 3.14 is not supported yet
 ## Windows
 Download and install the [.NET SDK](https://dotnet.microsoft.com/en-us/download) or follow these steps to use WSL:
