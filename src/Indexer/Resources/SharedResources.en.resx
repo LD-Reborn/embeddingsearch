@@ -78,4 +78,10 @@
   <data name="Unknown" xml:space="preserve">
     <value>Unknown</value>
   </data>
+  <data name="Swagger" xml:space="preserve">
+    <value>Swagger</value>
+  </data>
+  <data name="Elmah" xml:space="preserve">
+    <value>Elmah</value>
+  </data>
 </root>

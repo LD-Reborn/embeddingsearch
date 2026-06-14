@@ -1,3 +1,4 @@
+using ElmahCore;
 using Shared.Models;
 namespace Indexer.Models;
 
@@ -10,6 +11,7 @@ public class IndexerOptions : IApiKeyOptions
     public required Dictionary<string, AiProviderOptions> AiProviders { get; set; }
     public string? DefaultVisionModel { get; set; }
     public SimpleAuthOptions? SimpleAuth { get; set; }
+    public ElmahOptions? Elmah { get; set; }
 }
 
 public class SimpleAuthOptions

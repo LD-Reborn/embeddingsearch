@@ -1,0 +1,58 @@
+.swagger-return-btn {
+    position: fixed;
+    top: 6px;
+    left: 24px;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+
+    height: 44px;
+    min-width: 44px;
+    padding: 0 14px;
+
+    background: #85ea2d;
+    color: black;
+    border-radius: 999px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+
+    overflow: hidden;
+    white-space: nowrap;
+
+    justify-content: center;
+
+    transition:
+        top 0.25s ease,
+        background-color 0.2s ease;
+}
+
+/* hidden label */
+.swagger-return-btn::after {
+    content: "Return to Front-end";
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 0;
+    opacity: 0;
+    transition:
+        max-width 0.3s ease,
+        opacity 0.2s ease;
+}
+
+/* expand on hover */
+.swagger-return-btn:hover::after {
+    max-width: 220px;
+    padding: 0.5rem;
+    opacity: 1;
+}
+
+/* hover colors */
+.swagger-return-btn:hover {
+    background: #0b5ed7;
+    color: white;
+}
+
+/* scrolled state */
+.swagger-return-btn.scrolled {
+    top: 24px;
+}
