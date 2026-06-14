@@ -11,6 +11,10 @@ using Shared.Models;
 using Shared.Services;
 using Microsoft.AspNetCore.Localization;
 using System.Globalization;
+using System.Net;
+using System.Text;
+using Microsoft.OpenApi;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,14 +33,14 @@ builder.Services.AddScoped<LocalizationService>();
 
 // Add Localization
 
-builder.Services.AddControllersWithViews();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .CreateLogger();
-builder.Logging.AddSerilog();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IConfigurationRoot>(builder.Configuration);
 
@@ -52,9 +56,53 @@ builder.Services.AddSingleton<AIProviderService>();
 builder.Services.AddHostedService<IndexerService>();
 builder.Services.AddHealthChecks()
     .AddCheck<WorkerHealthCheck>("WorkerHealthCheck");
+
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, _) =>
+    {
+        if (configuration.ApiKeys is null)
+            return Task.CompletedTask;
+
+        document.Components ??= new();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["ApiKey"] =
+            new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                Name = "X-API-KEY",
+                In = ParameterLocation.Header,
+                Description = "ApiKey must appear in header"
+            };
+        
+        document.Security ??= [];
+
+        // Apply globally
+        document.Security?.Add(
+            new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("ApiKey", document)] = []
+            }
+        );
+
+        return Task.CompletedTask;
+    });
+});
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
+builder.Logging.AddSerilog();
 builder.Services.AddElmah<XmlFileErrorLog>(Options =>
 {
-    Options.LogPath = builder.Configuration.GetValue<string>("EmbeddingsearchIndexer:Elmah:LogFolder") ?? "~/logs";
+    Options.OnPermissionCheck = context =>
+        context.User.Claims.Any(claim =>
+            claim.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+            || claim.Value.Equals("Elmah", StringComparison.OrdinalIgnoreCase)
+    );
+    Options.LogPath = configuration.Elmah?.LogPath ?? "./logs";
 });
 
 builder.Services
@@ -84,21 +132,77 @@ var localizationOptions = new RequestLocalizationOptions()
     .AddSupportedUICultures(supportedCultures);
 app.UseRequestLocalization(localizationOptions);
 
-List<string>? allowedIps = builder.Configuration.GetSection("EmbeddingsearchIndexer:Elmah:AllowedHosts")
-    .Get<List<string>>();
+app.UseAuthentication();
+app.UseAuthorization();
 
+// Configure Elmah
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/elmah"))
     {
-        var remoteIp = context.Connection.RemoteIpAddress?.ToString();
-        bool blockRequest = allowedIps is null
-            || remoteIp is null
-            || !allowedIps.Contains(remoteIp);
-        if (blockRequest)
+        context.Response.OnStarting(() =>
         {
-            context.Response.StatusCode = 403;
-            await context.Response.WriteAsync("Forbidden");
+            context.Response.Headers.Append(
+                "Content-Security-Policy",
+                "default-src 'self' 'unsafe-inline' 'unsafe-eval'"
+            );
+            return Task.CompletedTask;
+        });
+    }
+
+    await next();
+});
+app.Use(async (context, next) =>
+{
+    if (!context.Request.Path.StartsWithSegments("/elmah"))
+    {
+        await next();
+        return;
+    }
+
+    var originalBody = context.Response.Body;
+    using var memStream = new MemoryStream();
+    context.Response.Body = memStream;
+
+    await next();
+
+    memStream.Position = 0;
+    var html = await new StreamReader(memStream).ReadToEndAsync();
+
+    if (context.Response.ContentType?.Contains("text/html") == true)
+    {
+        html = html.Replace(
+            "</head>",
+            """
+            <link rel="stylesheet" href="/elmah-ui/custom.css" />
+            <script src="/elmah-ui/custom.js"></script>
+            </head>
+            """
+        );
+    }
+
+    var bytes = Encoding.UTF8.GetBytes(html);
+    context.Response.ContentLength = bytes.Length;
+    await originalBody.WriteAsync(bytes);
+    context.Response.Body = originalBody;
+});
+app.UseElmah();
+
+app.MapHealthChecks("/healthz");
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/swagger"))
+    {
+        if (!context.User.Identity?.IsAuthenticated ?? true)
+        {
+            context.Response.Redirect($"/Account/Login?ReturnUrl={WebUtility.UrlEncode("/swagger")}");
+            return;
+        }
+
+        if (!context.User.IsInRole("Admin"))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return;
         }
     }
@@ -106,23 +210,33 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.UseElmah();
-
-app.MapHealthChecks("/healthz");
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-    app.UseElmahExceptionPage();
-}
-else
+    options.SwaggerEndpoint("/openapi/v1.json", "API v1");
+    options.RoutePrefix = "swagger";
+    options.EnablePersistAuthorization();
+    options.InjectStylesheet("/swagger-ui/custom.css");
+    options.InjectJavascript("/swagger-ui/custom.js");
+});
+app.MapOpenApi("/openapi/v1.json");
+
+//app.UseElmahExceptionPage(); // Messes with JSON response for API calls. Leaving this here so I don't accidentally put this in again later on.
+
+if (configuration.ApiKeys is not null)
 {
-    app.UseMiddleware<Shared.ApiKeyMiddleware>();
+    app.UseWhen(context =>
+    {
+        RouteData routeData = context.GetRouteData();
+        string controllerName = routeData.Values["controller"]?.ToString() ?? "StaticFile";
+        if (controllerName == "Account" || controllerName == "Dashboard" || controllerName == "StaticFile")
+        {
+            return false;
+        }
+        return true;
+    }, appBuilder =>
+    {
+        appBuilder.UseMiddleware<Shared.ApiKeyMiddleware>();    
+    });
 }
 
 app.UseStaticFiles();
