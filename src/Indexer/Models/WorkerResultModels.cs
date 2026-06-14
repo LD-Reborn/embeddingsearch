@@ -24,6 +24,8 @@ public class WorkerListResult
     public required DateTime? LastSuccessfulExecution { get; set; }
     [JsonPropertyName("HealthStatus")]
     public required string HealthStatus { get; set; }
+    [JsonPropertyName("Calls")]
+    public List<CallListResult>? Calls { get; set; }
 }
 
 public class WorkerTriggerUpdateResult

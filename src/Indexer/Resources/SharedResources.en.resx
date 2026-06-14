@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Indexer Dashboard" xml:space="preserve">
+    <value>Indexer Dashboard</value>
+  </data>
+  <data name="Embedding Search Indexer" xml:space="preserve">
+    <value>Embedding Search Indexer</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Loading workers" xml:space="preserve">
+    <value>Loading workers</value>
+  </data>
+  <data name="Indexer" xml:space="preserve">
+    <value>Indexer</value>
+  </data>
+  <data name="Workers" xml:space="preserve">
+    <value>Workers</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="Issues" xml:space="preserve">
+    <value>Issues</value>
+  </data>
+  <data name="Error loading workers" xml:space="preserve">
+    <value>Error loading workers</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="No workers configured" xml:space="preserve">
+    <value>No workers configured</value>
+  </data>
+  <data name="Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Idle" xml:space="preserve">
+    <value>Idle</value>
+  </data>
+  <data name="Execution" xml:space="preserve">
+    <value>Execution</value>
+  </data>
+  <data name="Last execution" xml:space="preserve">
+    <value>Last execution</value>
+  </data>
+  <data name="Successful" xml:space="preserve">
+    <value>Successful</value>
+  </data>
+  <data name="Trigger" xml:space="preserve">
+    <value>Trigger</value>
+  </data>
+  <data name="Enable" xml:space="preserve">
+    <value>Enable</value>
+  </data>
+  <data name="Disable" xml:space="preserve">
+    <value>Disable</value>
+  </data>
+  <data name="Calls" xml:space="preserve">
+    <value>Calls</value>
+  </data>
+  <data name="Healthy" xml:space="preserve">
+    <value>Healthy</value>
+  </data>
+  <data name="Degraded" xml:space="preserve">
+    <value>Degraded</value>
+  </data>
+  <data name="Unhealthy" xml:space="preserve">
+    <value>Unhealthy</value>
+  </data>
+  <data name="N/A" xml:space="preserve">
+    <value>N/A</value>
+  </data>
+  <data name="Executing" xml:space="preserve">
+    <value>Executing</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+</root>

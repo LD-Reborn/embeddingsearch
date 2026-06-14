@@ -9,4 +9,17 @@ public class IndexerOptions : IApiKeyOptions
     public string[]? ApiKeys { get; set; }
     public required Dictionary<string, AiProviderOptions> AiProviders { get; set; }
     public string? DefaultVisionModel { get; set; }
+    public SimpleAuthOptions? SimpleAuth { get; set; }
+}
+
+public class SimpleAuthOptions
+{
+    public List<SimpleUser> Users { get; set; } = [];
+}
+
+public class SimpleUser
+{
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string[] Roles { get; set; } = [];
 }
