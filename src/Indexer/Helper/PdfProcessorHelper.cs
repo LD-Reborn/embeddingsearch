@@ -1,9 +1,7 @@
 using System.Text;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Xobject;
-using Server;
-using Shared;
-using Shared.Models;
+using Shared.Services;
 
 namespace Indexer.Helper;
 

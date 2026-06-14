@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 using Shared.Exceptions;
 using Shared.Models;
 
-namespace Server;
+namespace Shared.Services;
 
 public class AIProviderService
 {
