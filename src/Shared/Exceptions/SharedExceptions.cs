@@ -1,4 +1,4 @@
-using Server;
+using Shared.Services;
 
 namespace Shared.Exceptions;
 

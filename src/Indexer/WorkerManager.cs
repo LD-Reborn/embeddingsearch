@@ -3,7 +3,7 @@ using Indexer.Models;
 using Indexer.ScriptContainers;
 using Indexer.Services;
 using Microsoft.Extensions.Options;
-using Server;
+using Shared.Services;
 
 public class WorkerManager
 {

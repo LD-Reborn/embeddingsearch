@@ -3,7 +3,7 @@ using System.Xml.Linq;
 using System.IO.Compression;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using Server;
+using Shared.Services;
 
 namespace Indexer.Helper;
 

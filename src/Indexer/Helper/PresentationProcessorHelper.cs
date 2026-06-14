@@ -1,8 +1,8 @@
 using System.Text;
 using System.Xml.Linq;
 using System.IO.Compression;
-using Server;
 using Indexer.Models;
+using Shared.Services;
 
 namespace Indexer.Helper;
 

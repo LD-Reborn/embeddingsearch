@@ -2,13 +2,13 @@ using System.Text;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Indexer.Models;
-using Server;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Office.CustomUI;
 using Quartz.Util;
 using Indexer.Helper;
 using iText.Kernel.Pdf;
+using Shared.Services;
 
 namespace Indexer.Services;
 

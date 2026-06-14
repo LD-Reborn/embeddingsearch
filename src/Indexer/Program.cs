@@ -8,7 +8,7 @@ using Serilog;
 using Quartz;
 using System.Configuration;
 using Shared.Models;
-using Server;
+using Shared.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
