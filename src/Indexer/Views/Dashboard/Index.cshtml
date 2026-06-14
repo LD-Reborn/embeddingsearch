@@ -1,0 +1,52 @@
+@using System.Globalization
+@using Shared.Services
+@inject LocalizationService T
+
+@{
+    ViewData["Title"] = T["Dashboard"];
+}
+
+<div class="container py-4">
+    <h1 class="mb-4">@T["Indexer Dashboard"]</h1>
+
+    <div id="workersContainer" class="row g-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-center align-items-center py-5">
+                <div class="spinner me-2"></div>
+                <span>@T["Loading workers"]…</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.dashboardCulture = '@CultureInfo.CurrentCulture.Name';
+        window.dashboardTranslations = {
+            errorLoadingWorkers: '@T["Error loading workers"]',
+            retry: '@T["Retry"]',
+            noWorkersConfigured: '@T["No workers configured"]',
+            running: '@T["Running"]',
+            idle: '@T["Idle"]',
+            execution: '@T["Execution"]',
+            lastExecution: '@T["Last execution"]',
+            successful: '@T["Successful"]',
+            trigger: '@T["Trigger"]',
+            enable: '@T["Enable"]',
+            disable: '@T["Disable"]',
+            calls: '@T["Calls"]',
+            healthy: '@T["Healthy"]',
+            degraded: '@T["Degraded"]',
+            unhealthy: '@T["Unhealthy"]',
+            executing: '@T["Executing"]',
+            unknown: '@T["Unknown"]',
+            notAvailable: '@T["N/A"]',
+            enableAll: '@T["Enable all"]',
+            disableAll: '@T["Disable all"]',
+            enabled: '@T["Enabled"]',
+            disabled: '@T["Disabled"]',
+            worker: '@T["Worker"]'
+        };
+    </script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}
