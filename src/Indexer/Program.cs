@@ -50,6 +50,8 @@ builder.Services.Configure<IndexerOptions>(configurationSection);
 builder.Services.Configure<ServerOptions>(configurationSection.GetSection("Server"));
 builder.Services.Configure<AiProviderCollectionOptions>(configurationSection);
 builder.Services.Configure<ApiKeyOptions>(configurationSection);
+builder.Services.Configure<LdapOptions>(configurationSection.GetSection("Ldap"));
+builder.Services.AddSingleton<LdapAuthenticationService>();
 builder.Services.AddSingleton<Client.Client>();
 builder.Services.AddSingleton<WorkerManager>();
 builder.Services.AddSingleton<AIProviderService>();

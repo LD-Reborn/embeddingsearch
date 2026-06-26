@@ -35,6 +35,8 @@ EmbeddingSearchOptions configuration = configurationSection.Get<EmbeddingSearchO
 builder.Services.Configure<EmbeddingSearchOptions>(configurationSection);
 builder.Services.Configure<AiProviderCollectionOptions>(configurationSection);
 builder.Services.Configure<ApiKeyOptions>(configurationSection);
+builder.Services.Configure<LdapOptions>(configurationSection.GetSection("Ldap"));
+builder.Services.AddSingleton<LdapAuthenticationService>();
 
 // Configure Kestrel
 builder.WebHost.ConfigureKestrel(options =>
