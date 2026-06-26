@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Server.Models;
+using Shared.Services;
 
 namespace Server.Controllers;
 
@@ -11,10 +12,14 @@ namespace Server.Controllers;
 public class AccountController : Controller
 {
     private readonly SimpleAuthOptions _options;
+    private readonly LdapAuthenticationService _ldapAuth;
 
-    public AccountController(IOptions<EmbeddingSearchOptions> options)
+    public AccountController(
+        IOptions<EmbeddingSearchOptions> options,
+        LdapAuthenticationService ldapAuth)
     {
         _options = options.Value.SimpleAuth;
+        _ldapAuth = ldapAuth;
     }
 
     [HttpGet("Login")]
@@ -30,21 +35,37 @@ public class AccountController : Controller
         string password,
         string? returnUrl = null)
     {
-        var user = _options.Users.SingleOrDefault(u =>
-            u.Username == username && u.Password == password);
+        var ldapResult = await _ldapAuth.AuthenticateAsync(username, password);
 
-        if (user == null)
+        string displayName;
+        List<string> roles;
+
+        if (ldapResult is not null)
         {
-            ModelState.AddModelError("", "Invalid credentials");
-            return View();
+            displayName = ldapResult.DisplayName;
+            roles = ldapResult.Roles;
+        }
+        else
+        {
+            var user = _options.Users.SingleOrDefault(u =>
+                u.Username == username && u.Password == password);
+
+            if (user == null)
+            {
+                ModelState.AddModelError("", "Invalid credentials");
+                return View();
+            }
+
+            displayName = user.Username;
+            roles = user.Roles.ToList();
         }
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name, user.Username)
+            new(ClaimTypes.Name, displayName)
         };
 
-        claims.AddRange(user.Roles.Select(r =>
+        claims.AddRange(roles.Select(r =>
             new Claim(ClaimTypes.Role, r)));
 
         var identity = new ClaimsIdentity(
