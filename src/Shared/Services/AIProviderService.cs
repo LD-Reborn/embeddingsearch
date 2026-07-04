@@ -81,7 +81,14 @@ public class AIProviderService
         {
             request.Headers.Add(header[0], header[1]);
         }
-        HttpResponseMessage response = httpClient.PostAsync(requestUri, requestContent).Result;
+        HttpResponseMessage response;
+        try
+        {
+            response = httpClient.PostAsync(requestUri, requestContent).Result;
+        } catch (Exception e)
+        {
+            throw new AggregateException("Unable to retrieve embeddings", e);
+        }
         string responseContent = response.Content.ReadAsStringAsync().Result;
         try
         {
