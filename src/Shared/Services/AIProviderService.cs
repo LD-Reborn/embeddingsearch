@@ -174,8 +174,8 @@ public class AIProviderService
             }
             catch (Exception ex)
             {
-                _logger.LogError("Unable to parse the response to valid models. {ex.Message}", [ex.Message]);
-                throw;
+                _logger.LogError("Unable to list models for AIProvider {aIProviderName}. {ex.Message}", [aIProviderName, ex.Message]);
+                throw new AggregateException($"Unable to list models for AIProvider {aIProviderName}. {ex.Message}", ex);
             }
         }
         return [.. results];
