@@ -8,11 +8,10 @@ The indexer by default
 - Uses HealthChecks (endpoint: `/healthz`)
 ## Docker installation
 (On Linux you might need root privileges, thus use `sudo` where necessary)
-1. [Configure the indexer](docs/Indexer.md#configuration)
+1. [Configure appsettings.Docker.json](docs/Indexer.md#configuration)
 2. [Set up your indexing script(s)](docs/Indexer.md#scripting)
-3. Navigate to the `src` directory
-4. Build the docker container: `docker build -t embeddingsearch-indexer -f Indexer/Dockerfile .`
-5. Run the docker container: `docker run --net=host -t embeddingsearch-indexer` (the `-t` is optional, but you get more meaningful output. Or use `-d` to run it in the background)
+3. Navigate into this directory: `src/Indexer`
+4. Run `docker compose up` (use `-d` to run it in the background)
 ## Installing the dependencies
 ## Ubuntu 24.04
 1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-10.0 -y`

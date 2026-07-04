@@ -7,10 +7,9 @@ The server by default
 - Uses HealthChecks (endpoint: `/healthz`)
 ## Docker installation
 (On Linux you might need root privileges. Use `sudo` where necessary)
-1. [Set up the configuration](docs/Server.md#setup)
-2. Navigate to the `src` directory
-3. Build the docker container: `docker build -t embeddingsearch-server -f Server/Dockerfile .`
-4. Run the docker container: `docker run --net=host -t embeddingsearch-server` (the `-t` is optional, but you get more meaningful output. Or use `-d` to run it in the background)
+1. [Configure appsettings.Docker.json](docs/Server.md#setup)
+2. Navigate into this directory: `src/Server`
+3. Run `docker compose up` (use `-d` to run it in the background)
 # Installing the dependencies
 ## Ubuntu 24.04
 1. Install the .NET SDK: `sudo apt update && sudo apt install dotnet-sdk-10.0 -y`
