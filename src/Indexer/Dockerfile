@@ -1,15 +1,32 @@
-FROM ubuntu:25.10 AS ubuntu
+# -----------------------
+# Build stage
+# -----------------------
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY ./src/Indexer/ ./Indexer/
+COPY ./src/Shared/ ./Shared/
+COPY ./src/Client/ ./Client/
+
+RUN dotnet publish ./Indexer/Indexer.csproj -c Release -o /out /p:UseAppHost=false
+
+# -----------------------
+# Runtime stage
+# -----------------------
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
-RUN apt-get update
-RUN apt-get install -y python3.14 python3.14-venv python3.14-dev dotnet-sdk-10.0
-RUN apt-get clean
-COPY . /src/
-ENV ASPNETCORE_ENVIRONMENT Docker
-RUN rm /src/Server/appsettings*
-RUN dotnet build /src/Indexer/Indexer.csproj
-RUN dotnet publish /src/Indexer/Indexer.csproj -c Release -o /app
-RUN cp -r /src/Indexer/Scripts /app/Scripts
-RUN rm -r /src
+
+# Only runtime dependencies
+RUN apt-get update && apt-get install -y software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y python3.14 python3.14-venv python3.14-dev
+
+COPY --from=build /out ./
+COPY ./src/Indexer/Scripts ./Scripts
+
+ENV ASPNETCORE_ENVIRONMENT=Docker
 ENV PYTHONIOENCODING=utf8
-EXPOSE 5120
-ENTRYPOINT ["./Indexer"]
+
+EXPOSE 5210
+ENTRYPOINT ["dotnet", "Indexer.dll"]

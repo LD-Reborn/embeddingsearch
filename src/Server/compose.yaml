@@ -1,0 +1,8 @@
+services:
+  indexer:
+    image: ld50.dev/embeddingsearch-server:latest
+    ports:
+      - "5146:5000"
+    volumes:
+      - ./appsettings.Docker.json:/app/appsettings.Docker.json:rw
+    network_mode: host

@@ -1,12 +1,23 @@
+# Prepare build environment
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /build
-COPY . .
-RUN dotnet restore Server/Server.csproj
-RUN dotnet publish Server/Server.csproj -c Release -o /output
+
+# Copy projects
+COPY ./src/Server/ ./src/Server/
+COPY ./src/Shared/ ./src/Shared/
+
+# Remove sensitive files
+RUN rm ./src/Server/appsettings*.json
+
+# Build and publish projects
+RUN dotnet restore src/Server/Server.csproj
+RUN dotnet publish src/Server/Server.csproj -c Release -o /output
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /output .
 ENV ASPNETCORE_ENVIRONMENT Docker
+
+# Define port and entrypoint
 EXPOSE 5146
 ENTRYPOINT [ "./Server" ]

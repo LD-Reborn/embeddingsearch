@@ -1,0 +1,11 @@
+# Ignore build artifacts and logs
+logs/
+bin/
+obj/
+
+# Ignore Python cache/venv
+**/__pycache__/
+**/*.pyc
+**/.env/
+**/.venv/
+
