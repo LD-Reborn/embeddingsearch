@@ -53,5 +53,8 @@ This repository comes with a:
 # Planned features and support
 - Support for other database types (MSSQL, SQLite, PostgreSQL, MongoDB, Redis)
 
+# Pipelines
+![Build & Publish](https://github.com/LD-Reborn/embeddingsearch/actions/workflows/docker-ci.yml/badge.svg)
+
 # Community
 <a href="https://discord.gg/MUKeZM3k"><img src="https://img.shields.io/badge/Join%20Discord-7289DA?style=flat&logo=discord&logoColor=whiteServer" alt="Discord"></img></a>

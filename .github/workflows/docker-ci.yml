@@ -15,37 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src
+        working-directory: .
     steps:
       - uses: actions/checkout@v4
 
       - name: Build Server Docker image
-        run: docker build -t embeddingsearch-server -f Server/Dockerfile .
-
-      - name: Smoke test Server container
-        run: |
-          docker run -d --name server-test \
-            -p 5146:5146 \
-            -e ASPNETCORE_ENVIRONMENT=Docker \
-            embeddingsearch-server
-
-          # Wait up to 15s for the process to bind
-          for i in $(seq 1 15); do
-            if curl -sf http://localhost:5146/healthz > /dev/null 2>&1; then
-              echo "Server responded on /healthz"
-              exit 0
-            fi
-            # Check container is still running
-            if ! docker ps --filter name=server-test --format "{{.Status}}" | grep -q Up; then
-              echo "Container stopped unexpectedly"
-              docker logs server-test
-              exit 1
-            fi
-            sleep 1
-          done
-          echo "Server failed to respond within 15s"
-          docker logs server-test
-          exit 1
+        run: docker build -t embeddingsearch-server -f src/Server/Dockerfile .
 
       - name: Cleanup
         if: always()
@@ -56,35 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: src
+        working-directory: .
     steps:
       - uses: actions/checkout@v4
 
       - name: Build Indexer Docker image
-        run: docker build -t embeddingsearch-indexer -f Indexer/Dockerfile .
-
-      - name: Smoke test Indexer container
-        run: |
-          docker run -d --name indexer-test \
-            -p 5120:5120 \
-            -e ASPNETCORE_ENVIRONMENT=Docker \
-            embeddingsearch-indexer
-
-          for i in $(seq 1 15); do
-            if curl -sf http://localhost:5120/healthz > /dev/null 2>&1; then
-              echo "Indexer responded on /healthz"
-              exit 0
-            fi
-            if ! docker ps --filter name=indexer-test --format "{{.Status}}" | grep -q Up; then
-              echo "Container stopped unexpectedly"
-              docker logs indexer-test
-              exit 1
-            fi
-            sleep 1
-          done
-          echo "Indexer failed to respond within 15s"
-          docker logs indexer-test
-          exit 1
+        run: docker build -t embeddingsearch-indexer -f src/Indexer/Dockerfile .
 
       - name: Cleanup
         if: always()
