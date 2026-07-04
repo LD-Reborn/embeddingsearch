@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Server Docker image
-        run: docker build -t embeddingsearch-server -f Server/Dockerfile .
+        run: docker build -t embeddingsearch-server -f src/Server/Dockerfile .
 
       - name: Smoke test Server container
         run: |
@@ -61,7 +61,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Indexer Docker image
-        run: docker build -t embeddingsearch-indexer -f Indexer/Dockerfile .
+        run: docker build -t embeddingsearch-indexer -f src/Indexer/Dockerfile .
 
       - name: Smoke test Indexer container
         run: |
