@@ -111,4 +111,25 @@
   <data name="No more logs" xml:space="preserve">
     <value>No more logs</value>
   </data>
+  <data name="Filters" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="Log level" xml:space="preserve">
+    <value>Log level</value>
+  </data>
+  <data name="Filter by regex" xml:space="preserve">
+    <value>Filter by regex</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="Clear filters" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
+  <data name="No logs match filters" xml:space="preserve">
+    <value>No logs match filters</value>
+  </data>
 </root>

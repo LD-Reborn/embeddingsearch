@@ -117,4 +117,25 @@
   <data name="No more logs" xml:space="preserve">
     <value>Keine weiteren Protokolle</value>
   </data>
+  <data name="Filters" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Log level" xml:space="preserve">
+    <value>Protokollstufe</value>
+  </data>
+  <data name="Filter by regex" xml:space="preserve">
+    <value>Mit Regex filtern</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>Ende</value>
+  </data>
+  <data name="Clear filters" xml:space="preserve">
+    <value>Filter zurücksetzen</value>
+  </data>
+  <data name="No logs match filters" xml:space="preserve">
+    <value>Keine Protokolle passen zu den Filtern</value>
+  </data>
 </root>

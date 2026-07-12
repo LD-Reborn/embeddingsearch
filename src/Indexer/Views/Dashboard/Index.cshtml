@@ -27,6 +27,60 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
+                <div id="logFilterBar" class="px-3 pt-3 border-bottom">
+                    <div class="d-flex align-items-center mb-2">
+                        <small class="text-muted fw-semibold me-2">@T["Filters"]</small>
+                        <button class="btn btn-link btn-sm p-0 ms-auto" id="logFilterToggle" type="button"></button>
+                    </div>
+                    <div id="logFilterContent">
+                        <div class="mb-2">
+                            <small class="text-muted d-block mb-1">@T["Log level"]</small>
+                            <div class="d-flex flex-wrap gap-2" id="logLevelFilters">
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="checkbox" id="logFilterTrace" value="trace" checked>
+                                    <label class="form-check-label" for="logFilterTrace">Trace</label>
+                                </div>
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="checkbox" id="logFilterDebug" value="debug" checked>
+                                    <label class="form-check-label" for="logFilterDebug">Debug</label>
+                                </div>
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="checkbox" id="logFilterInfo" value="information" checked>
+                                    <label class="form-check-label" for="logFilterInfo">Info</label>
+                                </div>
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="checkbox" id="logFilterWarning" value="warning" checked>
+                                    <label class="form-check-label" for="logFilterWarning">Warning</label>
+                                </div>
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="checkbox" id="logFilterError" value="error" checked>
+                                    <label class="form-check-label" for="logFilterError">Error</label>
+                                </div>
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="checkbox" id="logFilterCritical" value="critical" checked>
+                                    <label class="form-check-label" for="logFilterCritical">Critical</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col">
+                                <small class="text-muted d-block mb-1">@T["Filter by regex"]</small>
+                                <input type="text" class="form-control form-control-sm" id="logFilterRegex">
+                            </div>
+                            <div class="col-auto">
+                                <small class="text-muted d-block mb-1">@T["Start"]</small>
+                                <input type="datetime-local" class="form-control form-control-sm" id="logFilterStart">
+                            </div>
+                            <div class="col-auto">
+                                <small class="text-muted d-block mb-1">@T["End"]</small>
+                                <input type="datetime-local" class="form-control form-control-sm" id="logFilterEnd">
+                            </div>
+                            <div class="col-auto d-flex align-items-end">
+                                <button class="btn btn-secondary btn-sm" id="logFilterClear" type="button">@T["Clear filters"]</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <ul id="logHistoryList" class="list-group list-group-flush" role="list"></ul>
             </div>
             <div class="modal-footer">
@@ -65,7 +119,14 @@
             disabled: '@T["Disabled"]',
             worker: '@T["Worker"]',
             allLogs: '@T["All logs"]',
-            noMoreLogs: '@T["No more logs"]'
+            noMoreLogs: '@T["No more logs"]',
+            filters: '@T["Filters"]',
+            logLevel: '@T["Log level"]',
+            filterByRegex: '@T["Filter by regex"]',
+            start: '@T["Start"]',
+            end: '@T["End"]',
+            clearFilters: '@T["Clear filters"]',
+            noLogsMatchFilters: '@T["No logs match filters"]'
         };
     </script>
     <script src="~/js/dashboard.js" asp-append-version="true"></script>

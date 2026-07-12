@@ -16,6 +16,8 @@ class Dashboard {
         // Modal state
         this.modalWorkerName = null;
         this.modalLogs = [];
+        this.modalAllLogs = [];
+        this.modalFilterDebounce = null;
 
         this.init();
     }
@@ -39,6 +41,23 @@ class Dashboard {
 
         // Modal lifecycle
         document.getElementById('logHistoryModal').addEventListener('hidden.bs.modal', () => this.closeModal());
+
+        // Filter toggle
+        document.getElementById('logFilterToggle').addEventListener('click', () => {
+            const content = document.getElementById('logFilterContent');
+            const btn = document.getElementById('logFilterToggle');
+            const hidden = content.classList.toggle('d-none');
+            btn.textContent = hidden ? '\u25B6' : '\u25BC';
+        });
+        document.getElementById('logFilterToggle').textContent = '\u25BC';
+
+        // Filter change listeners
+        const filterHandler = () => this.scheduleFilterApply();
+        document.querySelectorAll('#logLevelFilters .form-check-input').forEach(el => el.addEventListener('change', filterHandler));
+        document.getElementById('logFilterRegex').addEventListener('input', filterHandler);
+        document.getElementById('logFilterStart').addEventListener('change', filterHandler);
+        document.getElementById('logFilterEnd').addEventListener('change', filterHandler);
+        document.getElementById('logFilterClear').addEventListener('click', () => this.clearLogFilters());
     }
 
     // ==================== Log Counts ====================
@@ -347,6 +366,7 @@ class Dashboard {
     async openLogModal(workerName) {
         this.modalWorkerName = workerName;
         this.modalLogs = [];
+        this.modalAllLogs = [];
 
         const escapedName = this.escapeHtml(workerName);
         document.getElementById('logHistoryModalTitle').textContent = `${window.dashboardTranslations.allLogs} \u2014 ${escapedName}`;
@@ -381,14 +401,17 @@ class Dashboard {
             const data = await response.json();
 
             if (data.Success && data.Logs.length > 0) {
-                this.modalLogs = data.Logs;
-                const list = document.getElementById('logHistoryList');
-                list.innerHTML = data.Logs.map(log => this.renderLogEntry(log)).join('');
+                this.modalAllLogs = data.Logs;
+                this.applyFilters();
             } else {
+                this.modalAllLogs = [];
+                this.modalLogs = [];
                 document.getElementById('logHistoryList').innerHTML = `<li class="list-group-item text-muted p-3 text-center">${window.dashboardTranslations.noMoreLogs}</li>`;
             }
 
-            document.getElementById('logHistoryCount').textContent = `${this.modalLogs.length} logs`;
+            document.getElementById('logHistoryCount').textContent = this.modalAllLogs.length > 0
+                ? `${this.modalLogs.length} / ${this.modalAllLogs.length} logs`
+                : `${this.modalLogs.length} logs`;
         } catch (error) {
             console.error('Error loading modal logs:', error);
             document.getElementById('logHistoryList').innerHTML = `<li class="list-group-item text-danger p-3 text-center">${window.dashboardTranslations.retry}</li>`;
@@ -401,6 +424,14 @@ class Dashboard {
 
         const modal = document.getElementById('logHistoryModal');
         if (!modal.classList.contains('show')) return;
+
+        this.modalAllLogs.unshift(log);
+
+        const filters = this.getActiveFilters();
+        if (!this.logMatchesFilters(log, filters)) {
+            document.getElementById('logHistoryCount').textContent = `${this.modalLogs.length} / ${this.modalAllLogs.length} logs`;
+            return;
+        }
 
         // Remove placeholder if present
         const placeholder = list.querySelector('.text-muted.text-center');
@@ -420,12 +451,85 @@ class Dashboard {
         }
 
         this.modalLogs.unshift(log);
-        document.getElementById('logHistoryCount').textContent = `${this.modalLogs.length} logs`;
+        document.getElementById('logHistoryCount').textContent = `${this.modalLogs.length} / ${this.modalAllLogs.length} logs`;
     }
 
     closeModal() {
         this.modalWorkerName = null;
         this.modalLogs = [];
+        this.modalAllLogs = [];
+    }
+
+    // ==================== Log Filters ====================
+
+    getActiveFilters() {
+        const levels = new Set();
+        document.querySelectorAll('#logLevelFilters .form-check-input:checked').forEach(el => levels.add(el.value));
+
+        let regex = null;
+        const regexVal = document.getElementById('logFilterRegex').value.trim();
+        if (regexVal) {
+            try { regex = new RegExp(regexVal, 'i'); } catch { regex = null; }
+        }
+
+        const startVal = document.getElementById('logFilterStart').value;
+        const endVal = document.getElementById('logFilterEnd').value;
+
+        return {
+            levels,
+            regex,
+            startTime: startVal ? new Date(startVal) : null,
+            endTime: endVal ? new Date(endVal) : null
+        };
+    }
+
+    logMatchesFilters(log, filters) {
+        const levelName = this.resolveLogLevel(log.logLevel);
+        if (!filters.levels.has(levelName)) return false;
+
+        if (filters.regex) {
+            const msg = this.formatLogMessage(log);
+            if (!filters.regex.test(msg)) return false;
+        }
+
+        if (filters.startTime || filters.endTime) {
+            const ts = new Date(log.timestamp);
+            if (filters.startTime && ts < filters.startTime) return false;
+            if (filters.endTime && ts > filters.endTime) return false;
+        }
+
+        return true;
+    }
+
+    applyFilters() {
+        if (!this.modalWorkerName) return;
+
+        const filters = this.getActiveFilters();
+        const list = document.getElementById('logHistoryList');
+        const filtered = this.modalAllLogs.filter(log => this.logMatchesFilters(log, filters));
+
+        this.modalLogs = filtered;
+        list.innerHTML = filtered.length > 0
+            ? filtered.map(log => this.renderLogEntry(log)).join('')
+            : `<li class="list-group-item text-muted p-3 text-center">${window.dashboardTranslations.noLogsMatchFilters}</li>`;
+
+        document.getElementById('logHistoryCount').textContent = `${filtered.length} / ${this.modalAllLogs.length} logs`;
+
+        const container = this.getModalScrollContainer();
+        if (container) this.scrollToBottom(container);
+    }
+
+    scheduleFilterApply() {
+        clearTimeout(this.modalFilterDebounce);
+        this.modalFilterDebounce = setTimeout(() => this.applyFilters(), 200);
+    }
+
+    clearLogFilters() {
+        document.querySelectorAll('#logLevelFilters .form-check-input').forEach(el => el.checked = true);
+        document.getElementById('logFilterRegex').value = '';
+        document.getElementById('logFilterStart').value = '';
+        document.getElementById('logFilterEnd').value = '';
+        this.applyFilters();
     }
 
     // ==================== Worker Actions ====================
