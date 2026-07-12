@@ -53,6 +53,14 @@ This repository comes with a:
 # Planned features and support
 - Support for other database types (MSSQL, SQLite, PostgreSQL, MongoDB, Redis)
 
+# AI disclosure
+The core logic and structure of this project was human-authored. Parts of code that are relevant for performance and stability are strictly human-authored.
+
+Elements that were co-authored by AI include:
+- Indexer front-end: LD-Reborn and Big Pickle (OpenCode)
+- Indexer document processing: LD-Reborn and Copilot
+- Server front-end: LD-Reborn and Qwen3-Coder:latest / Qwen3-Coder-Next:latest
+
 # Pipelines
 ![Build & Publish](https://github.com/LD-Reborn/embeddingsearch/actions/workflows/docker-ci.yml/badge.svg)
 
