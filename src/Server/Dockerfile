@@ -8,6 +8,7 @@ COPY ./src/Shared/ ./src/Shared/
 
 # Remove sensitive files
 RUN rm ./src/Server/appsettings*.json
+RUN rm ./src/Server/wwwroot/logs/* || true
 
 # Build and publish projects
 RUN dotnet restore src/Server/Server.csproj

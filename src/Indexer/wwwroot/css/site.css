@@ -84,3 +84,48 @@ td.btn-group {
 [data-bs-theme="light"] img[alt="Logo"] {
   filter: invert(100%);
 }
+
+/* Log entry highlight animation */
+@keyframes log-highlight {
+  from { background-color: rgba(13, 202, 240, 0.25); }
+  to   { background-color: transparent; }
+}
+
+.log-entry-highlight {
+  animation: log-highlight 2s ease-out;
+}
+
+/* Log level color bar hover */
+.log-level-bar {
+  cursor: default;
+  transition: width 0.15s ease;
+  border-radius: 2px;
+  align-self: stretch;
+}
+
+.log-level-bar:hover {
+  width: 10px !important;
+}
+
+/* Log filter bar */
+#logFilterBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bs-body-bg);
+}
+
+#logFilterToggle {
+  font-size: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  line-height: 1;
+}
+
+#logFilterBar .form-check-label {
+  font-size: 0.8rem;
+}
+
+#logFilterBar .form-control-sm {
+  font-size: 0.8rem;
+}

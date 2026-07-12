@@ -13,6 +13,8 @@ public class PythonScriptable : IScriptContainer
     public bool SourceLoaded { get; set; }
     public ScriptUpdateInfo UpdateInfo { get; set; }
     public ILogger _logger { get; set; }
+    private readonly object _execLock = new();
+    
     public PythonScriptable(ScriptToolSet toolSet, ILogger logger)
     {
         string runtime = toolSet.Configuration.PythonRuntime;

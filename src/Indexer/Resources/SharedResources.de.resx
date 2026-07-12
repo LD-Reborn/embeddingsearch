@@ -78,6 +78,12 @@
   <data name="Calls" xml:space="preserve">
     <value>Calls</value>
   </data>
+  <data name="Logs" xml:space="preserve">
+    <value>Protokolle</value>
+  </data>
+  <data name="Load more" xml:space="preserve">
+    <value>Mehr laden</value>
+  </data>
   <data name="Healthy" xml:space="preserve">
     <value>Healthy</value>
   </data>
@@ -104,5 +110,32 @@
   </data>
   <data name="Elmah" xml:space="preserve">
     <value>Elmah</value>
+  </data>
+  <data name="All logs" xml:space="preserve">
+    <value>Alle Protokolle</value>
+  </data>
+  <data name="No more logs" xml:space="preserve">
+    <value>Keine weiteren Protokolle</value>
+  </data>
+  <data name="Filters" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Log level" xml:space="preserve">
+    <value>Protokollstufe</value>
+  </data>
+  <data name="Filter by regex" xml:space="preserve">
+    <value>Mit Regex filtern</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>Ende</value>
+  </data>
+  <data name="Clear filters" xml:space="preserve">
+    <value>Filter zurücksetzen</value>
+  </data>
+  <data name="No logs match filters" xml:space="preserve">
+    <value>Keine Protokolle passen zu den Filtern</value>
   </data>
 </root>

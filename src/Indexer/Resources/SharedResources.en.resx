@@ -60,6 +60,12 @@
   <data name="Calls" xml:space="preserve">
     <value>Calls</value>
   </data>
+  <data name="Logs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="Load more" xml:space="preserve">
+    <value>Load more</value>
+  </data>
   <data name="Healthy" xml:space="preserve">
     <value>Healthy</value>
   </data>
@@ -83,5 +89,47 @@
   </data>
   <data name="Elmah" xml:space="preserve">
     <value>Elmah</value>
+  </data>
+  <data name="Enable all" xml:space="preserve">
+    <value>Enable all</value>
+  </data>
+  <data name="Disable all" xml:space="preserve">
+    <value>Disable all</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Worker" xml:space="preserve">
+    <value>Worker</value>
+  </data>
+  <data name="All logs" xml:space="preserve">
+    <value>All logs</value>
+  </data>
+  <data name="No more logs" xml:space="preserve">
+    <value>No more logs</value>
+  </data>
+  <data name="Filters" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="Log level" xml:space="preserve">
+    <value>Log level</value>
+  </data>
+  <data name="Filter by regex" xml:space="preserve">
+    <value>Filter by regex</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="Clear filters" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
+  <data name="No logs match filters" xml:space="preserve">
+    <value>No logs match filters</value>
   </data>
 </root>

@@ -93,4 +93,49 @@ public class WorkerController : ControllerBase
 
     }
 
+    [HttpGet("Logs")]
+    public ActionResult<WorkerLogsResults> GetLogs(string name, int count = 100)
+    {
+        if (!_workerCollection.Workers.TryGetValue(name, out Worker? worker))
+        {
+            _logger.LogError("Unable to get logs for worker {name} - no running worker with this name.", [name]);
+            return new WorkerLogsResults
+            {
+                WorkerName = name,
+                Logs = [],
+                Success = false
+            };
+        }
+
+        var logs = worker.GetRecentLogs(count);
+        _logger.LogInformation("Retrieved {count} logs for worker {name}.", [logs.Count, name]);
+        return new WorkerLogsResults
+        {
+            WorkerName = name,
+            Logs = logs,
+            Success = true
+        };
+    }
+
+    [HttpPost("ClearLogs")]
+    public ActionResult<WorkerClearLogsResults> ClearLogs(string name)
+    {
+        if (!_workerCollection.Workers.TryGetValue(name, out Worker? worker))
+        {
+            _logger.LogError("Unable to clear logs for worker {name} - no running worker with this name.", [name]);
+            return new WorkerClearLogsResults
+            {
+                WorkerName = name,
+                Success = false
+            };
+        }
+
+        worker.ClearLogs();
+        _logger.LogInformation("Cleared logs for worker {name}.", [name]);
+        return new WorkerClearLogsResults
+        {
+            WorkerName = name,
+            Success = true
+        };
+    }
 }

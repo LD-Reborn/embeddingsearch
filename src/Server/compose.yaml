@@ -1,6 +1,6 @@
 services:
   indexer:
-    image: ld50.dev/embeddingsearch-server:latest
+    image: git.ld50.dev/embeddingsearch/embeddingsearch-server:latest
     ports:
       - "5146:5000"
     volumes:
