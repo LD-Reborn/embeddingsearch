@@ -55,6 +55,7 @@ builder.Services.AddSingleton<LdapAuthenticationService>();
 builder.Services.AddSingleton<Client.Client>();
 builder.Services.AddSingleton<WorkerManager>();
 builder.Services.AddSingleton<AIProviderService>();
+builder.Services.AddSingleton<LogBroadcaster>();
 builder.Services.AddHostedService<IndexerService>();
 builder.Services.AddHealthChecks()
     .AddCheck<WorkerHealthCheck>("WorkerHealthCheck");

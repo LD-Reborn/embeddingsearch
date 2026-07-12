@@ -84,3 +84,25 @@ td.btn-group {
 [data-bs-theme="light"] img[alt="Logo"] {
   filter: invert(100%);
 }
+
+/* Log entry highlight animation */
+@keyframes log-highlight {
+  from { background-color: rgba(13, 202, 240, 0.25); }
+  to   { background-color: transparent; }
+}
+
+.log-entry-highlight {
+  animation: log-highlight 2s ease-out;
+}
+
+/* Log level color bar hover */
+.log-level-bar {
+  cursor: default;
+  transition: width 0.15s ease;
+  border-radius: 2px;
+  align-self: stretch;
+}
+
+.log-level-bar:hover {
+  width: 10px !important;
+}

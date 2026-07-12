@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Indexer.Models;
 
@@ -26,10 +27,38 @@ public class WorkerListResult
     public required string HealthStatus { get; set; }
     [JsonPropertyName("Calls")]
     public List<CallListResult>? Calls { get; set; }
+    [JsonPropertyName("Logs")]
+    public List<LogEntry>? Logs { get; set; }
 }
 
 public class WorkerTriggerUpdateResult
 {
     [JsonPropertyName("Success")]
     public required bool Success { get; set; }
+}
+
+public class WorkerLogsResults
+{
+    [JsonPropertyName("WorkerName")]
+    public required string WorkerName { get; set; }
+    [JsonPropertyName("Logs")]
+    public required List<LogEntry> Logs { get; set; }
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+}
+
+public class WorkerClearLogsResults
+{
+    [JsonPropertyName("WorkerName")]
+    public required string WorkerName { get; set; }
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+}
+
+public class WorkerLogCountsResults
+{
+    [JsonPropertyName("Success")]
+    public required bool Success { get; set; }
+    [JsonPropertyName("Counts")]
+    public required Dictionary<string, Dictionary<string, int>> Counts { get; set; }
 }

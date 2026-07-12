@@ -78,6 +78,12 @@
   <data name="Calls" xml:space="preserve">
     <value>Calls</value>
   </data>
+  <data name="Logs" xml:space="preserve">
+    <value>Protokolle</value>
+  </data>
+  <data name="Load more" xml:space="preserve">
+    <value>Mehr laden</value>
+  </data>
   <data name="Healthy" xml:space="preserve">
     <value>Healthy</value>
   </data>
@@ -104,5 +110,11 @@
   </data>
   <data name="Elmah" xml:space="preserve">
     <value>Elmah</value>
+  </data>
+  <data name="All logs" xml:space="preserve">
+    <value>Alle Protokolle</value>
+  </data>
+  <data name="No more logs" xml:space="preserve">
+    <value>Keine weiteren Protokolle</value>
   </data>
 </root>

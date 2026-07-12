@@ -51,10 +51,10 @@ public class ExampleScript : Indexer.Models.IScript
     public int Update(Indexer.Models.ICallbackInfos callbackInfos)
     {
         ToolSet.Logger.LogInformation("{ToolSet.Name} - Update", ToolSet.Name);
-        EntityQueryResults test = ToolSet.Client.EntityQueryAsync(defaultSearchdomain, "DNA").Result;
+        EntityQueryResults test = ToolSet.Client.SearchdomainQueryAsync(defaultSearchdomain, "DNA").Result;
         var firstResult = test.Results.ToArray()[0];
-        ToolSet.Logger.LogInformation(firstResult.Name);
-        ToolSet.Logger.LogInformation(firstResult.Value.ToString());
+        ToolSet.Logger.LogDebug(firstResult.Name);
+        ToolSet.Logger.LogDebug(firstResult.Value.ToString());
         return 0;
     }
 

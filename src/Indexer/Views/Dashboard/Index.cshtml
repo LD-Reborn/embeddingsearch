@@ -19,6 +19,23 @@
     </div>
 </div>
 
+<div class="modal fade" id="logHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="logHistoryModalTitle"></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <ul id="logHistoryList" class="list-group list-group-flush" role="list"></ul>
+            </div>
+            <div class="modal-footer">
+                <small class="text-muted" id="logHistoryCount"></small>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         window.dashboardCulture = '@CultureInfo.CurrentCulture.Name';
@@ -35,6 +52,7 @@
             enable: '@T["Enable"]',
             disable: '@T["Disable"]',
             calls: '@T["Calls"]',
+            logs: '@T["Logs"]',
             healthy: '@T["Healthy"]',
             degraded: '@T["Degraded"]',
             unhealthy: '@T["Unhealthy"]',
@@ -45,7 +63,9 @@
             disableAll: '@T["Disable all"]',
             enabled: '@T["Enabled"]',
             disabled: '@T["Disabled"]',
-            worker: '@T["Worker"]'
+            worker: '@T["Worker"]',
+            allLogs: '@T["All logs"]',
+            noMoreLogs: '@T["No more logs"]'
         };
     </script>
     <script src="~/js/dashboard.js" asp-append-version="true"></script>

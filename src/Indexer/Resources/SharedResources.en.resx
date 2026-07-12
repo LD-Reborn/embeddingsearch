@@ -60,6 +60,12 @@
   <data name="Calls" xml:space="preserve">
     <value>Calls</value>
   </data>
+  <data name="Logs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="Load more" xml:space="preserve">
+    <value>Load more</value>
+  </data>
   <data name="Healthy" xml:space="preserve">
     <value>Healthy</value>
   </data>
@@ -83,5 +89,26 @@
   </data>
   <data name="Elmah" xml:space="preserve">
     <value>Elmah</value>
+  </data>
+  <data name="Enable all" xml:space="preserve">
+    <value>Enable all</value>
+  </data>
+  <data name="Disable all" xml:space="preserve">
+    <value>Disable all</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Worker" xml:space="preserve">
+    <value>Worker</value>
+  </data>
+  <data name="All logs" xml:space="preserve">
+    <value>All logs</value>
+  </data>
+  <data name="No more logs" xml:space="preserve">
+    <value>No more logs</value>
   </data>
 </root>
